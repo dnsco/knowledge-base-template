@@ -20,7 +20,7 @@ Sibling placement is what makes those symlinks relative, so they survive moving 
 Clone the template with its submodule, then point it at your own remote:
 
 ```bash
-git clone --recurse-submodules <template-repo-url> ~/workspace/<vault> && cd ~/workspace/<vault> && git remote remove origin
+git clone --recurse-submodules https://github.com/dnsco/knowledge-base-template.git ~/workspace/<vault> && cd ~/workspace/<vault> && git remote remove origin
 ```
 
 Cloning (rather than copying the directory) is what keeps the `obsidian-skills` submodule wired up. If you'd
