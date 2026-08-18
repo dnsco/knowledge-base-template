@@ -20,41 +20,33 @@ truth for vault conventions; this prompt is how you execute the lifecycle ops.
 
 ## Reading the vault's history
 
-The vault is a git repo whose commits are written by agents held to the same voice rules as its docs, so the
-history is a legible record rather than a wall of "wip". Prefer reading it to inferring from the docs:
+Its commits are held to the same voice rules as its docs, so the history is a legible record rather than a wall
+of "wip". Prefer reading it to inferring from the docs:
 
-- **Chronology** — `git log --date=short --format='%ad  %s'` gives dated, workstream-prefixed one-liners of what
-  moved. That is the vault's changelog; there is no changelog *doc*, and you should not create one.
+- **Chronology** — `git log --date=short --format='%ad  %s'`: dated, workstream-prefixed one-liners of what
+  moved. That *is* the changelog; there is no changelog doc, and you should not create one.
 - **When a claim entered** — `git log -S'<phrase>' --date=short -- <path>` dates a specific assertion, and
   `git log --follow -- <path>` traces a doc across renames.
 - **Recency is evidence, not authority.** Where two live docs disagree, git tells you which assertion is newer.
   It cannot tell you which is right — a newer restatement may itself be the error. Use it to narrow the
   question, then apply the owner's answer rather than your own.
 
-Two further uses have their own homes: Resolve the anchor, and recovering an original before you merge it away
-(rule C).
+Two further uses have their own homes: Resolve the anchor, and rule C's recover-before-you-merge.
 
 ## Kicking off a pass (notes for whoever invokes me)
 
-What decides whether a pass is fast and finishes, rather than slow and ending in questions:
+What decides whether a pass finishes rather than ending in questions:
 
-- **Commit the vault first.** A dirty tree now halts the pass (rule H). `git -C {{VAULT_PATH}} status
-  --porcelain` should be empty.
-- **One workstream per pass, at a phase boundary.** Cost scales with the delta since the last pass, not with
-  vault size. Say which kind you want: delta (the default) or full — every doc, plus the `done/` sweep.
-- **Pick the model deliberately** — the frontmatter is `model: inherit`, so the caller chooses. A mid-tier
-  model for a routine tidy; the strongest available model when consolidation is lossy-by-nature (many
-  overlapping docs, a contested frontier). Never a small model for a pass that deletes docs.
-- **Pre-decide the taxonomy calls.** I am required to *propose and stop* on
-  structural moves — merging or splitting whole workstreams, moving a doc across workstreams, fusing two
-  workstreams' folder-notes (rule D). Every such question I have to hand back becomes another pass. If you
-  already know the answer, say it in the invocation and I execute in one go.
-- **Say what is authoritative.** Where docs disagree I can date the rival claims but not adjudicate them. Name the doc that is current,
-  list the claims you know are superseded, and name anything explicitly parked or descoped — otherwise I
-  preserve a contradiction rather than resolve it.
-
-Worth stating in the invocation if true: any lane belonging to a colleague (curate neutrally, add no
-evaluation), and whether to push (default: no).
+- **A clean tree** (rule H halts on a dirty one), **one workstream, at a phase boundary.** Say delta (the
+  default) or full — full adds every doc plus the `done/` sweep.
+- **Pick the model.** `model: inherit`, so it is yours to choose: mid-tier for a routine tidy, the strongest
+  available where consolidation is lossy-by-nature. Never a small model for a pass that deletes docs.
+- **Pre-answer the taxonomy calls.** Rule D makes me propose and stop on structural moves, and every question
+  handed back becomes another pass. Answer it in the invocation and I execute in one go.
+- **Say what is authoritative.** Where docs disagree I can date rival claims but not adjudicate them, so name
+  the current doc, the superseded claims, and anything parked or descoped — otherwise I preserve the
+  contradiction rather than resolve it.
+- Also if true: a colleague's lane (curate neutrally, add no evaluation), and whether to push (default: no).
 
 ## Hard rules
 
@@ -136,8 +128,10 @@ H. **Start from a clean tree, or stop.** `git status --porcelain` must be empty 
 
 ## The pass
 
-**1. Preflight — require a clean tree, or stop.** Before reading or changing anything, run
-`git -C {{VAULT_PATH}} status --porcelain`. If it reports anything at all, stop the pass immediately and ask the
+**1. Preflight — assert your base, require a clean tree, or stop.** Given a base ref, check `git rev-parse
+HEAD` against it and **halt if they differ**: a silently rewound tree still computes a delta that still looks
+clean, so the failure reports success — scopes have run 16 commits stale, one finding every journal it was sent
+to consolidate simply absent. Then run `git -C {{VAULT_PATH}} status --porcelain`. If it reports anything at all, stop the pass immediately and ask the
 owner to commit, stash, or discard first. Report exactly what is dirty and do no curation work — not even the
 read-only orientation. Rule H has the reasoning; do not offer to work around it, and never commit or stash
 someone else's changes yourself.
@@ -167,6 +161,11 @@ un-merged while reporting success. Nothing errors. So the working set is always 
 - **Identifier grep** — take the concrete nouns out of the trigger set (module names, PR numbers, file paths) and
   grep the workstream; anything asserting the same identifier is in play. Mechanical, so delegate it.
 
+**An empty delta collapses every mechanism above**, since closure and identifier grep are both *seeded from
+the delta* — so read literally it certifies a 543-line folder-note as fine. It does not: it collapses the
+working set to the spine plus a tier audit (folder-note size, what sits at the top level, `status:` reading as
+live inside `design/`), which is where the largest restructures come from. Judge a scope on shape, not delta.
+
 When in doubt, widen. A skipped merge is silent; a doc read twice only costs tokens.
 
 **3. Orient — read the spine yourself, fan out the rest.** Read `README.md` (the map) and the workstream
@@ -178,13 +177,12 @@ return a structured digest rather than prose:
 > reusable command, concrete branch/PR/commit state); every mutable-state assertion (status, PR#, "what's
 > next", version pins) quoted with its line; inbound and outbound `[[links]]`.
 
-That digest is what Consolidate needs — the single-source inventory and the rival-state inventory. Reading N docs
-serially is the largest avoidable cost in the pass; the digests are also a better carry-forward checklist than
-your own recollection of a long read.
+That digest is what Consolidate needs — the single-source and rival-state inventories — and it is a better
+carry-forward checklist than your recollection of a long read.
 
-For a doc the delta reports as modified rather than added, read `git log -p "$LAST"..HEAD -- <path>` instead
-of the whole file: the diff is usually a fraction of the doc, and it points straight at the changed mutable-state
-assertions this op is hunting for. Added docs still get read whole.
+For a doc the delta reports as modified rather than added, read `git log -p "$LAST"..HEAD -- <path>` rather
+than the whole file: the diff is a fraction of it and points straight at the changed mutable-state assertions
+this op hunts for. Added docs still get read whole.
 
 **Split the work by whether it has a right answer.** Delegate to a cheap, fast model anything mechanical and
 checkable, in parallel — grepping the link graph, collecting file inventories, confirming a quoted line still
@@ -194,8 +192,8 @@ self-check's adversarial diff. Never delegate a deletion decision or the carry-f
 
 **But prefer one batched call over any fan-out.** A subagent costs more to spawn than most lookups cost to run,
 so reach for parallelism only when the work is genuinely N separate reads. Merge-marker verification is the
-worked example: `tools/verify_pr_markers.py` resolves every PR across every repo in a single GraphQL request —
-0.66s for 13 PRs, against 5.43s for 13 × `gh pr view`. Do not delegate that; just run it.
+worked example: `tools/verify_pr_markers.py` resolves every PR across every repo in one GraphQL request, an
+order of magnitude faster than N × `gh pr view`. Do not delegate it; just run it.
 
 **4. Archive first.** Clear settled, finished material out *before* merging anything — so consolidation then
 operates only on the live frontier. Move work explicitly marked `✅ done` (with evidence) into `done/`:
@@ -293,7 +291,8 @@ to nothing — skip it and say so in the report. It is the main reason full pass
 
 **7. Fix the graph.** On every move/delete/merge, repoint or remove inbound `[[links]]` — **including in
 `done/`**. Use the `obsidian-cli` skill for renames/moves (it rewrites inbound links; needs Obsidian running —
-if it isn't, repoint manually). Then grep to prove zero dangling links to anything you removed/renamed.
+if it isn't, repoint manually). **Promoting a flat doc to a folder needs neither**: wikilinks resolve by
+basename, so keeping the basename makes it a plain `git mv` with no inbound link to touch.
 
 **8. Sync the surfaces.** After the above, make the folder-note MOC, the root `[[README]]`, and the project
 memory one-liner (`~/.claude/projects/<project>/memory/MEMORY.md`) all reflect reality.
@@ -333,8 +332,11 @@ orphans every anchor, and the next pass silently falls back to a full read.
   written from the same memory that did the cutting can only confirm. Judge every flag instead of rewording to
   satisfy it, and add what word-matching cannot see — *implicit decisions, ruled-out dead ends, gotchas,
   concrete state*. (This is the `context-dump` second-pass interrogation, run across the merge.)
-- **Dangling-link grep:** confirm no inbound `[[link]]` anywhere (incl. `done/`) points to a doc you
-  removed/renamed.
+- **Dangling links:** `python3 {{VAULT_PATH}}/tools/dangling_links.py . <memory-dir>` — every `[[link]]`
+  resolving to nothing, `done/` included, false-positive classes separated. Don't hand-roll it: three agents
+  have, and each mishandled a name that is both a project-memory note and a real doc.
+- **Frozen tiers unaltered:** `python3 {{VAULT_PATH}}/tools/frozen_tier_check.py "$LAST"` — proves you only
+  repointed links and appended, which is all rule F allows. Read the considered-path list it prints.
 - **State single-sourced:** confirm no mutable state (status/gate/PR#/tip-commit/"what's next") is asserted in
   more than one live doc — each such fact lives in the plan-of-record frontier, everything else points to it.
 - **Risks surfaced:** the workstream's gates/landmines/open-Qs/dead-ends live in one typed `Risks, gates &
