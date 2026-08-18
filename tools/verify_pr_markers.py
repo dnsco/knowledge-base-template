@@ -107,6 +107,9 @@ def run(query):
 
 def main():
     argv = sys.argv[1:]
+    if not argv or {"-h", "--help"} & set(argv):
+        print(__doc__.strip())
+        return 0
     as_json = "--json" in argv
     argv = [a for a in argv if a != "--json"]
     if argv == ["-"]:
