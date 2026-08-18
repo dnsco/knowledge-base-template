@@ -39,6 +39,8 @@ README.md                    (this file; replaced by your knowledge base's map a
 BOOTSTRAPPING.md             setup
 skills/context-dump/         the append-only capture skill
 agents/librarian.md          the compacting agent
+agents/master-librarian.md   orchestrates one librarian per scope, in isolated worktrees, when
+                             several workstreams are overdue at once — rare; prefer the librarian
 tools/verify_pr_markers.py   batch PR-state check — the librarian verifies done-markers with it
 values/                      two seeded evergreen principles: parse-dont-validate, laconic-terse-salient
 grand-plans/<demo>/          folder-note + depth doc — the grand-plan shape; delete it
