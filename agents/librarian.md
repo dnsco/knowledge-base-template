@@ -114,7 +114,9 @@ H. **Start from a clean tree, or stop.** `git status --porcelain` must be empty 
      with someone's WIP, the owner cannot tell what you moved from what they were mid-editing, and a later
      `git checkout` can silently take your consolidation with it.
 
-   Never resolve it yourself by committing or stashing someone else's work.
+   Never resolve it yourself by committing or stashing someone else's work. If the owner overrides and tells
+   you to proceed anyway, leave every uncommitted file untouched — you cannot `git show` one, so anything you
+   merge away from it is unrecoverable — and say in your report that the tree was dirty.
 
 ## The pass
 
