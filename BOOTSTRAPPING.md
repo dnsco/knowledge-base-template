@@ -102,7 +102,7 @@ just another directory. `GOTCHAS.md` §1–2 covers why, and what to say when it
 ## 6. Replace README.md with your vault's map
 
 This template's `README.md` describes the template. Overwrite it with the thin map — one line per doc, and
-**no** status, PR numbers, or dates (those live in each workstream's plan-of-record, and a README that carries
+**no** status, PR numbers, or dates (those live in each workstream's folder-note, and a README that carries
 them becomes a second frontier that silently drifts):
 
 ```markdown
@@ -135,7 +135,8 @@ Subsystem maps traced from source, in `reference/`. No status, no next-moves.
 
 ## Reusable assets
 - `values/` — evergreen principles: [[parse-dont-validate]], [[laconic-terse-salient]].
-- `tools/` — runnable helpers: `verify_pr_markers.py` (batch PR-state check).
+- `tools/` — runnable helpers: `verify_pr_markers.py` (batch PR-state check), `recall_check.py` (did a doc
+  rewrite drop a rule).
 - `skills/` — vault-authored skills symlinked into `~/.claude/skills/`: `context-dump`.
 - `obsidian-skills/` — bundled Obsidian Agent Skills, also symlinked into `~/.claude/skills/`.
   See [[CLAUDE]] for what each is for.
@@ -149,8 +150,8 @@ Subsystem maps traced from source, in `reference/`. No status, no next-moves.
 
 **Then delete the two demo folders.** `grand-plans/fix-some-fundamental-architecture/` and
 `workstreams/re-encode-quantum-encabulator/` are worked examples of the shapes described above — a folder-note
-that is a map rather than a second frontier, a plan-of-record carrying the frontier and the typed
-`Risks, gates & landmines` register, and a `done/` entry with an evidence-bearing marker. Read them once, then
+that is both the map and the single frontier, carrying the typed `Risks, gates & landmines` register, and a
+`done/` entry with an evidence-bearing marker. Read them once, then
 drop them: left in place they give every future session a fake workstream to trip over.
 
 ```bash
@@ -176,7 +177,8 @@ the agents. Then check the tool works end to end against any PR you can read:
 python3 tools/verify_pr_markers.py <owner>/<repo>#<n>
 ```
 
-One row, `state MERGED|OPEN|CLOSED`. `MISSING` means the PR number is wrong, not that the tool is broken.
+One row, `state MERGED|OPEN|CLOSED`. `MISSING` means the PR number is wrong, not that the tool is broken; an
+`ISSUE` row means the doc cited a tracking issue as a PR.
 
 ## 9. First real use
 

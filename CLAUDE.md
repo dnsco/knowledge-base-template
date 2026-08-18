@@ -11,14 +11,19 @@ rooted in a code project may never have loaded this file.
 
 ## Using it — start here
 1. Open **[[README]]** — a thin map of what exists and where. Find the workstream you're touching.
-2. Open that workstream's folder-note, then the plan-of-record it points to, and **read the top**: the
-   frontier gives the goal, the current state, and the next concrete move in a couple of minutes.
+2. Open that workstream's folder-note and **read the top**: the frontier gives the goal, the
+   current state, and the next concrete move in a couple of minutes.
 3. **Follow companion links only when a task needs the depth** — docs can be large; don't read them all by
    default. Open anything under `done/` only to re-examine completed work, not for current state.
 4. **Read docs as a strong prior, not ground truth.** They're point-in-time: file paths, line numbers, and
    "current state" drift. Verify against the actual code before treating a claim as fact.
 
 ## Maintaining it
+
+**This is not an exhaustive record, and absence is not a gap.** The goal is not to track everything —
+it is to keep what a future session actually needs. Do not propose sweeps to capture every artifact,
+channel or shipped document for completeness' sake; a thing earns a place here because someone will
+need it, not because it exists.
 
 **Two roles — keep them separate.** A working agent (any session doing engineering) **only appends**: capture
 findings with the **`context-dump` skill** — a dated journal entry, plus flipping a doc's `status` the moment
@@ -35,21 +40,25 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
 - **Placement & filenames** — `grand-plans/` (long-horizon direction), `workstreams/` (active efforts; a named
   one gets a subfolder + a `<folder>/<folder>.md` folder-note as its mini-MOC), `reference/` (subsystem maps
   traced from source, cross-workstream — no status, no next-moves), `values/` (evergreen principles), `done/`
-  (finished work), `sources/` (raw verbatim inputs), `external/` (artifacts written for an outside audience),
-  `tools/` (runnable scripts, not notes). Files are `YYYY-MM-DD-topic.md`; evergreen concepts and folder-notes
-  skip the date.
+  (finished work), `sources/` (raw verbatim inputs, subdivided by kind — `sources/transcriptions/`),
+  `external/` (artifacts written for an outside audience), `tools/` (runnable scripts, not notes). Files are
+  `YYYY-MM-DD-topic.md`; evergreen concepts and folder-notes skip the date.
 - **`sources/` and `external/` are read-only — correct them by appending, never by editing.** `sources/` holds
   raw verbatim inputs (meeting and session transcripts, clipped articles); a transcript that has been edited is
   no longer a transcript, and every doc citing it now quotes something that was never said. `external/` holds
   artifacts already delivered to an audience; editing one retroactively makes the record disagree with what
   people actually received. When either carries a claim that has since gone stale, **append a dated note** saying
   so and leave the original text intact — the same move `done/` already allows.
-- **A mature workstream tends toward three tiers.** *Live* — the folder-note MOC plus exactly **one**
-  plan-of-record holding all mutable state (status, gates, PR#s, what's next). *Stable* — a `design/`
-  subfolder of still-consulted reference (the "why", as-built design, recipes) that **carries no live
-  status**. *Inert* — `done/`, the finished record. The distinction: `done/` is frozen history you open only
-  to re-examine completed work; `design/` is living reference a current task leans on. Consolidate toward
-  this shape, and keep mutable state single-sourced in the one plan-of-record.
+- **A mature workstream tends toward three tiers.** *Live* — **the folder-note *is* the plan of record**:
+  one file that is both the map and the single frontier, holding all mutable state (status, gates, PR#s,
+  what's next). There is no separate plan doc; a workstream with one has two frontiers waiting to
+  diverge. *Stable* — a `design/` subfolder of still-consulted reference (the "why", as-built design,
+  recipes) that **carries no live status**. *Inert* — `done/`, the finished record. The distinction:
+  `done/` is frozen history you open only to re-examine completed work; `design/` is living reference a
+  current task leans on. Consolidate toward this shape, and keep mutable state single-sourced in the
+  folder-note. **A folder-note growing too large is a signal to move *reference* down into `design/`,
+  never to move the frontier out into a second live doc.** (A folder-less workstream is a single flat
+  doc, which is its own plan of record by the same rule.)
 - **Parked (`workstreams/parked/`)** — shared shelf for on-hold efforts (`status: parked`/`deferred`) that may
   revive; distinct from `design/` (settled reference) and `done/` (frozen). A parked doc keeps its `up:`.
 - **Long-horizon work gets a stub, not a paragraph.** Work that is real but far off earns its own
@@ -58,8 +67,8 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   Record a baseline measurement in the stub where one exists, so the premise stays checkable later.
 - **The README is a thin map** — one line per doc: what it is and which effort it serves. It carries **no
   mutable state**; status, PR numbers, dates and next-moves live only in the workstream's folder-note. Do not
-  expand it into an annotated table of contents — that makes it a second frontier that silently drifts out of
-  date.
+  expand it into an annotated table of contents — one that did became a second frontier and silently drifted
+  out of date.
 - **Frontmatter** — keep `type` / `status` / `date` / `tags` current (plus `up` / `links` for tier relationships).
 - **Links** — `[[wikilinks]]` for intra-vault references; leave code-repo paths as literal text. Docs span
   repos, so **name the repo** when a path is ambiguous — `acme-server: docs/…`, not a bare `docs/…`.

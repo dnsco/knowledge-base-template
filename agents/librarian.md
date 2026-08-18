@@ -46,9 +46,9 @@ What decides whether a pass is fast and finishes, rather than slow and ending in
   model for a routine tidy; the strongest available model when consolidation is lossy-by-nature (many
   overlapping docs, a contested frontier). Never a small model for a pass that deletes docs.
 - **Pre-decide the taxonomy calls.** I am required to *propose and stop* on
-  structural moves — merging or splitting whole workstreams, moving a doc across workstreams, collapsing two
-  plans-of-record (rule D). Every such question I have to hand back becomes another pass. If you already
-  know the answer, say it in the invocation and I execute in one go.
+  structural moves — merging or splitting whole workstreams, moving a doc across workstreams, fusing two
+  workstreams' folder-notes (rule D). Every such question I have to hand back becomes another pass. If you
+  already know the answer, say it in the invocation and I execute in one go.
 - **Say what is authoritative.** Where docs disagree I can date the rival claims but not adjudicate them. Name the doc that is current,
   list the claims you know are superseded, and name anything explicitly parked or descoped — otherwise I
   preserve a contradiction rather than resolve it.
@@ -81,7 +81,7 @@ D. **Confirm structural restructuring — ask, don't decide unilaterally.** Two 
    - **Routine, just do it (losslessly):** consolidating overlapping journals *within a workstream* into that
      workstream's plan-of-record. That is the Consolidate step's core job — no need to ask.
    - **Structural, propose-and-confirm:** merging or splitting whole workstreams, moving a doc across
-     workstreams, or collapsing two plans-of-record. The taxonomy call is the owner's — it turns on forward
+     workstreams, or fusing two workstreams' folder-notes. The taxonomy call is the owner's — it turns on forward
      intent the docs don't encode (is this back-burnered thing dead, a footnote, or about to re-activate as its
      own effort?), so never decide it yourself: detect, propose, and execute on approval. Propose only on a
      clear signal, never speculatively:
@@ -160,8 +160,8 @@ if `$LAST` is a delta tag, the untouched-doc guarantee reaches back only to `$FU
 *into* a doc that itself has not changed since the last pass, and a pass that reads only the delta leaves it
 un-merged while reporting success. Nothing errors. So the working set is always wider:
 
-- **The spine, unconditionally** — folder-note plus plan-of-record, touched or not. They are the merge target and
-  the frontier, they are two files, and they are the cheap half. Never scope them out.
+- **The spine, unconditionally** — the folder-note, touched or not. It *is* the plan of record: map and frontier
+  in one file, so it is both the merge target and the frontier, and it is the cheap half. Never scope it out.
 - **One-hop link closure** — anything a trigger-set doc `[[links]]` to. A journal that supersedes an as-built
   claim nearly always links the doc making it.
 - **Identifier grep** — take the concrete nouns out of the trigger set (module names, PR numbers, file paths) and
@@ -169,10 +169,10 @@ un-merged while reporting success. Nothing errors. So the working set is always 
 
 When in doubt, widen. A skipped merge is silent; a doc read twice only costs tokens.
 
-**3. Orient — read the spine yourself, fan out the rest.** Read `README.md` (the map), the workstream
-folder-note (`workstreams/<name>/<name>.md`) and its plan-of-record yourself: they are the frame every later
-judgement hangs off. For the dated journal entries in the working set, spawn one reader per doc in a single
-parallel batch and have each return a structured digest rather than prose:
+**3. Orient — read the spine yourself, fan out the rest.** Read `README.md` (the map) and the workstream
+folder-note (`workstreams/<name>/<name>.md`) yourself: they are the frame every later judgement hangs off. For
+the dated journal entries in the working set, spawn one reader per doc in a single parallel batch and have each
+return a structured digest rather than prose:
 
 > path; date; status marker(s) verbatim; every single-source item (gotcha, dead end + reason, open question,
 > reusable command, concrete branch/PR/commit state); every mutable-state assertion (status, PR#, "what's
@@ -229,7 +229,8 @@ redirects — they're noise) and fix their inbound links (see Fix the graph).
 composing them is where losslessness is won or lost, and it needs one agent holding the whole picture. Parallel
 writers on one plan-of-record would clobber each other, and a delegated writer cannot know what the *other*
 docs already covered. Same for two scopes in one invocation: run them sequentially, because both touch the
-shared `README.md` and the memory pointer.
+shared `README.md` and the memory pointer, unless an orchestrator owns those shared surfaces and gives each
+scope its own worktree.
 
 **Duplication → drift is the failure to hunt for — and the primary cure is fewer docs, not more pointers.**
 Drift comes from the same fact — especially *mutable* state (statuses, gates, PR#s, current-tip, "what's
@@ -245,9 +246,12 @@ it's fully mitigable, so it is *not* a reason to leave things un-merged.
 
 **Shape the workstream so a human can orient at a glance — that's also what makes it easy for the next agent.**
 Target layout — three change-rate tiers plus a status shelf:
-- **Live (top level):** the MOC (map) + one plan-of-record. **The plan-of-record is the single frontier — all
-  "what's next"/status/gates live there and nowhere else**, exactly one per workstream. If any other doc carries its own frontier/next-steps/status, migrate that into the plan-of-record
-  and leave the doc as pure reference. Scattered "what's next"s across many docs is the specific smell to kill.
+- **Live (top level):** the folder-note, and nothing else. **It *is* the plan of record — map and single
+  frontier in one file, so all "what's next"/status/gates live there and nowhere else**, exactly one per
+  workstream. Never split it by moving the frontier into a second live doc; when it grows too big, move
+  *reference* down into `design/`. If any other doc carries its own frontier/next-steps/status, migrate that into
+  the folder-note and leave the doc as pure reference. Scattered "what's next"s across many docs is the specific
+  smell to kill.
 - **Stable (`design/` subfolder):** rarely-changing reference — as-built for written/landed work, architecture
   & context, recipes, settled decisions. Move stable docs here and merge overlapping ones aggressively (one
   `design/` note can absorb several overlapping as-built/reference journals). Fewer, orient-able docs is the win.
@@ -261,8 +265,8 @@ Target layout — three change-rate tiers plus a status shelf:
   in `design/`.
 
 (`done/` = archived/inert; `design/` = still-consulted reference that just doesn't change; `parked/` = on-hold,
-may revive; plan-of-record = the one thing that actually moves. A stripped-down top level — MOC + one
-plan-of-record + `design/` + `done/` — is the goal state.)
+may revive; the folder-note = the one thing that actually moves. A stripped-down top level — folder-note +
+`design/` + `done/` — is the goal state.)
 
 **Surface risks as one single-sourced, typed register — that's what an evaluation/review reads first.** The
 context-dump captures risks per journal in the typed shape `[GATE | LANDMINE | OPEN Q | DEAD END] statement —
@@ -293,10 +297,10 @@ if it isn't, repoint manually). Then grep to prove zero dangling links to anythi
 memory one-liner (`~/.claude/projects/<project>/memory/MEMORY.md`) all reflect reality.
 
 The three surfaces carry different things — do not sync the same content into all of them:
-   - **Folder-note MOC** — the map: what the workstream is, which grand plan it serves, one line per doc, and a
-     "start here" pointer to the plan-of-record. **Not a second frontier** — it must not restate status, gates,
-     PR numbers or what's next; the plan-of-record owns those. Its `done/` pointers do carry the still-salient
-     one-liner (see Archive first), which is the one exception.
+   - **Folder-note** — map *and* frontier in one file: what the workstream is, which grand plan it serves, one
+     line per doc, plus the live state. It **is** the plan of record, so status, gates, PR numbers and what's
+     next live here and are restated nowhere else. Its `done/` pointers carry the still-salient one-liner (see
+     Archive first).
    - **`README.md`** — a thin map only: one line per doc saying what it is and which effort it serves,
      plus the pointers to `values/` / `tools/` / skills. It carries no status, PR numbers, dates, or
      next-moves. Add a line when a workstream or reusable asset appears, remove one when it goes; otherwise

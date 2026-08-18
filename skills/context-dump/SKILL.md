@@ -47,7 +47,7 @@ project root as `{{VAULT}}/`, so you can read and grep it as in-tree paths. Full
      any agent) and `[[link]]` it.
    - `[[wikilinks]]` to related vault docs; leave code-repo paths as literal text.
 3. **Update the live frontier — with explicit, evidence-bearing done-markers.** In the workstream's
-   plan-of-record, record progress as **discrete line items the librarian can act on without guessing** — each
+   folder-note, which *is* its plan of record, record progress as **discrete line items the librarian can act on without guessing** — each
    with a state and its *evidence*:
    - `✅ done — merged #NNNN` / `commit <sha>` / `gate green` — a real landing, **NOT** "PR opened",
    - `⏳ in-flight — #MMMM (draft)` / `mid-rebase` / `blocked on …`,
@@ -80,8 +80,9 @@ project root as `{{VAULT}}/`, so you can read and grep it as in-tree paths. Full
 - Don't edit `sources/` or `external/` — raw inputs and already-delivered artifacts are read-only. Add a new
   source file freely; correct a stale one by appending a dated note.
 - Don't repoint or remove other docs' `[[links]]`.
-- Don't write a *competing* plan-of-record — there is one per workstream; append a journal entry and update that
-  one instead. (Rival "plan" docs from many agents are what create the overlapping-telephone mess.)
+- Don't write a *competing* frontier — the workstream's folder-note is its one plan of record; append a journal
+  entry and update that instead. (Rival "plan" docs from many agents are what create the overlapping-telephone
+  mess.)
 
 If consolidation, archiving, or graph cleanup is overdue, **say so and recommend a librarian pass** — don't do
 it from here.

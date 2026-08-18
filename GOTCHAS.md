@@ -19,7 +19,7 @@ a symlinked one at that, so whether it gets read is a coin flip.
 
 An agent that writes here without it produces exactly what the conventions exist to prevent: an undated
 filename, a doc in the wrong tier, chat voice, agent-local codenames ("Option C"), or worst, a **rival
-plan-of-record** parked next to the real one.
+frontier** parked next to the workstream's real one.
 
 Three mitigations. Use all three, because each covers a different hole:
 
@@ -111,7 +111,7 @@ What follows from that:
   the `done/` sweep. Ask for a full pass at phase boundaries; that is also the only thing that renews the
   licence to skip untouched docs.
 - **Front-load the decisions.** It is required to stop and ask on structural moves (merging or splitting whole
-  workstreams, relocating a doc across them, collapsing two plans-of-record). Every question handed back costs
+  workstreams, relocating a doc across them, fusing two workstreams' folder-notes). Every question handed back costs
   another pass, so pre-answer the ones you already know and name what is authoritative where docs disagree.
 - **Commit first.** A dirty tree halts the pass outright (§3) — the most common way to spend an invocation and
   get nothing.

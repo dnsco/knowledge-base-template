@@ -23,7 +23,7 @@ The fix is a split, and it's the whole design:
 | | writes | never |
 |---|---|---|
 | **`context-dump` skill** — any session doing engineering | appends a dated journal entry; flips `status`; keeps the one live frontier truthful | deletes, merges, archives, restructures, re-links |
-| **`librarian` agent** — a separate deliberate pass | consolidates overlapping docs into the one plan-of-record, archives finished work, fixes the `[[link]]` graph, syncs the map | engineering decisions; inferring that something is done |
+| **`librarian` agent** — a separate deliberate pass | consolidates overlapping docs into the workstream's one folder-note, archives finished work, fixes the `[[link]]` graph, syncs the map | engineering decisions; inferring that something is done |
 
 Working agents are **append-only**, so any number of them can run in parallel without clobbering each other.
 All destruction is concentrated in the librarian, which runs alone, with full context, at a phase boundary
@@ -41,10 +41,11 @@ skills/context-dump/         the append-only capture skill
 agents/librarian.md          the compacting agent
 agents/master-librarian.md   orchestrates one librarian per scope, in isolated worktrees, when
                              several workstreams are overdue at once — rare; prefer the librarian
-tools/verify_pr_markers.py   batch PR-state check — the librarian verifies done-markers with it
+tools/                       verify_pr_markers.py (batch PR-state check) and recall_check.py (did a
+                             rewrite drop a rule) — the librarian's two verification tools
 values/                      two seeded evergreen principles: parse-dont-validate, laconic-terse-salient
 grand-plans/<demo>/          folder-note + depth doc — the grand-plan shape; delete it
-workstreams/<demo>/          folder-note + plan-of-record + done/ — the full workstream shape; delete it
+workstreams/<demo>/          folder-note (map + frontier) + done/ — the full workstream shape; delete it
 obsidian-skills/             submodule: kepano/obsidian-skills (obsidian-cli, defuddle, …)
 reference/ done/             empty tiers, see below
 ```
@@ -55,10 +56,10 @@ Two placeholders — `{{VAULT}}` (the vault's directory name) and `{{VAULT_PATH}
 
 Sorted by **rate of change**, not by topic. That's the one idea to keep:
 
-- **`workstreams/<name>/`** — an active multi-session effort. Contains a `<name>.md` **folder-note** (its
-  mini-map) and exactly **one plan-of-record**: the single place mutable state lives — status, gates, PR
-  numbers, what's next, and one typed `Risks, gates & landmines` register. One frontier per workstream, no
-  second copy anywhere.
+- **`workstreams/<name>/`** — an active multi-session effort. Its `<name>.md` **folder-note** *is* the plan of
+  record: map and single frontier in one file, the only place mutable state lives — status, gates, PR numbers,
+  what's next, and one typed `Risks, gates & landmines` register. One frontier per workstream, no second copy
+  anywhere; there is no separate plan doc, because a workstream with one has two frontiers waiting to diverge.
 - **`workstreams/<name>/design/`** — still-consulted reference that no longer moves: the "why", as-built
   design, recipes. Carries no status.
 - **`done/`** — finished and frozen. Opened only to re-examine completed work, never for current state.
