@@ -43,14 +43,15 @@ Then prove none are left — this should print nothing:
 grep -rn '{{' --include='*.md' --exclude-dir=obsidian-skills --exclude=BOOTSTRAPPING.md --exclude=README.md .
 ```
 
-Placeholders live in `CLAUDE.md`, `skills/context-dump/SKILL.md` and `agents/librarian.md` — including their
+Placeholders live in `CLAUDE.md`, `skills/context-dump/SKILL.md`, `agents/librarian.md` and
+`agents/master-librarian.md` — including their
 frontmatter `description:`, which is what Claude Code matches on to decide whether to invoke them. An
 unreplaced placeholder there degrades triggering, so don't skip the check.
 
-## 3. Wire the skill and agent into Claude Code — at **user** level
+## 3. Wire the skill and agents into Claude Code — at **user** level
 
 ```bash
-mkdir -p ~/.claude/skills ~/.claude/agents && ln -s ~/workspace/<vault>/skills/context-dump ~/.claude/skills/context-dump && ln -s ~/workspace/<vault>/agents/librarian.md ~/.claude/agents/librarian.md
+mkdir -p ~/.claude/skills ~/.claude/agents && ln -s ~/workspace/<vault>/skills/context-dump ~/.claude/skills/context-dump && ln -s ~/workspace/<vault>/agents/librarian.md ~/.claude/agents/librarian.md && ln -s ~/workspace/<vault>/agents/master-librarian.md ~/.claude/agents/master-librarian.md
 ```
 
 **User level (`~/.claude/`), not the vault's `.claude/`** — you invoke `context-dump` and the librarian from a
