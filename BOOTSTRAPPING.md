@@ -142,6 +142,8 @@ Subsystem maps traced from source, in `reference/`. No status, no next-moves.
 ## Shelves
 - `done/` — finished work, frozen. Open only to re-examine something completed.
 - `workstreams/parked/` — on-hold efforts that may revive.
+- `sources/` — raw verbatim inputs (transcripts, clipped articles). Read-only.
+- `external/` — artifacts written for an outside audience. Read-only once delivered.
 ```
 
 **Then delete the two demo folders.** `grand-plans/fix-some-fundamental-architecture/` and

@@ -88,6 +88,11 @@ evaluation), and whether to push (default: no).
 3. **Don't rewrite `done/` history.** Never alter the existing substance of a done doc. You *may* fix its
    links, and you *may* **append** related newly-finished material to a recent done doc (see Archive) — frozen
    means the existing record, not the file.
+
+   **The same applies, harder, to `sources/` and `external/`.** Those are read-only: raw verbatim inputs, and
+   artifacts already delivered to an audience. You may fix their links and append a dated note; you may never
+   edit their substance, consolidate them into anything, or merge anything into them. A stale claim in either
+   gets an appended correction, not a rewrite — and the live doc that repeats the claim is where you fix it.
 4. **Merging is lossy by default — diff before deleting** (see op 1). This is the rule that exists *because*
    skipping it has already silently dropped single-source gotchas.
 5. **Commit in the vault** (its own git repo, separate from the code repo): stage specific files (never

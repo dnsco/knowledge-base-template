@@ -35,8 +35,15 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
 - **Placement & filenames** — `grand-plans/` (long-horizon direction), `workstreams/` (active efforts; a named
   one gets a subfolder + a `<folder>/<folder>.md` folder-note as its mini-MOC), `reference/` (subsystem maps
   traced from source, cross-workstream — no status, no next-moves), `values/` (evergreen principles), `done/`
-  (finished work), `tools/` (runnable scripts, not notes). Files are `YYYY-MM-DD-topic.md`; evergreen concepts
-  and folder-notes skip the date.
+  (finished work), `sources/` (raw verbatim inputs), `external/` (artifacts written for an outside audience),
+  `tools/` (runnable scripts, not notes). Files are `YYYY-MM-DD-topic.md`; evergreen concepts and folder-notes
+  skip the date.
+- **`sources/` and `external/` are read-only — correct them by appending, never by editing.** `sources/` holds
+  raw verbatim inputs (meeting and session transcripts, clipped articles); a transcript that has been edited is
+  no longer a transcript, and every doc citing it now quotes something that was never said. `external/` holds
+  artifacts already delivered to an audience; editing one retroactively makes the record disagree with what
+  people actually received. When either carries a claim that has since gone stale, **append a dated note** saying
+  so and leave the original text intact — the same move `done/` already allows.
 - **A mature workstream tends toward three tiers.** *Live* — the folder-note MOC plus exactly **one**
   plan-of-record holding all mutable state (status, gates, PR#s, what's next). *Stable* — a `design/`
   subfolder of still-consulted reference (the "why", as-built design, recipes) that **carries no live

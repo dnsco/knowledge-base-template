@@ -77,6 +77,8 @@ project root as `{{VAULT}}/`, so you can read and grep it as in-tree paths. Full
 
 - Don't delete, merge, or restructure existing docs.
 - Don't move anything to `done/`, and don't edit `done/` docs.
+- Don't edit `sources/` or `external/` — raw inputs and already-delivered artifacts are read-only. Add a new
+  source file freely; correct a stale one by appending a dated note.
 - Don't repoint or remove other docs' `[[links]]`.
 - Don't write a *competing* plan-of-record — there is one per workstream; append a journal entry and update that
   one instead. (Rival "plan" docs from many agents are what create the overlapping-telephone mess.)
