@@ -22,13 +22,17 @@ The fix is a split, and it's the whole design:
 
 | | writes | never |
 |---|---|---|
-| **`context-dump` skill** — any session doing engineering | appends a dated journal entry; flips `status`; keeps the one live frontier truthful | deletes, merges, archives, restructures, re-links |
-| **`librarian` agent** — a separate deliberate pass | consolidates overlapping docs into the workstream's one folder-note, archives finished work, fixes the `[[link]]` graph, syncs the map | engineering decisions; inferring that something is done |
+| **`context-dump` skill** — any session doing engineering | a dated journal entry, and nothing else | the frontier; deletes, merges, archives, restructures, re-links |
+| **`frontier-clerk` agent** — spawned by the dump | frontier state only: `status` flips, marker moves, striking items whose completion is recorded | moving content between docs; inferring completion; tagging |
+| **`librarian` agent** — a separate deliberate pass | structure within one workstream: consolidates overlapping docs into its one folder-note, archives finished work, fixes the `[[link]]` graph | engineering decisions; inferring that something is done |
+| **`head-librarian` agent** — several workstreams at once | shared surfaces, commits, anchor tags | any doc's substance; taxonomy calls |
+| **`scout` agent** — read-only reconnaissance | nothing at all | — |
 
-Working agents are **append-only**, so any number of them can run in parallel without clobbering each other.
-All destruction is concentrated in the librarian, which runs alone, with full context, at a phase boundary
-("run the librarian" / "tidy the vault"). That's what makes the record safe to write to from many sessions and
-still small enough to read.
+Each boundary is a **capability, not a request for restraint**: the appending agent *cannot* rewrite, so the
+illegal state is unrepresentable rather than checked for afterwards. Working agents being append-only is what
+lets any number run in parallel without clobbering each other, and concentrating all destruction in the
+librarian — alone, with full context, at a phase boundary ("run the librarian" / "tidy the vault") — is what
+keeps the record safe to write to from many sessions and still small enough to read.
 
 ## What's in the box
 
@@ -39,10 +43,14 @@ README.md                    (this file; replaced by your knowledge base's map a
 BOOTSTRAPPING.md             setup
 skills/context-dump/         the append-only capture skill
 agents/librarian.md          the compacting agent
-agents/master-librarian.md   orchestrates one librarian per scope, in isolated worktrees, when
+agents/frontier-clerk.md     reconciles a frontier against a dump's entry, and writes nothing else
+agents/head-librarian.md     orchestrates one librarian per scope, in isolated worktrees, when
                              several workstreams are overdue at once — rare; prefer the librarian
-tools/                       verify_pr_markers.py (batch PR-state check) and recall_check.py (did a
-                             rewrite drop a rule) — the librarian's two verification tools
+agents/scout.md              read-only reconnaissance; reports, writes nothing
+tools/                       the librarian's verification tools: verify_pr_markers.py (batch
+                             PR-state check), recall_check.py (did a rewrite drop a rule),
+                             frozen_tier_check.py (was frozen-tier substance altered),
+                             dangling_links.py (which [[links]] resolve to nothing)
 values/                      two seeded evergreen principles: parse-dont-validate, laconic-terse-salient
 grand-plans/<demo>/          folder-note + depth doc — the grand-plan shape; delete it
 workstreams/<demo>/          folder-note (map + frontier) + done/ — the full workstream shape; delete it

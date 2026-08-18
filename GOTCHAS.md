@@ -30,7 +30,7 @@ Three mitigations. Use all three, because each covers a different hole:
 
 Default assumption: if a session did not invoke the skill, it has not read the conventions.
 
-## 2. Reads are free; writes go through the skill, destruction through the librarian
+## 2. Reads are free; writes go through the skill, frontier and structure through their own agents
 
 A project session sees `{{VAULT}}/` in its tree and treats it like any other directory — it will edit a doc in
 place, "tidy" a section that reads as stale, delete what looks obsolete, or rewrite a frontier it has half the
@@ -41,8 +41,12 @@ The discipline, worth stating in the invocation whenever a session will touch th
 
 - **Read freely.** Any session may read and grep it. (As a strong prior, not ground truth — docs are
   point-in-time; verify against the code.)
-- **Write only via `/context-dump`** — append a dated entry, flip a `status`. Not a hand-edit that restructures.
+- **Write only via `/context-dump`** — append a dated entry, and nothing else. Not a hand-edit that
+  restructures, and not a frontier edit either.
+- **The frontier — `status` flips, striking a completed item: `frontier-clerk` only.** The dump spawns it; it is
+  not something to do by hand on the way past.
 - **Delete / merge / archive / re-link: librarian only**, as its own deliberate pass, on a clean tree.
+  Several workstreams overdue at once is the `head-librarian`'s; one is not.
 - **Never touch `done/`.** It is frozen.
 - Spotted overdue cleanup? **Recommend a librarian pass**; don't do it inline.
 
