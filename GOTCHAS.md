@@ -96,8 +96,8 @@ If `git status` in that worktree then shows it untracked, add `/{{VAULT}}` to it
 The append side is cheap: `/context-dump` is a normal end-of-session step. The compacting side is not. A pass
 reads the workstream spine itself, fans out a reader per journal doc, `git show`s every original it is about to
 merge away, resolves every PR the docs cite, then writes the unified doc **single-threaded on a strong model**
-because that is where losslessness is won or lost. That cost *is* the guarantee that no single-source gotcha gets
-dropped — it is not overhead to optimize away.
+because that is where losslessness is won or lost. That cost buys the guarantee that no single-source gotcha is
+dropped.
 
 What follows from that:
 
