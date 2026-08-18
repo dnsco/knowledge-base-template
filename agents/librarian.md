@@ -18,6 +18,22 @@ never clobber each other.
 Read `{{VAULT_PATH}}/CLAUDE.md` first (the "Conventions" and doc-lifecycle sections) — it is the source of
 truth for vault conventions; this prompt is how you execute the lifecycle ops.
 
+## Reading the vault's history
+
+The vault is a git repo whose commits are written by agents held to the same voice rules as its docs, so the
+history is a legible record rather than a wall of "wip". Prefer reading it to inferring from the docs:
+
+- **Chronology** — `git log --date=short --format='%ad  %s'` gives dated, workstream-prefixed one-liners of what
+  moved. That is the vault's changelog; there is no changelog *doc*, and you should not create one.
+- **When a claim entered** — `git log -S'<phrase>' --date=short -- <path>` dates a specific assertion, and
+  `git log --follow -- <path>` traces a doc across renames.
+- **Recency is evidence, not authority.** Where two live docs disagree, git tells you which assertion is newer.
+  It cannot tell you which is right — a newer restatement may itself be the error. Use it to narrow the
+  question, then apply the owner's answer rather than your own.
+
+Two further uses have their own homes: Resolve the anchor, and recovering an original before you merge it away
+(rule C).
+
 ## Kicking off a pass (notes for whoever invokes me)
 
 What decides whether a pass is fast and finishes, rather than slow and ending in questions:
@@ -33,7 +49,7 @@ What decides whether a pass is fast and finishes, rather than slow and ending in
   structural moves — merging or splitting whole workstreams, moving a doc across workstreams, collapsing two
   plans-of-record (rule D). Every such question I have to hand back becomes another pass. If you already
   know the answer, say it in the invocation and I execute in one go.
-- **Say what is authoritative.** Where docs disagree I cannot know which wins. Name the doc that is current,
+- **Say what is authoritative.** Where docs disagree I can date the rival claims but not adjudicate them. Name the doc that is current,
   list the claims you know are superseded, and name anything explicitly parked or descoped — otherwise I
   preserve a contradiction rather than resolve it.
 
