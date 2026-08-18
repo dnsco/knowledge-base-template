@@ -60,6 +60,8 @@ Sorted by **rate of change**, not by topic. That's the one idea to keep:
 - **`workstreams/<name>/design/`** — still-consulted reference that no longer moves: the "why", as-built
   design, recipes. Carries no status.
 - **`done/`** — finished and frozen. Opened only to re-examine completed work, never for current state.
+- **`sources/`** and **`external/`** — read-only: raw verbatim inputs, and artifacts already delivered to an
+  audience. Correct either by appending a dated note, never by editing.
 - **`workstreams/parked/`** — shared shelf for on-hold efforts that may revive.
 - **`grand-plans/`** — the long-horizon direction the workstreams serve.
 - **`reference/`** — subsystem maps traced from source, cross-workstream. Kept so agents re-read instead of
