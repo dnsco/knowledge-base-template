@@ -213,7 +213,9 @@ operates only on the live frontier. Move work explicitly marked `✅ done` (with
      optimistic. Collect every PR the docs cite and resolve them all at once with
      `python3 {{VAULT_PATH}}/tools/verify_pr_markers.py <owner>/<repo>#<n> <n> <n> …` (bare numbers inherit
      the preceding repo). It returns state, `mergedAt` and the merge commit per PR, exits 2 if any ref came back
-     `MISSING`, and a `MISSING` means the doc's PR number is wrong — a finding to fix, not a tool failure.
+     `MISSING`, and a `MISSING` means the doc's PR number is wrong — a finding to fix, not a tool failure. An
+     `ISSUE` row means the doc cited a tracking issue as though it were a PR, so work that reads as unlanded
+     may never have been a PR at all; that is the most common real finding here, and the doc is what to fix.
      For a loose commit rather than a PR, `gh api repos/<o>/<r>/compare/<base>...<sha>` still applies. Make the
      archive call yourself on the returned evidence, and correct any date or sha the docs got wrong while you
      are there — a real pass found a wrong merge date this way.
@@ -315,17 +317,22 @@ last or the anchor swallows your own edits:
 git tag "librarian/<ws>/delta/$(date +%F)"   # or .../full/... for a full pass
 ```
 
-Append `-2` if the day already has one. Tags rather than a field in a doc: an anchor is not prose, it cannot
-drift, and it costs no doc surface. This makes rewriting vault history a landmine — a squash or rebase
+Append `-2` if the day already has one. **Lightweight tags only** — `-m` makes it annotated, and then
+`git rev-parse <tag>` yields the tag object, not the commit, so the next delta silently diffs from the wrong
+place; `git cat-file -t <tag>` must say `commit`. Tags rather than a field in a doc: an anchor is not prose, it
+cannot drift, and it costs no doc surface. This makes rewriting vault history a landmine — a squash or rebase
 orphans every anchor, and the next pass silently falls back to a full read.
 
 ## Self-check (mandatory, before you report done)
 
 - **Tree was clean at the start:** confirm you ran the Preflight check and it was empty. If you proceeded on a dirty
   tree, say so explicitly in your report — a reader must not have to infer it.
-- **Adversarial diff:** for every doc you deleted or merged away, `git show <pre-merge>:<path>` and confirm
-  every salient single-source item survived in the unified doc. (This is the `context-dump` second-pass
-  interrogation — *implicit decisions, ruled-out dead ends, gotchas, concrete state* — run across the merge.)
+- **Adversarial diff:** for every doc you deleted or merged away, run
+  `python3 {{VAULT_PATH}}/tools/recall_check.py "$LAST" <path> --into <survivor>`, repeating `--into`
+  for each doc that absorbed part of it. It takes its questions from the *old* version, which is the point: a checklist
+  written from the same memory that did the cutting can only confirm. Judge every flag instead of rewording to
+  satisfy it, and add what word-matching cannot see — *implicit decisions, ruled-out dead ends, gotchas,
+  concrete state*. (This is the `context-dump` second-pass interrogation, run across the merge.)
 - **Dangling-link grep:** confirm no inbound `[[link]]` anywhere (incl. `done/`) points to a doc you
   removed/renamed.
 - **State single-sourced:** confirm no mutable state (status/gate/PR#/tip-commit/"what's next") is asserted in

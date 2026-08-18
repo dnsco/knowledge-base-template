@@ -5,8 +5,8 @@ Batch PR-state verifier — librarian tooling for checking done-markers against 
 WHAT IT DOES
   Takes a list of PR references, possibly spanning several repos, and resolves all of
   them in ONE GitHub GraphQL request: state, mergedAt, and the squash/merge commit.
-  Built for the librarian's op-1 ("verify every marker before archiving on it") and for
-  any agent reconciling a vault frontier against what actually merged.
+  Built for the librarian's "Archive first" step (verify every marker before acting on
+  it) and for any agent reconciling a vault frontier against what actually merged.
 
 WHY NOT `gh pr view`
   One round-trip instead of N. Measured on 13 PRs across 3 repos:
@@ -24,13 +24,22 @@ USAGE
   python3 verify_pr_markers.py acme/server#12091 12096 12193
 
 OUTPUT
-  repo     pr      state   mergedAt              mergeCommit
+  repo     ref     state   mergedAt              mergeCommit
   server   #12398  MERGED  2026-08-04T14:44:06Z  54c372b4775
   client   #121    OPEN    -                     -
-  server   #99999  MISSING -                     -            <- check the number
+  tracker  #168    CLOSED  -                     -   <- ISSUE, not a PR (completed)
+  server   #99999  MISSING -                     -   <- check the number
 
   Exit 0 if every ref resolved, 2 if any came back MISSING. A MISSING ref means the doc
   citing it has a wrong number — that is a finding, not a tool failure.
+
+THE ISSUE-VS-PR TRAP (the most common real finding)
+  Docs cite a tracking *issue* as though it were a PR, and it then reads as unlanded work.
+  So this resolves `issueOrPullRequest`, not `pullRequest`: an issue comes back as an ISSUE
+  with its state and stateReason instead of a misleading MISSING. One vault pass hit three
+  of these in a single run — every one a closed-or-open issue that a doc had recorded as a
+  pending PR. An ISSUE row does not set the exit code (citing an issue is often
+  legitimate), so read the note: if the doc calls it a PR, fix the doc.
 
 GOTCHA THIS ENCODES
   GraphQL returns PARTIAL data when one PR does not exist: the good aliases resolve, the
@@ -70,9 +79,12 @@ def build_query(refs):
     for i, ((owner, repo), nums) in enumerate(refs.items()):
         lines.append(f'  r{i}: repository(owner:"{owner}", name:"{repo}") {{')
         for n in nums:
+            # issueOrPullRequest, not pullRequest: a doc citing a tracking issue as a PR
+            # would otherwise come back MISSING and read as a wrong number.
             lines.append(
-                f"    p{n}: pullRequest(number:{n}) "
-                "{ number state mergedAt mergeCommit { oid } }"
+                f"    p{n}: issueOrPullRequest(number:{n}) {{ __typename "
+                "... on PullRequest { number state mergedAt mergeCommit { oid } } "
+                "... on Issue { number state stateReason } }"
             )
         lines.append("  }")
     lines.append("}")
@@ -115,11 +127,22 @@ def main():
                 missing = True
                 rows.append({"repo": repo, "number": n, "state": "MISSING",
                              "mergedAt": None, "mergeCommit": None})
+            elif pr.get("__typename") == "Issue":
+                rows.append({
+                    "repo": repo,
+                    "number": pr["number"],
+                    "state": pr["state"],
+                    "kind": "issue",
+                    "stateReason": pr.get("stateReason"),
+                    "mergedAt": None,
+                    "mergeCommit": None,
+                })
             else:
                 rows.append({
                     "repo": repo,
                     "number": pr["number"],
                     "state": pr["state"],
+                    "kind": "pr",
                     "mergedAt": pr["mergedAt"],
                     "mergeCommit": (pr.get("mergeCommit") or {}).get("oid"),
                 })
@@ -128,9 +151,15 @@ def main():
         print(json.dumps(rows, indent=2))
     else:
         w = max(len(r["repo"]) for r in rows)
-        print(f"{'repo':<{w}}  {'pr':<8} {'state':<8} {'mergedAt':<21} mergeCommit")
+        print(f"{'repo':<{w}}  {'ref':<8} {'state':<8} {'mergedAt':<21} mergeCommit")
         for r in rows:
-            note = "   <- check the number" if r["state"] == "MISSING" else ""
+            if r["state"] == "MISSING":
+                note = "   <- check the number"
+            elif r.get("kind") == "issue":
+                reason = (r.get("stateReason") or "").lower()
+                note = f"   <- ISSUE, not a PR{f' ({reason})' if reason else ''}"
+            else:
+                note = ""
             print(
                 f"{r['repo']:<{w}}  {'#' + str(r['number']):<8} {r['state']:<8} "
                 f"{r['mergedAt'] or '-':<21} {(r['mergeCommit'] or '-')[:11]}{note}"

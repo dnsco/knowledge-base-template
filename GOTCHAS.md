@@ -52,7 +52,7 @@ Via the symlink, `cd <project>/{{VAULT}} && git …` operates on **this** repo, 
 a trap: a turn that touches code and docs leaves commits owed in two repos, and the knowledge-base ones are the
 easy ones to forget.
 
-That matters more than tidiness. The librarian **halts on a dirty tree** (its hard rule 6) — it cannot `git show`
+That matters more than tidiness. The librarian **halts on a dirty tree** (its hard rule H) — it cannot `git show`
 an uncommitted original, so its carry-forward guarantee does not hold. One forgotten uncommitted doc is enough to
 block the next pass. Commit here in the same turn you write.
 
