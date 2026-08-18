@@ -290,9 +290,12 @@ fan out parallel readers and synthesize.)
 to nothing — skip it and say so in the report. It is the main reason full passes still have to happen.
 
 **7. Fix the graph.** On every move/delete/merge, repoint or remove inbound `[[links]]` — **including in
-`done/`**. Use the `obsidian-cli` skill for renames/moves (it rewrites inbound links; needs Obsidian running —
-if it isn't, repoint manually). **Promoting a flat doc to a folder needs neither**: wikilinks resolve by
-basename, so keeping the basename makes it a plain `git mv` with no inbound link to touch.
+`done/`**. Find them with `python3 {{VAULT_PATH}}/tools/obsidian.py backlinks file=<name>`, which answers from
+Obsidian's resolved index and excludes the file's own self-links that `grep -rln '[[name]]'` counts. It exits 3
+if the CLI is disabled and **4 if it indexes a different tree than yours, which is the normal state in a
+worktree** — on either, grep your own tree and say which you got. **A move that keeps the basename needs no link
+work at all**: wikilinks resolve by basename, so it is a plain `git mv`, and that includes promoting a flat doc
+to a folder. Only a rename that *changes* a basename breaks inbound links.
 
 **8. Sync the surfaces.** After the above, make the folder-note MOC, the root `[[README]]`, and the project
 memory one-liner (`~/.claude/projects/<project>/memory/MEMORY.md`) all reflect reality.

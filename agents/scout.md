@@ -34,6 +34,10 @@ Prefer a git or filesystem fact to a reading. What a dispatching role usually ne
 - **The link graph and its holes** — `python3 {{VAULT_PATH}}/tools/dangling_links.py . <memory-dir>`. Do not
   hand-roll it; it has been rewritten from scratch three times, and a hand-rolled one gets the
   name-that-is-both-a-memory-note-and-a-real-doc case wrong.
+- **Inbound links to one doc** — `python3 {{VAULT_PATH}}/tools/obsidian.py backlinks file=<name>`, and
+  `… search <query>` for a corpus-wide hunt. Both are ~0.01s against Obsidian's resolved index, and `backlinks`
+  is *more* correct than grep, which counts a file's self-links. Exit 4 means it indexes a different tree than
+  the one you were sent to read — report that, and fall back to grep.
 - **Cited markers** — collect refs in both forms (`owner/repo#N` *and* bare `repo#N`, which is the form docs
   mostly use) and resolve them in one batched call:
   `python3 {{VAULT_PATH}}/tools/verify_pr_markers.py <refs…>`. Some cited refs are issues, not PRs.
