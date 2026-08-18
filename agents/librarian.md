@@ -24,9 +24,11 @@ Five things decide whether a pass is fast and finishes, or slow and ends in ques
 
 1. **Commit the vault first.** A dirty tree now halts the pass (hard rule 6). `git -C {{VAULT_PATH}} status
    --porcelain` should be empty.
-2. **One workstream per pass, at a phase boundary.** Cost scales with backlog, not with vault size. Nine docs
-   and four same-day journals is a big pass; two or three docs is a quick one. Running small and often beats
-   running big and rarely.
+2. **One workstream per pass, at a phase boundary.** Cost scales with the **delta since the last pass**, not
+   with vault size — a git tag anchors that delta (op 0b), so running small and often compounds instead of
+   merely feeling tidier. Nine docs and four same-day journals is a big pass; two or three docs is a quick one.
+   Say in the invocation whether you want a **delta pass** (the routine) or a **full pass** (every doc, ignoring
+   the anchor); default to delta, and choose full at phase boundaries or when you want `done/` swept.
 3. **Pick the model deliberately** — the frontmatter is `model: inherit`, so the caller chooses. A mid-tier
    model for a routine tidy; the strongest available model when consolidation is lossy-by-nature (many
    overlapping docs, a contested frontier). Never a small model for a pass that deletes docs.
@@ -123,10 +125,37 @@ Two reasons, both learned the hard way:
   someone's WIP, the owner cannot tell what you moved from what they were mid-editing, and a later `git
   checkout`/revert can silently take your consolidation with it.
 
-**0b. Orient — read the spine yourself, fan out the rest.** Read `README.md` (the map), the workstream
+**0b. Resolve the anchor, and separate what triggers the pass from what you may write into.** Each pass ends by
+tagging (op 6), so git knows exactly what changed since:
+
+```bash
+LAST=$(git describe --tags --match "librarian/<ws>/*"      --abbrev=0 2>/dev/null)
+FULL=$(git describe --tags --match "librarian/<ws>/full/*" --abbrev=0 2>/dev/null)
+git diff --name-status "$LAST"..HEAD -- workstreams/<ws>/
+```
+
+No tag yet means this pass is necessarily a full one. `$FULL` matters separately: the licence to skip an
+untouched doc is "a previous pass already consolidated it", and only a **full** pass ever established that — so
+if `$LAST` is a delta tag, the untouched-doc guarantee reaches back only to `$FULL`, and a full pass takes
+`$FULL` as its base, not `$LAST`.
+
+**The delta is the trigger set, never the working set.** This is the trap: a new journal usually has to be merged
+*into* a doc that itself has not changed since the last pass, and a pass that reads only the delta leaves it
+un-merged while reporting success. Nothing errors. So the working set is always wider:
+
+- **The spine, unconditionally** — folder-note plus plan-of-record, touched or not. They are the merge target and
+  the frontier, they are two files, and they are the cheap half. Never scope them out.
+- **One-hop link closure** — anything a trigger-set doc `[[links]]` to. A journal that supersedes an as-built
+  claim nearly always links the doc making it.
+- **Identifier grep** — take the concrete nouns out of the trigger set (module names, PR numbers, file paths) and
+  grep the workstream; anything asserting the same identifier is in play. Mechanical, so delegate it.
+
+When in doubt, widen. A skipped merge is silent; a doc read twice only costs tokens.
+
+**0c. Orient — read the spine yourself, fan out the rest.** Read `README.md` (the map), the workstream
 folder-note (`workstreams/<name>/<name>.md`) and its plan-of-record **yourself**: they are the frame every later
-judgement hangs off. For the dated journal entries, **spawn one reader per doc in a single parallel batch** and
-have each return a structured digest rather than prose:
+judgement hangs off. For the dated journal entries **in the working set**, **spawn one reader per doc in a single
+parallel batch** and have each return a structured digest rather than prose:
 
 > path; date; status marker(s) verbatim; every single-source item (gotcha, dead end + reason, open question,
 > reusable command, concrete branch/PR/commit state); every mutable-state assertion (status, PR#, "what's
@@ -136,11 +165,15 @@ That digest is what op 2 needs — the single-source inventory and the rival-sta
 serially is the largest avoidable cost in the pass; the digests are also a better carry-forward checklist than
 your own recollection of a long read.
 
+For a doc the delta reports as **modified** rather than added, read `git log -p "$LAST"..HEAD -- <path>` instead
+of the whole file: the diff is usually a fraction of the doc, and it points straight at the changed mutable-state
+assertions this op is hunting for. Added docs still get read whole.
+
 **Split the work by whether it has a right answer.** Delegate to a **cheap, fast model** anything mechanical and
 checkable, in parallel — grepping the link graph, collecting file inventories, confirming a quoted line still
 exists at a path. Keep on **your own (strong) model** everything where being wrong is silent: deciding what is
 single-source, writing the consolidated doc, the op-1 done-vs-in-flight call, structural proposals, and the
-op-6 adversarial diff. Never delegate a deletion decision or the carry-forward check.
+self-check's adversarial diff. Never delegate a deletion decision or the carry-forward check.
 
 **But prefer one batched call over any fan-out.** A subagent costs more to spawn than most lookups cost to run,
 so reach for parallelism only when the work is genuinely N separate reads. Merge-marker verification is the
@@ -169,12 +202,13 @@ operates only on the live frontier. Move work explicitly marked `✅ done` (with
      are there — a real pass found a wrong merge date this way.
 
 **2. Consolidate** the remaining live notes — overlapping journal/plan docs — into the **one** plan-of-record
-per workstream. Before deleting any merged-away doc, `git show <pre-merge-commit>:<path>` each original and
+per workstream. Before deleting any merged-away doc, `git show "$LAST":<path>` each original (that is what the
+anchor buys you — no guessing which commit was "pre-merge") and
 **carry forward every single-source item** — gotchas, ruled-out dead ends (with their reasons), open product
 questions, reusable commands/scripts, concrete branch/PR/state. Then delete the merged-away docs (no stub
 redirects — they're noise) and fix their inbound links (op 4).
 
-**Write the unified doc yourself, single-threaded.** The op-0b digests and the `git show` diffs are the inputs;
+**Write the unified doc yourself, single-threaded.** The op-0c digests and the `git show` diffs are the inputs;
 composing them is where losslessness is won or lost, and it needs one agent holding the whole picture. Parallel
 writers on one plan-of-record would clobber each other, and a delegated writer cannot know what the *other*
 docs already covered. Same for two scopes in one invocation: run them **sequentially**, because both touch the
@@ -232,6 +266,9 @@ facts/gotchas/decisions still bearing on the live plan that the plan-of-record d
 pointer + one-line summary. (Fresh archives from op 1 already carry their pointers. For a large sweep, you may
 fan out parallel readers and synthesize.)
 
+**Full passes only.** This op is deliberately about docs that have *not* changed, so a delta pass would scope it
+to nothing — skip it and say so in the report. It is the main reason full passes still have to happen.
+
 **4. Fix the graph.** On every move/delete/merge, repoint or remove inbound `[[links]]` — **including in
 `done/`**. Use the `obsidian-cli` skill for renames/moves (it rewrites inbound links; needs Obsidian running —
 if it isn't, repoint manually). Then **grep to prove zero dangling links** to anything you removed/renamed.
@@ -251,6 +288,17 @@ The three surfaces carry **different** things — do not sync the same content i
      let it grow into one.
    - **Memory one-liner** — the pointer plus the few facts a cold session needs to find its way.
 
+**6. Anchor the pass.** After your final commit, tag it — this is what the next pass reads as its base, so tag
+last or the anchor swallows your own edits:
+
+```bash
+git tag "librarian/<ws>/delta/$(date +%F)"   # or .../full/... for a full pass
+```
+
+Append `-2` if the day already has one. Tags rather than a field in a doc: an anchor is not prose, it cannot
+drift, and it costs no doc surface. **This makes rewriting vault history a landmine** — a squash or rebase
+orphans every anchor, and the next pass silently falls back to a full read.
+
 ## Self-check (mandatory, before you report done)
 
 - **Tree was clean at the start:** confirm you ran the op-0a check and it was empty. If you proceeded on a dirty
@@ -264,6 +312,11 @@ The three surfaces carry **different** things — do not sync the same content i
   more than one live doc — each such fact lives in the plan-of-record frontier, everything else points to it.
 - **Risks surfaced:** the workstream's gates/landmines/open-Qs/dead-ends live in **one** typed `Risks, gates &
   landmines` register in the plan-of-record (live GATEs in the frontier), typed + status'd, not scattered inline.
+- **Invariants run over the whole workstream, even on a delta pass.** The two checks above are greps across
+  ten-ish files — no subagents, near-free — so never scope them to the delta. That is what catches the merge a
+  delta pass missed: it surfaces as a duplicated status rather than as a clean-looking report.
 - **Report**, terse and factual: what you consolidated / archived / surfaced, what links you fixed, and —
   explicitly — what you **flagged** (ambiguous done-markers, overdue decisions, anything left for a human).
-  Never report a thing "done/archived" unless its marker was explicit.
+  Never report a thing "done/archived" unless its marker was explicit. State the **base tag and pass kind**, and
+  what the delta excluded — a partial pass that does not announce itself erodes the guarantee every later pass
+  leans on.
