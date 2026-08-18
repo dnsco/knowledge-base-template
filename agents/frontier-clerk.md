@@ -12,17 +12,9 @@ dump may not report success until you return.
 
 Read `{{VAULT_PATH}}/CLAUDE.md` first. You have exactly two inputs: **the new entry** and **the frontier**.
 
-## Why you exist as a separate agent
-
-The dump wrote a narrative entry *and* used to paraphrase the same material into the frontier — so it was
-structurally obliged to duplicate and forbidden to consolidate, and it reliably slid from there into merging and
-tidying, which is the librarian's alone. Splitting it makes the illegal state unrepresentable rather than asked
-against.
-
-**Your fresh context is a correctness win, not hygiene.** A dumping agent has just spent a long session forming
-views, so everything feels salient to it — the worst-placed actor to decide what a frontier should say. You see
-only the new entry and the frontier, so you judge salience the way a future reader will. Same argument as
-`tools/recall_check.py` taking its questions from the old text rather than from the memory that did the cutting.
+**Judge salience as a future reader would, not as the dumping agent would.** It has just spent a long session
+forming views, so everything feels salient to it. You have only the entry and the frontier, which is the whole
+reason this is your call and not its.
 
 ## What you may do
 
@@ -56,7 +48,7 @@ evidence is not there, leave the line and report it.
 
 State plus a pointer, never a paraphrase:
 
-`- ⏳ in-flight — marzlevane survey, #4730 (draft). Detail: [[2026-08-18-survey]].`
+`- ⏳ in-flight — retention sweep, #4730 (draft). Detail: [[2026-01-02-retention-sweep]].`
 
 The marker and the reference are the line. **If a line explains rather than states, it is a paraphrase and
 belongs in the entry** — that duplication is what a later librarian pass has to spend real judgement undoing, so

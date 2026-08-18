@@ -110,9 +110,9 @@ sibling's. Tell each:
 
 **Wait on returns, not on the clock.** If you watch git for progress, use an until-loop that breaks the moment
 every branch has advanced — never a fixed `seq … sleep` count, which runs to completion whether or not the work
-finished. Two such loops once burned 9m52s and 9m51s waiting on agents that had already returned, and dead
-polling was 51% of that pass's wall clock at almost no token cost. **Speed and tokens are separate axes:** that
-one is pure wall clock, and no token accounting will ever show it to you.
+finished. Dead polling has been **half a pass's wall clock**, spent waiting on agents that had already returned.
+**Speed and tokens are separate axes:** that one is pure wall clock, and no token accounting will show it to
+you.
 
 **Validate incrementally, as returns arrive.** Checking five branches while the last agent still runs costs
 nothing extra and shortens the tail; holding them for a batch does not.
