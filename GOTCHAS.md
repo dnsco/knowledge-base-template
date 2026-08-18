@@ -96,15 +96,20 @@ If `git status` in that worktree then shows it untracked, add `/{{VAULT}}` to it
 The append side is cheap: `/context-dump` is a normal end-of-session step. The compacting side is not. A pass
 reads the workstream spine itself, fans out a reader per journal doc, `git show`s every original it is about to
 merge away, resolves every PR the docs cite, then writes the unified doc **single-threaded on a strong model**
-because that is where losslessness is won or lost. That cost *is* the guarantee that no single-source gotcha gets
-dropped — it is not overhead to optimize away.
+because that is where losslessness is won or lost. That cost buys the guarantee that no single-source gotcha is
+dropped.
 
 What follows from that:
 
 - **Never automate it.** Not a hook, not `/loop`, not a reflexive "tidy the vault" at the end of every session.
 - **Never point it at the whole vault**, and never run it on a small model when it will delete docs.
-- **Small and often beats big and rarely.** One workstream, at a phase boundary. Cost scales with **backlog**,
-  not vault size: nine docs and four same-day journals is a big pass; two or three docs is a quick one.
+- **Small and often beats big and rarely.** One workstream, at a phase boundary. Cost scales with the **delta
+  since the last pass** — each pass tags the vault, and the next one reads only what changed — so frequent
+  passes get cheap while a neglected workstream gets expensive. Nine docs and four same-day journals is a big
+  pass; two or three docs is a quick one.
+- **A delta pass is not a full one.** It scopes what gets *read*, never what may be written into, and it skips
+  the `done/` sweep. Ask for a full pass at phase boundaries; that is also the only thing that renews the
+  licence to skip untouched docs.
 - **Front-load the decisions.** It is required to stop and ask on structural moves (merging or splitting whole
   workstreams, relocating a doc across them, collapsing two plans-of-record). Every question handed back costs
   another pass, so pre-answer the ones you already know and name what is authoritative where docs disagree.
