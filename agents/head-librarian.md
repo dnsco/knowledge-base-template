@@ -74,10 +74,13 @@ run's scopes were exactly that, 18% of its tokens for zero commits. But a zero-f
 nothing-to-do — the two largest restructures of that same run had empty deltas, because folder-note size, what
 sits at a workstream's top level, and `status:` fields reading as live inside `design/` are precisely the
 defects a delta cannot see, **and a delta pass otherwise certifies them as fine.** So skip a scope only when
-all three hold, each of them a git or filesystem fact: no delta since `$LAST`, **and** `$LAST == $FULL` (the
-licence to skip an untouched doc is "a previous pass consolidated it", which only a full pass establishes),
-**and** its folder-note is under your size bound with no top-level docs beside it. Parked scopes satisfy that
-most often, so the saving concentrates there.
+all three hold, each of them a git or filesystem fact: **no delta since `$FULL`**, **and** a folder-note under
+your size bound, **and** no top-level docs beside it. Parked scopes satisfy that most often, so the saving
+concentrates there.
+
+Measure the delta from `$FULL`, not from `$LAST`. The licence to skip an untouched doc is "a previous pass
+consolidated it", and only a full pass establishes that — but do not express it as `$LAST == $FULL`, which is
+false forever after any delta pass and so makes every scope permanently unskippable.
 
 **A skipped scope is never tagged.** Tagging one for symmetry advances its anchor and claims coverage you never
 provided, silently converting "not looked at" into "already consolidated" — the exact guarantee every later
