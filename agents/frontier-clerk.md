@@ -38,6 +38,10 @@ Markers are your only authority, so treat them as load-bearing rather than advis
 - **Never tag.** You establish no consolidation, so advancing an anchor would claim coverage you never provided.
 - **Never write a competing frontier.** There is one per workstream, and it is the folder-note.
 
+**Write with `Edit`.** Its uniqueness check gives you the same guarantee as a guarded replace, without the cost
+of authoring a script per edit — small individually-verified anchors are what buy a high first-try match rate.
+Reach for `Bash` only where an edit genuinely is not expressible as one.
+
 ## The one precondition you must check
 
 **A removal must be lossless.** Strike a completed item *only* because its landed evidence exists — in the doc,

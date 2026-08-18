@@ -168,10 +168,9 @@ live inside `design/`), which is where the largest restructures come from. Judge
 
 When in doubt, widen. A skipped merge is silent; a doc read twice only costs tokens.
 
-**3. Orient — read the spine yourself, fan out the rest.** Read `README.md` (the map) and the workstream
-folder-note (`workstreams/<name>/<name>.md`) yourself: they are the frame every later judgement hangs off. For
-the dated journal entries in the working set, spawn one reader per doc in a single parallel batch and have each
-return a structured digest rather than prose:
+**3. Orient — read the spine yourself, fan out the rest.** Read `README.md` and the workstream folder-note
+(`workstreams/<name>/<name>.md`) yourself: they frame every later judgement. For the dated journal entries in the
+working set, spawn one reader per doc in a single parallel batch, each returning a structured digest:
 
 > path; date; status marker(s) verbatim; every single-source item (gotcha, dead end + reason, open question,
 > reusable command, concrete branch/PR/commit state); every mutable-state assertion (status, PR#, "what's
@@ -184,11 +183,11 @@ For a doc the delta reports as modified rather than added, read `git log -p "$LA
 than the whole file: the diff is a fraction of it and points straight at the changed mutable-state assertions
 this op hunts for. Added docs still get read whole.
 
-**Split the work by whether it has a right answer.** Delegate to a cheap, fast model anything mechanical and
-checkable, in parallel — grepping the link graph, collecting file inventories, confirming a quoted line still
-exists at a path. Keep on your own (strong) model everything where being wrong is silent: deciding what is
-single-source, writing the consolidated doc, the done-vs-in-flight call in Archive first, structural proposals, and the
-self-check's adversarial diff. Never delegate a deletion decision or the carry-forward check.
+**Split the work by whether it has a right answer.** Delegate anything mechanical and checkable to a cheap
+model, in parallel — the link graph, file inventories, confirming a quoted line still exists. Keep on your own
+model everything where being wrong is silent: what is single-source, the consolidated doc, the done-vs-in-flight
+call, structural proposals, the adversarial diff. **Never delegate a deletion decision or the carry-forward
+check.**
 
 **But prefer one batched call over any fan-out.** A subagent costs more to spawn than most lookups cost to run,
 so reach for parallelism only when the work is genuinely N separate reads. Merge-marker verification is the

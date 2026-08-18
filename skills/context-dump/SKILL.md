@@ -63,6 +63,11 @@ project root as `{{VAULT}}/`, so you can read and grep it as in-tree paths. Full
 
    Name the workstream whose frontier is affected, and anything your entry **falsifies** — a line the frontier
    still asserts that your work has made untrue. That is the clerk's input.
+
+   **Emit every marker the clerk will need, including for decisions the owner took in conversation.** The clerk
+   may act only on markers in your entry, so an owner decision you were told but did not write down leaves the
+   frontier stale and costs a second round trip — measured: two of three clerk invocations in one session existed
+   only because a marker was missing. Write the decision, dated and attributed, as its own `✅ settled` line.
 4. **Spawn the `frontier-clerk`, and do not report success until it returns.** Hand it the entry you just
    wrote and the workstream's folder-note. It flips the `status`, strikes next-moves your markers show
    completed, demotes superseded in-flight lines, and files landed items — the frontier work you may not do.
