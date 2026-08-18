@@ -94,6 +94,33 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   whatever repo you're working in). Via the symlink, `cd <project>/{{VAULT}} && git …` resolves to the *vault's*
   repo, not the project's — convenient, and a trap if you forget which one you're in.
 
+## Changing a shared surface — the loop, and why it is a loop
+
+`CLAUDE.md`, `GOTCHAS.md`, `README.md`, `BOOTSTRAPPING.md`, `agents/*.md`, `skills/*/SKILL.md` and `tools/*.py`
+are **shared**: this template is upstream, and each vault built from it holds a copy. A change to one of them
+runs the same four steps every time, in order.
+
+1. **Author here, in the template.** Never in the vault copy first. A vault-side edit guarantees a second
+   divergence, which is the failure the extraction exists to end.
+2. **Port down**, substituting `{{VAULT_PATH}}` and `{{VAULT}}`, then run
+   `python3 tools/port_check.py --vault <vault>`. **It is not a byte-identity check, deliberately.** A surviving
+   placeholder is a hard fail — an agent otherwise reads a literal `{{VAULT}}/` in its own system prompt. The
+   residual divergence it prints is for you to *judge*: some of it is meant to be there, because a vault names
+   its real project, repos, dates and shas where the template stays generic. Diffing to zero destroys exactly
+   that, and an identity check rewards you for it.
+3. **Try it** — on real work, not a rehearsal. Then run `python3 tools/recall_check.py <pre-change-ref> <path>`
+   in **both** repos, which is what proves no rule was dropped in either direction. A hand-written grep
+   checklist cannot: you write it from the same memory that did the cutting.
+4. **Profile it, and feed the findings back to step 1.** This is why it is a loop rather than a pipeline.
+
+**The lesson that keeps recurring, and the reason step 4 exists.** Instructions added to a definition
+repeatedly fail to fire, while a script with an exit code holds. Measured across one session: a scope-screening
+condition shipped unsatisfiable and nobody noticed until it was used; "dispatch a scout if recon runs past a
+handful of commands" did not fire across fourteen recon commands; and an agent told to prefer the Obsidian CLI
+never checked whether it was answering about the right tree. Each was fixed by moving the rule into `tools/`,
+where it fails loudly instead of being read past. **Prefer a tool that refuses to prose that asks.** It is also
+the cheaper end: a definition is a system prompt paid for on every invocation.
+
 ## Values — `values/`
 Evergreen principles that outlive any one effort, and that the docs here lean on by name. Two are seeded:
 
