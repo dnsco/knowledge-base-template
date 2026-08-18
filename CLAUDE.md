@@ -16,7 +16,9 @@ rooted in a code project may never have loaded this file.
 3. **Follow companion links only when a task needs the depth** — docs can be large; don't read them all by
    default. Open anything under `done/` only to re-examine completed work, not for current state.
 4. **Read docs as a strong prior, not ground truth.** They're point-in-time: file paths, line numbers, and
-   "current state" drift. Verify against the actual code before treating a claim as fact.
+   "current state" drift. Verify against the actual code before treating a claim as fact. **That caveat is about
+   drift, so weigh the age** — a weeks-old line number earns a check; an entry written today has not had time to
+   go stale.
 
 ## Maintaining it
 
@@ -79,6 +81,15 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   messages, issue comments. Laconic, terse, salient, and carrying **no leaked frames**: no "correcting my
   last comment", no "as discussed", no account of which files you did and did not open. A fresh observer was
   not in the room, and the artifact outlives the exchange. See [[laconic-terse-salient]].
+- **An owner's account of what happened outranks your inference about it.** They were there; you have
+  artifacts. When a measurement contradicts what they told you — especially a flat statement, or anything
+  recorded today — **surface the conflict and stop**: say what you saw, ask which to record, and leave the
+  record alone until they answer. Never rewrite a frontier or a memory note on your own inference about events
+  you did not witness. The usual cause is measuring a **different quantity** than the claim: an image existing
+  in a registry is not a deployed tag, and a merge time is not a rollout time. Read hedges as instructions —
+  "I think" invites a check, a flat statement is the answer — and verification costs a turn, so it needs a
+  reason: would the answer change your next action? This is **not deference**: silently swallowing a real
+  contradiction is the same failure as silently overturning one. Say it once, plainly, either way.
 - **Commit** — this is its own git repo; commit doc changes in `{{VAULT_PATH}}` (don't conflate with the git of
   whatever repo you're working in). Via the symlink, `cd <project>/{{VAULT}} && git …` resolves to the *vault's*
   repo, not the project's — convenient, and a trap if you forget which one you're in.
