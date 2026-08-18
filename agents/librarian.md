@@ -24,11 +24,8 @@ Five things decide whether a pass is fast and finishes, or slow and ends in ques
 
 1. **Commit the vault first.** A dirty tree now halts the pass (hard rule 6). `git -C {{VAULT_PATH}} status
    --porcelain` should be empty.
-2. **One workstream per pass, at a phase boundary.** Cost scales with the **delta since the last pass**, not
-   with vault size — a git tag anchors that delta (op 0b), so running small and often compounds instead of
-   merely feeling tidier. Nine docs and four same-day journals is a big pass; two or three docs is a quick one.
-   Say in the invocation whether you want a **delta pass** (the routine) or a **full pass** (every doc, ignoring
-   the anchor); default to delta, and choose full at phase boundaries or when you want `done/` swept.
+2. **One workstream per pass, at a phase boundary.** Cost scales with the delta since the last pass, not with
+   vault size. Say which kind you want: **delta** (the default) or **full** — every doc, plus the `done/` sweep.
 3. **Pick the model deliberately** — the frontmatter is `model: inherit`, so the caller chooses. A mid-tier
    model for a routine tidy; the strongest available model when consolidation is lossy-by-nature (many
    overlapping docs, a contested frontier). Never a small model for a pass that deletes docs.
