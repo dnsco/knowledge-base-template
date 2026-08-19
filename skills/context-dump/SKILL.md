@@ -8,16 +8,15 @@ description: Append-only capture of working context, findings, and handoffs into
 Persist what you did and learned into `{{VAULT_PATH}}` — the durable cross-session memory for engineering work —
 so the next session can pick up where you left off.
 
-**This skill is append-only, and that now includes the frontier.** You ADD a dated entry. You do NOT edit the
+**This skill is append-only, and that includes the frontier.** You ADD a dated entry. You do NOT edit the
 frontier — the `frontier-clerk` you spawn at the end does that — and you do NOT consolidate, merge, delete,
 archive or re-link, which are the **librarian's**, run as a separate deliberate pass. Concentrating all
 destruction in the librarian is what prevents parallel agents silently clobbering each other's notes.
 
-**Why you no longer touch the frontier.** Writing a narrative entry *and* paraphrasing it into the frontier
-obliged you to duplicate what you are forbidden to consolidate, and agents reliably slid from there into merging
-and tidying. It is also not your judgement to make: you have just spent a long session forming views, so
-everything feels salient to you. A clerk seeing only your entry and the frontier judges salience as a future
-reader will.
+**Why the frontier is the clerk's and not yours.** Writing a narrative entry *and* paraphrasing it into the
+frontier means duplicating what you are forbidden to consolidate, and that is one step from merging and tidying.
+It is also not your judgement to make: you have just spent a long session forming views, so everything feels
+salient to you. A clerk seeing only your entry and the frontier judges salience as a future reader will.
 
 The vault is its **own git repo** (separate from whatever repo you're working in) and an Obsidian graph: dated
 long-form docs, a root `README.md` map, per-workstream folders with a `<folder>/<folder>.md` folder-note
