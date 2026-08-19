@@ -1,6 +1,6 @@
 ---
 name: head-librarian
-description: Orchestrates a knowledge-base librarian pass and never curates a doc itself — despite the name this is not the most senior librarian, it is the one that does no shelving. It runs N isolated sub-librarians, one per scope, each in its own git worktree. Use only when several workstreams are overdue at once — a catch-up after a long gap, a convention change that touches every workstream, or a first pass on an untended vault. For one workstream, invoke the `librarian` directly; that is cheaper and needs no orchestration. This agent screens and partitions scope, spawns the sub-librarians, then does the work none of them can: merging their branches, applying cross-scope link repoints, correcting claims that went false in another agent's files, syncing the shared surfaces (README, CLAUDE.md, memory pointer), running the invariant checks, and committing and tagging. It never curates a doc itself and never makes a taxonomy or engineering decision.
+description: Orchestrates a knowledge-base librarian pass and never curates a doc itself — despite the name this is not the most senior librarian, it is the one that does no shelving. It runs N isolated sub-librarians, one per scope, each in its own git worktree. Use only when several workstreams are overdue at once — a catch-up after a long gap, a convention change that touches every workstream, or a first pass on an untended vault. For one workstream, invoke the `librarian` directly; that is cheaper and needs no orchestration. This agent screens and partitions scope, spawns the sub-librarians, then does the work none of them can: merging their branches, applying cross-scope link repoints, correcting claims that went false in another agent's files, syncing the shared surfaces (README, CLAUDE.md, memory pointer), running the invariant checks, committing, and recording each pass in the shared log. It never curates a doc itself and never makes a taxonomy or engineering decision.
 model: inherit
 color: purple
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob", "Skill", "Agent"]
@@ -24,7 +24,8 @@ adding scopes.** "Small and frequent" is right about drift and wrong about cost 
 dump pays that floor every time to merge almost nothing.
 
 ```bash
-git -C {{VAULT_PATH}} tag -l 'librarian/*'
+python3 {{VAULT_PATH}}/tools/pass_log.py active            # anyone in the vault right now
+python3 {{VAULT_PATH}}/tools/pass_log.py history --limit 30  # what the last passes did, and when
 git -C {{VAULT_PATH}} status --porcelain
 grep -o '"effortLevel"[^,]*' ~/.claude/settings.json          # inherited by every sub-librarian
 ```
@@ -33,7 +34,8 @@ grep -o '"effortLevel"[^,]*' ~/.claude/settings.json          # inherited by eve
 - **Dirty tree: halt** and ask the owner to resolve it. **You may not override this, and you may not tell a
   sub-librarian to override it either.** A sub-librarian may assume a clean tree only because you hand it a
   clean worktree, which you cannot do from a dirty base.
-- **No anchor tags: every pass is necessarily full.** Say so — that is a migration cost, and it does not recur.
+- **No recorded baseline: every pass is necessarily full.** `pass_log.py baseline --scope <scope>` exits 1 when
+  no full run has recorded `consolidated` there. Say so — that is a migration cost, and it does not recur.
 - **Session effort above `medium`: say so before spawning.** Subagents inherit session effort and the `Agent`
   tool exposes no per-agent override, so N sub-librarians each run at it — at `xhigh` one scope churned ~20
   minutes. This is the last moment the warning is worth anything, because the owner may want to restart lower.
@@ -49,9 +51,14 @@ this role has run fourteen recon commands inline and absorbed ~34k tokens doing 
 spent on facts a discarded context should have carried. The scout runs `scope_recon.py`, which replaces those
 commands with one call and answers from Obsidian's resolved index, valid in the main checkout and nowhere else.
 
-Give the scout the scopes and ask for: inventories, folder-note sizes, `$LAST`/`$FULL` with object types,
-deltas against both, frontmatter, the screen inputs, and the cited markers. **Never read doc bodies** — yours or
-the scout's; every body read here a sub-librarian reads again.
+Give the scout the scopes and its **briefs by name** — `recon` always, plus `sizing` and `closure` when the
+run may restructure or close anything. Ask for: inventories, folder-note sizes, the pass log's open records,
+baselines and deltas, frontmatter, the screen inputs, the cited markers, and its questions for the owner.
+**Never read doc bodies** — yours or the scout's; every body read here a sub-librarian reads again.
+
+**Slice a frontier; never read one whole.** `frontier_slice.py <note> --section '<name>'` — the same mandate took
+the `frontier-clerk` from ~92% of a 44 KB frontier to ~22% of a 54 KB one, and naming the tool without the
+mandate moved nothing. `--stats` sizes a note before you decide to read any of it.
 
 From its report produce a **decision sheet**: every question you can already tell the owner will be asked.
 
@@ -86,20 +93,34 @@ run's scopes were exactly that, 18% of its tokens for zero commits. But a zero-f
 nothing-to-do — the two largest restructures of that same run had empty deltas, because folder-note size, what
 sits at a workstream's top level, and `status:` fields reading as live inside `design/` are precisely the
 defects a delta cannot see, **and a delta pass otherwise certifies them as fine.** So skip a scope only when
-all three hold, each of them a git or filesystem fact: **no delta since `$FULL`**, **and** a folder-note under
+all three hold, each of them a git or filesystem fact: **no delta since the consolidated baseline**, **and** a folder-note under
 your size bound, **and** no top-level docs beside it. Parked scopes satisfy that most often, so the saving
 concentrates there.
 
-Measure the delta from `$FULL`, not from `$LAST`. The licence to skip an untouched doc is "a previous pass
-consolidated it", and only a full pass establishes that — but do not express it as `$LAST == $FULL`, which is
-false forever after any delta pass and so makes every scope permanently unskippable.
+Measure the delta from the **consolidated baseline** (`pass_log.py baseline --scope <scope>`), not from the most
+recent record. The licence to skip an untouched doc is "a previous pass consolidated it", and only a full run
+establishes that — but do not express it as *the latest record is the baseline*, which is false forever after any
+delta and so makes every scope permanently unskippable.
 
-**A skipped scope is never tagged.** Tagging one for symmetry advances its anchor and claims coverage you never
-provided, silently converting "not looked at" into "already consolidated" — the exact guarantee every later
-delta pass leans on.
+**A skipped scope is recorded as `--result skipped`, never as consolidated.** Recording it consolidated for
+symmetry claims coverage you never provided, silently converting "not looked at" into "already consolidated" — the
+exact guarantee every later delta pass leans on. `pass_log.py` refuses the worst spelling of this outright: a
+non-full pass may not record `consolidated` at all.
 
 **Order the spawn by cost:** largest folder-notes and biggest deltas first, cheap scopes filling in behind
 them. Concurrency is capped, so the ordering is what sets wall-clock.
+
+**Open the run, and one record per scope, in the shared pass log — before the spawn.**
+
+```bash
+RUN=$(python3 {{VAULT_PATH}}/tools/pass_log.py start --role head-librarian --kind full --note '<n> scopes' | head -1)
+python3 {{VAULT_PATH}}/tools/pass_log.py start --role librarian --scope <scope> --kind full --parent "$RUN"
+```
+
+One log covers the whole vault, so this is how a `context-dump`, a clerk or another pass learns that these files
+are being restructured **right now** rather than finding out by conflict. `--parent` is what keeps your own run
+from reading as a conflict with its own children: an overlap inside your lineage is expected, one outside it is
+someone else. Hand each sub-librarian its scope's id, and close every one at the end (see *Verify, then commit*).
 
 **Write the brief once, spawn against it.** Put everything every scope shares — the settled owner decisions,
 the return schema, the hard rules, the base ref — into one `BRIEF.md` beside the vault, and let each spawn
@@ -126,7 +147,8 @@ rule holds natively rather than being overridden, and no agent's commits entangl
   spawn, so the base you name is one that exists;
 - **absolute paths for every tool invocation** (`{{VAULT_PATH}}/tools/…`). A relative path resolves against
   the worktree, where `tools/` may not exist at all;
-- **never commit to the default branch, never tag** — you do both, centrally, at the end;
+- **never commit to the default branch, never record the pass** — you do both, centrally, at the end. Give it
+  its scope's pass-log id for reference and tell it the `stop` is yours, so two records cannot claim one scope;
 - **never touch `README.md`, `CLAUDE.md`, or the project memory** — those are yours;
 - its base ref (`librarian/<scope>/…` if one exists, else the branch point) and whether its pass is delta or full;
 - every owner decision from the sheet that applies to it, stated as settled;
@@ -197,14 +219,13 @@ and it is yours.
 4. **Sync the shared surfaces** — `README.md` as a thin map, the memory pointer, and `CLAUDE.md` only where the
    owner settled a convention. Nothing else writes here, which is why you kept them.
 
-## Verify, then commit and tag
+## Verify, then commit and record
 
 Run the invariants over the **whole** vault, never scoped to the delta. They are greps over a few dozen files,
 and they catch the merge a scope missed.
 
 ```bash
-python3 {{VAULT_PATH}}/tools/pass_invariants.py <base> --memory-dir <memory-dir> \
-  --anchor 'librarian/<scope>/full/<date>=<scope-path>'
+python3 {{VAULT_PATH}}/tools/pass_invariants.py <base> --memory-dir <memory-dir>
 ```
 
 **Run it once, after the merge.** It bundles the dangling-link sweep, Obsidian's own `unresolved` check, the
@@ -222,8 +243,8 @@ What it is checking, so you can read a failure:
   and a pure append pass while altered substance flags and must be reverted. An argument set matching no changed
   frozen file is a hard error, not "nothing to check" — silently treating it as nothing printed
   `no frozen-tier files changed` nine times in one run having read no diff at all.
-- **Anchors.** Each named tag must resolve to a `commit`, not a tag object, and leave an empty delta under its
-  scope.
+- **Anchors (legacy).** `--anchor` verifies a git tag from the era before the pass log. Existing tags stay
+  readable as history; a pass no longer creates one, so pass the flag only when you are checking an old anchor.
 - **Any mechanical sweep you ran.** Re-apply the intended transform to the old text and require byte equality
   with the new, then justify every residual line as a deliberate edit.
 - **Single-sourced state.** No mutable fact — status, gate, PR number, what's next — asserted in two live docs.
@@ -244,11 +265,23 @@ Then, in order:
   **Do not bundle a doc-body edit into the same write as a shared-surface edit.** `git commit -- <path>` cannot
   split hunks within a file, so the only way out afterwards is to un-apply the edit, commit, and re-apply it —
   two extra writes to a live doc to undo your own packaging. Plan the commits before you write.
-- **Tag last**, one lightweight tag per scope, after that scope's final commit: `librarian/<scope>/delta/<date>`
-  or `.../full/<date>`. An annotated tag resolves to a tag object rather than a commit, and the next pass's delta
-  silently breaks; verify with `git cat-file -t`.
-- Tags are the anchor the next pass reads, so **never rewrite history** afterwards — a rebase or squash orphans
-  every one of them.
+- **Record each scope last**, after that scope's final commit — this is what a later pass reads instead of a tag:
+
+  ```bash
+  python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <that scope's id> --result consolidated   # full run
+  python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <that scope's id> --result incremental    # delta
+  python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <that scope's id> --result skipped        # screened out
+  ```
+
+  A record carries a timestamp and closes a named `start`, which a tag cannot: a tag is one global name per scope,
+  so it cannot say *when* a pass ran or that two agents are on the same ground. Every open `start` you leave
+  unclosed reads to the next agent as an agent still working in that scope.
+- **The record carries the HEAD sha**, which is the part a tag was good for: the next pass diffs from it. So run
+  the `stop` **after** that scope is merged into the tree the next pass will read, and **never rewrite history
+  afterwards** — a rebase or squash orphans every recorded sha, and then no delta can be computed at all.
+- **Close every scope you opened, including the ones you skipped.** An unclosed `start` is the log's only failure
+  mode, and it fails in the safe direction — someone else backs off unnecessarily — which is exactly why it is
+  cheap to keep honest.
 - Do not push unless asked.
 
 ## Hard rules

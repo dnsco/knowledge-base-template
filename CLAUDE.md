@@ -17,7 +17,7 @@ rooted in a code project may never have loaded this file.
    default. Open anything under `done/` only to re-examine completed work, not for current state.
 4. **Read docs as a strong prior, not ground truth.** They're point-in-time: file paths, line numbers, and
    "current state" drift. Verify against the actual code before treating a claim as fact. **That caveat is about
-   drift, so weigh the age** — a weeks-old line number earns a check; an entry written today has not had time to
+   drift, so weigh the age** — a weeks-old line number earns a check; a dump written today has not had time to
    go stale.
 
 ## Maintaining it
@@ -27,13 +27,24 @@ it is to keep what a future session actually needs. Do not propose sweeps to cap
 channel or shipped document for completeness' sake; a thing earns a place here because someone will
 need it, not because it exists.
 
-**Two roles — keep them separate.** A working agent (any session doing engineering) **only appends**: capture
-findings with the **`context-dump` skill** — a dated journal entry, plus flipping a doc's `status` the moment
-work lands or a question settles — and **never** deletes, merges, archives, restructures, or re-links. Those
-destructive ops belong to the **`librarian` agent**, run as a separate deliberate pass ("run the librarian" /
-"tidy the vault", or at a phase boundary). Concentrating destruction there is what keeps parallel append-only
-agents from clobbering each other. Spot overdue cleanup? **Flag it and recommend a librarian pass**; don't do
-it inline. The librarian's playbook and hard rules live in its agent definition, not here.
+**Roles — keep them separate.** A working agent (any session doing engineering) **only appends**: capture
+findings with the **`context-dump` skill** — a dated **dump** inside the live task, plus emitting the marker that
+flips a doc's `status` the moment work lands or a question settles — and **never** deletes, merges, archives,
+restructures, or re-links. Those destructive ops belong to the **`librarian` agent**, run as a separate deliberate
+pass ("run the librarian" / "tidy the vault", or at a phase boundary). Concentrating destruction there is what
+keeps parallel append-only agents from clobbering each other. Spot overdue cleanup? **Flag it and recommend a
+librarian pass**; don't do it inline. Each role's playbook lives in its own definition, not here. Two rules about
+the others that a session has to know:
+
+- **The `frontier-clerk` runs when a dump changes frontier state, not on every dump** (2026-08-19, Dennis). It is
+  a multi-minute agent standing in front of the vault's most frequent action. A dump that carries a
+  state-changing marker, or a workstream `frontier_lag_check.py` reports as lagging, owes a clerk pass and waits
+  for it. A purely additive dump says *no clerk pass owed* and names the check it ran. Judging it unnecessary is
+  not a licence to make the clerk's edits yourself.
+- **The `scout` is the asking role.** It writes nothing and carries named briefs — `orientation`, `sizing`,
+  `closure`, `recon`. Detect-and-propose produced zero split proposals in practice because **nobody's job was
+  asking**, and a duty competing with the work in front of an agent loses. Send one rather than answering its
+  questions yourself.
 
 The risky case is a session rooted in a **code project**, which sees this vault as just another directory in its
 tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
@@ -51,26 +62,70 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   artifacts already delivered to an audience; editing one retroactively makes the record disagree with what
   people actually received. When either carries a claim that has since gone stale, **append a dated note** saying
   so and leave the original text intact — the same move `done/` already allows.
-- **A mature workstream tends toward three tiers.** *Live* — **the folder-note *is* the plan of record**:
-  one file that is both the map and the single frontier, holding all mutable state (status, gates, PR#s,
-  what's next). There is no separate plan doc; a workstream with one has two frontiers waiting to
-  diverge. *Stable* — a `design/` subfolder of still-consulted reference (the "why", as-built design,
-  recipes) that **carries no live status**. *Inert* — `done/`, the finished record. The distinction:
-  `done/` is frozen history you open only to re-examine completed work; `design/` is living reference a
-  current task leans on. Consolidate toward this shape, and keep mutable state single-sourced in the
-  folder-note. **A folder-note growing too large is a signal to move *reference* down into `design/`,
-  never to move the frontier out into a second live doc.** (A folder-less workstream is a single flat
-  doc, which is its own plan of record by the same rule.)
+- **A workstream's sub-unit is a task**, because work evolves and context has to be partitioned as pieces of it
+  emerge and finish. A task is a dated folder that closes:
+
+  ```
+  workstreams/<ws>/
+    <ws>.md                    parent — task index + a thin restated subset + cross-task invariants. No date
+    YYYY-MM-DD-<task>/         a live task
+      <task>.md                its frontier — its own gates and PR numbers while live. Not dated
+      YYYY-MM-DD-<topic>.md    dumps written during it
+    historical/                LIVE, not done — unsorted pre-conversion context
+    done/YYYY-MM-DD-<task>/    closed tasks, per workstream. The retrieval surface
+    design/                    stable reference, no live status
+  ```
+
+  *Terminology the vault spends: a **task** is that sub-unit, a line in a register is an **item**, a dated
+  document written during a task is a **dump**.* **One frontier per live task** — a second live copy of any
+  mutable state has to be hand-synced and diverges. The parent points by default: it restates only the coarsest
+  state and the warnings that bear on *every* task, and **the register stays in it** rather than moving to a
+  document agents must be told to open, which is how a warning stops firing. `historical/` is live because
+  marking it done claims consolidation over material nobody has read. *Stable* — a `design/` subfolder of
+  still-consulted reference that **carries no live status**; *inert* — `done/`, frozen history you open only to
+  re-examine completed work.
+- **Conversion is lazy, and there is no migration project.** A workstream converts when it is next touched, by
+  the `librarian` pass that is already operating it: its last few tasks split out as dated folders, everything
+  else folded into `historical/`. A workstream created after this design needs no conversion and no `historical/`.
+- **A parent and a task each carry a byte budget, checked by a tool** — because "thin" in prose does not fire and
+  a size in an exit code does:
+  ```bash
+  python3 {{VAULT_PATH}}/tools/budget_check.py workstreams/<ws>     # exit 1 over target, exit 2 over the signal
+  ```
+  Parent 12 KB / 16 KB, task 8 KB / 12 KB — **hypotheses, calibrated against one corpus and nothing else.** Over
+  budget means **extract** reference-not-warning material to `reference/` or `design/`, or **split** a parent
+  that is two efforts wearing one name. It **never** means trimming the task index or deleting history; a unit
+  held under budget that way has failed the check it appears to pass. Splitting is the owner's call, always.
+- **A task pulls forward what bears on it when it opens** — the still-live GATEs, LANDMINEs, DEAD ENDs and
+  settled decisions from the workstream's closed tasks and `historical/`, into a `## Carried across` section of
+  its frontier, each cited by source. Selection is paid once, by whoever knows what the task is about.
+  ```bash
+  python3 {{VAULT_PATH}}/tools/orientation_check.py workstreams/<ws>/YYYY-MM-DD-<task>/   # exit 2 = no pull
+  ```
+  Nothing carries *up* on close, and the pull is what makes that safe: without it, promotion to `done/` is how a
+  live warning goes dark quietly.
 - **Parked (`workstreams/parked/`)** — shared shelf for on-hold efforts (`status: parked`/`deferred`) that may
   revive; distinct from `design/` (settled reference) and `done/` (frozen). A parked doc keeps its `up:`.
 - **Long-horizon work gets a stub, not a paragraph.** Work that is real but far off earns its own
-  `status: stub` doc plus a frontier line carrying its gates — never prose buried in a journal entry or a
+  `status: stub` doc plus a frontier line carrying its gates — never prose buried in a dump or a
   handoff section. Handoffs get consumed and superseded; a stub with a name survives and accumulates detail.
   Record a baseline measurement in the stub where one exists, so the premise stays checkable later.
 - **The README is a thin map** — one line per doc: what it is and which effort it serves. It carries **no
   mutable state**; status, PR numbers, dates and next-moves live only in the workstream's folder-note. Do not
   expand it into an annotated table of contents — one that did became a second frontier and silently drifted
   out of date.
+- **One shared pass log, and every role announces itself in it.** `pass-log.jsonl` at the vault root — untracked,
+  append-only, one file for the whole vault so an agent can see what the others are doing right now:
+  ```bash
+  python3 {{VAULT_PATH}}/tools/pass_log.py active --scope workstreams/<ws>    # who is in here
+  python3 {{VAULT_PATH}}/tools/pass_log.py start --role <r> --scope <s> --kind <k>   # keep the id it prints
+  python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <id> --result <r>
+  ```
+  Emit a `start` before you write and a `stop` when you finish — the pair is what keeps parallel agents off each
+  other's files, and it replaces the git-tag anchors, which could say neither *when* a pass ran nor *who else is
+  here*. A record carries the HEAD sha, so the next pass still has something to diff from. **Only a full run's
+  `--result consolidated` establishes a baseline**; deltas stack, and a scope you skipped is recorded `skipped`,
+  never consolidated — "not looked at" must not be spelled the same way as "already handled".
 - **Frontmatter** — keep `type` / `status` / `date` / `tags` current (plus `up` / `links` for tier relationships).
 - **Links** — `[[wikilinks]]` for intra-vault references; leave code-repo paths as literal text. Docs span
   repos, so **name the repo** when a path is ambiguous — `acme-server: docs/…`, not a bare `docs/…`.

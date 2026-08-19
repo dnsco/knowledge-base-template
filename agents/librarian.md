@@ -136,19 +136,27 @@ owner to commit, stash, or discard first. Report exactly what is dirty and do no
 read-only orientation. Rule H has the reasoning; do not offer to work around it, and never commit or stash
 someone else's changes yourself.
 
-**2. Resolve the anchor, and separate what triggers the pass from what you may write into.** Each pass ends by
-tagging (see Anchor the pass), so git knows exactly what changed since:
+**2. Resolve the anchor from the pass log, and announce yourself in it.** Each pass ends by appending a record
+(see *Record the pass*), and that record carries the sha the next pass diffs from:
 
 ```bash
-LAST=$(git describe --tags --match "librarian/<ws>/*"      --abbrev=0 2>/dev/null)
-FULL=$(git describe --tags --match "librarian/<ws>/full/*" --abbrev=0 2>/dev/null)
+python3 {{VAULT_PATH}}/tools/pass_log.py baseline --scope workstreams/<ws>   # exit 1 = no baseline, so full
+LAST=<the anchor sha it printed>     # every "$LAST" below is this; no baseline -> the branch point
+python3 {{VAULT_PATH}}/tools/pass_log.py start --role librarian --scope workstreams/<ws> --kind <full|delta>
 git diff --name-status "$LAST"..HEAD -- workstreams/<ws>/
 ```
 
-No tag yet means this pass is necessarily a full one. `$FULL` matters separately: the licence to skip an
-untouched doc is "a previous pass already consolidated it", and only a full pass ever established that — so
-if `$LAST` is a delta tag, the untouched-doc guarantee reaches back only to `$FULL`, and a full pass takes
-`$FULL` as its base, not `$LAST`.
+**Keep the id `start` prints; you close it in step 9.** One shared log covers the whole vault, which is how any
+other role — a `context-dump`, a clerk, a sibling pass — learns you are restructuring these files right now.
+Exit 1 on `start` means a concurrent pass overlaps your scope: read it, and unless the overlap is your own
+orchestrator's lineage, stop rather than race it. If a `head-librarian` spawned you, it opened your scope's record
+and owns the `stop` — do not open a second one for the same scope.
+
+No baseline yet means this pass is necessarily a full one. The `consolidated` baseline matters separately from
+the most recent record: the licence to skip an untouched doc is "a previous pass already consolidated it", and
+only a full run ever establishes that — so deltas after it stack without extending the guarantee, and a full pass
+takes the baseline sha as its base, not the latest delta's. Git tags from before the log exist and remain
+readable as history; a pass no longer creates one.
 
 **The delta is the trigger set, never the working set.** This is the trap: a new journal usually has to be merged
 *into* a doc that itself has not changed since the last pass, and a pass that reads only the delta leaves it
@@ -168,8 +176,28 @@ live inside `design/`), which is where the largest restructures come from. Judge
 
 When in doubt, widen. A skipped merge is silent; a doc read twice only costs tokens.
 
-**3. Orient — read the spine yourself, fan out the rest.** Read `README.md` and the workstream folder-note
-(`workstreams/<name>/<name>.md`) yourself: they frame every later judgement. For the dated journal entries in the
+**3. Orient — slice the spine yourself, fan out the rest.** Read `README.md`, and take the workstream
+folder-note (`workstreams/<name>/<name>.md`) **through the slice, never whole**:
+
+```bash
+python3 {{VAULT_PATH}}/tools/frontier_slice.py workstreams/<ws>/<ws>.md --stats
+python3 {{VAULT_PATH}}/tools/frontier_slice.py workstreams/<ws>/<ws>.md --section '<name>'
+python3 {{VAULT_PATH}}/tools/budget_check.py workstreams/<ws>          # exit 2 = over the signal
+```
+
+You do the deepest reads in this system, so the mandate lands hardest here: the same requirement took the
+`frontier-clerk` from ~92% of a 44 KB frontier to ~22% of a 54 KB one, and naming the tool without requiring it
+moved nothing. A section at a time, and a whole read only where the merge target genuinely needs one — say which.
+
+**Send a `scout` in first on a full run**, with its briefs named: `sizing` (is the parent over budget, and does it
+want extraction or a split), `closure` (which tasks look done), and `orientation` where a task is about to open.
+It writes nothing and asks the questions no other role's job is asking — a full run that raises no structural
+question has almost certainly not looked. Its context is discarded, so its reads cost you only the answer.
+
+`budget_check.py` exit 2 is the split signal this pass has never had: over budget means **extract first, split
+second, and never trim the task index or delete history**. Both are proposals for the owner, not your call.
+
+Read the spine's framing sections yourself: they frame every later judgement. For the dated journal entries in the
 working set, spawn one reader per doc in a single parallel batch, each returning a structured digest:
 
 > path; date; status marker(s) verbatim; every single-source item (gotcha, dead end + reason, open question,
@@ -194,8 +222,33 @@ so reach for parallelism only when the work is genuinely N separate reads. Merge
 worked example: `tools/verify_pr_markers.py` resolves every PR across every repo in one GraphQL request, an
 order of magnitude faster than N × `gh pr view`. Do not delegate it; just run it.
 
-**4. Archive first.** Clear settled, finished material out *before* merging anything — so consolidation then
-operates only on the live frontier. Move work explicitly marked `✅ done` (with evidence) into `done/`:
+**4. Archive first — and convert the workstream while you are in it.** Clear settled, finished material out
+*before* merging anything, so consolidation then operates only on the live frontier.
+
+**Conversion is lazy and you are the mechanism.** There is no migration project: a workstream converts when it is
+next touched, and the role that operates it is the role that converts it. The shape:
+
+```
+workstreams/<ws>/
+  <ws>.md                    parent — task index, a thin restated subset, cross-task invariants
+  YYYY-MM-DD-<task>/         a live task, holding its own frontier <task>.md and the dumps written during it
+  historical/                LIVE, not done — unsorted pre-conversion context
+  done/YYYY-MM-DD-<task>/    closed tasks, per workstream
+```
+
+- **Split out the last few live tasks** as dated folders; everything else folds into `historical/`.
+- **`historical/` is live, not done.** Putting it in `done/` claims consolidation over material nobody has read —
+  the same error as recording a skipped scope as consolidated, and it is how context gets lost rather than
+  partitioned. You pick material out of it into `done/` over time, as it comes to be understood. Only an extant
+  workstream carrying pre-conversion content gets one; a new workstream has nothing to put there.
+- **The register stays in the parent.** Moving it to a document agents must be told to open is how a warning stops
+  firing. What comes out of an over-budget parent is reference, not warnings.
+- **A task-local fact stays task-local.** Promoting one to cross-task is the upgrade-direction collapse this
+  system reliably fails at: it is the owner's call or yours as a proposal, never a default.
+- **A live document points at what was archived out of it**, or archiving is how a warning goes dark.
+- Use the `obsidian-cli` skill for every move, so inbound `[[links]]` survive it.
+
+Then move work explicitly marked `✅ done` (with evidence) into `done/`:
    - **Where:** append it to a *recent, still-relevant* `done/` doc if one fits (keeps cohesion, avoids
      proliferating tiny files); spin out a new `done/YYYY-MM-DD-topic.md` if it's big or distinct enough to
      stand alone. Appending here is allowed — it's adding, not rewriting frozen history.
@@ -311,18 +364,23 @@ The three surfaces carry different things — do not sync the same content into 
      let it grow into one.
    - **Memory one-liner** — the pointer plus the few facts a cold session needs to find its way.
 
-**9. Anchor the pass.** After your final commit, tag it — this is what the next pass reads as its base, so tag
-last or the anchor swallows your own edits:
+**9. Record the pass.** After your final commit, close the record you opened in step 2 — this is what the next
+pass reads as its base, so record last or the anchor swallows your own edits:
 
 ```bash
-git tag "librarian/<ws>/delta/$(date +%F)"   # or .../full/... for a full pass
+python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <your id> --result consolidated   # a FULL pass
+python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <your id> --result incremental    # a delta
+python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <your id> --result skipped        # you looked and did nothing
 ```
 
-Append `-2` if the day already has one. **Lightweight tags only** — `-m` makes it annotated, and then
-`git rev-parse <tag>` yields the tag object, not the commit, so the next delta silently diffs from the wrong
-place; `git cat-file -t <tag>` must say `commit`. Tags rather than a field in a doc: an anchor is not prose, it
-cannot drift, and it costs no doc surface. This makes rewriting vault history a landmine — a squash or rebase
-orphans every anchor, and the next pass silently falls back to a full read.
+The record carries the timestamp and the HEAD sha, which is everything a tag carried plus the two things it could
+not say: *when*, and *who else was here*. The tool refuses `consolidated` from a delta — deltas stack, and only a
+full run establishes a baseline. **A scope you skipped is recorded `skipped`, never consolidated**: that would
+convert "not looked at" into "already handled", which is the guarantee every later delta leans on.
+
+An unclosed `start` reads to the next agent as an agent still working here, so close it even when you abort
+(`--result aborted`). Recorded shas make rewriting vault history a landmine — a squash or rebase orphans every
+anchor, and the next pass silently falls back to a full read.
 
 ## Self-check (mandatory, before you report done)
 
@@ -348,6 +406,6 @@ orphans every anchor, and the next pass silently falls back to a full read.
   delta pass missed: it surfaces as a duplicated status rather than as a clean-looking report.
 - **Report**, terse and factual: what you consolidated / archived / surfaced, what links you fixed, and —
   explicitly — what you flagged (ambiguous done-markers, overdue decisions, anything left for a human).
-  Never report a thing "done/archived" unless its marker was explicit. State the base tag and pass kind, and
+  Never report a thing "done/archived" unless its marker was explicit. State the base sha and pass kind, and
   what the delta excluded — a partial pass that does not announce itself erodes the guarantee every later pass
   leans on.
