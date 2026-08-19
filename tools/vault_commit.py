@@ -1,0 +1,208 @@
+#!/usr/bin/env python3
+"""
+Vault commit helper — refuses a bare commit and a half-rename.
+
+WHY
+  Three commit rules exist here, all learned the hard way, and all of them are prose today:
+
+  1. NEVER a bare `git commit`. It takes the whole index, so it captures whatever another
+     session in the same repo has staged -- and if you later switch branches, their work
+     vanishes from their working tree. Always `git commit -m "..." -- <paths>`.
+  2. BOTH HALVES of a rename in one pathspec list. Commit only the new half and the old file
+     stays on the branch; commit only the old and the doc disappears.
+  3. RE-CHECK CLEANLINESS AT COMMIT TIME. A check from before you started writing proves
+     nothing about now.
+
+  Measured 2026-08-18: an orchestrator that had bundled a doc-body edit into the same write as
+  a shared-surface edit could not then split them, because `git commit -- <path>` cannot split
+  hunks within a file. It un-applied the sentence, committed, and re-applied it -- two extra
+  writes to a live doc to work around its own packaging. This refuses the shapes that lead
+  there, and says which rule fired.
+
+WHAT IT REFUSES
+  - no pathspecs at all (the bare commit)
+  - a pathspec naming one half of a detected rename without the other
+  - a message that is empty, or a subject line over --subject-max (default 72)
+  - staged changes outside the pathspecs you named, unless --allow-foreign-index
+
+USAGE
+  python3 tools/vault_commit.py -m "message" -- <paths...>
+  python3 tools/vault_commit.py -m "message" --vault ~/vault --dry-run -- <paths...>
+  python3 tools/vault_commit.py -m "msg" --trailer "Co-Authored-By: X <y@z>" -- <paths...>
+
+    exit 0   committed (or --dry-run printed the plan)
+    exit 2   a rule refused it -- the message says which
+    exit 3   nothing to commit under those pathspecs
+    exit 5   bad invocation
+"""
+
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+
+def git(vault, *args, check=False):
+    r = subprocess.run(["git", *args], cwd=vault, capture_output=True, text=True)
+    if check and r.returncode != 0:
+        print((r.stderr or r.stdout).strip(), file=sys.stderr)
+        sys.exit(2)
+    return r.returncode, r.stdout
+
+
+def git_full(vault, *args):
+    """Like git(), but returns stderr too — printing only stdout hid a failure's reason."""
+    r = subprocess.run(["git", *args], cwd=vault, capture_output=True, text=True)
+    return r.returncode, r.stdout, r.stderr
+
+
+def die(code, *lines):
+    for l in lines:
+        print(l, file=sys.stderr)
+    sys.exit(code)
+
+
+def covered(path, specs):
+    p = Path(path)
+    for s in specs:
+        if path == s or str(p).startswith(s.rstrip("/") + "/"):
+            return True
+    return False
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-m", "--message", required=True)
+    ap.add_argument("--vault", default=".")
+    ap.add_argument("--trailer", action="append", default=[])
+    ap.add_argument("--subject-max", type=int, default=72)
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--allow-foreign-index", action="store_true",
+                    help="proceed even if changes are staged outside your pathspecs")
+    ap.add_argument("paths", nargs="*")
+    args = ap.parse_args()
+
+    vault = Path(args.vault).expanduser().resolve()
+    specs = [p for p in args.paths if p != "--"]
+
+    if not specs:
+        die(2,
+            "REFUSED: no pathspecs.",
+            "A bare commit takes the whole index, including anything another session in this",
+            "repo has staged. Name the paths:  vault_commit.py -m \"...\" -- <paths>")
+
+    subject = args.message.splitlines()[0]
+    if not subject.strip():
+        die(2, "REFUSED: empty subject line.")
+    if len(subject) > args.subject_max:
+        die(2, f"REFUSED: subject is {len(subject)} chars, over --subject-max {args.subject_max}.",
+               f"  {subject}")
+
+    code, status = git(vault, "status", "--porcelain")
+    if code != 0:
+        die(5, f"not a git repository: {vault}")
+
+    entries = []
+    for line in status.splitlines():
+        if not line.strip():
+            continue
+        x, y, rest = line[0], line[1], line[3:]
+        if " -> " in rest:
+            old, new = rest.split(" -> ", 1)
+            entries.append((x + y, old.strip('"'), new.strip('"')))
+        else:
+            entries.append((x + y, rest.strip('"'), None))
+
+    # Rename detection against the index, so a staged R shows both halves.
+    code, staged = git(vault, "diff", "--cached", "--name-status", "-M")
+    renames = []
+    for line in staged.splitlines():
+        parts = line.split("\t")
+        if parts and parts[0].startswith("R") and len(parts) >= 3:
+            renames.append((parts[1], parts[2]))
+    # Also pair an unstaged delete with an untracked add of the same stem -- the shape a
+    # `git mv` leaves if only one half was added.
+    dels = {p for st, p, _ in entries if "D" in st}
+    adds = {p for st, p, _ in entries if st.strip() in ("??", "A")}
+    for d in dels:
+        for a in adds:
+            if Path(d).stem == Path(a).stem and d != a:
+                renames.append((d, a))
+
+    for old, new in renames:
+        has_old, has_new = covered(old, specs), covered(new, specs)
+        if has_old != has_new:
+            missing = old if has_new else new
+            die(2,
+                "REFUSED: half a rename.",
+                f"  {old}  ->  {new}",
+                f"  your pathspecs cover {'the new half' if has_new else 'the old half'} only.",
+                f"  add:  {missing}",
+                "",
+                "Committing one half leaves the other behind: the old file survives on the",
+                "branch, or the doc disappears. Both halves go in one pathspec list.")
+
+    changed_in_specs = [p for st, p, new in entries
+                        if covered(new or p, specs) or covered(p, specs)]
+    if not changed_in_specs:
+        die(3, "nothing to commit under those pathspecs:", *[f"  {s}" for s in specs])
+
+    if not args.allow_foreign_index:
+        foreign = [p for st, p, new in entries
+                   if st[0] not in (" ", "?") and not (covered(new or p, specs) or covered(p, specs))]
+        if foreign:
+            die(2,
+                f"REFUSED: {len(foreign)} path(s) are STAGED outside your pathspecs.",
+                *[f"  {p}" for p in foreign[:10]],
+                "",
+                "They may belong to another session in this repo. `git commit -- <paths>` will",
+                "not take them, but their presence means the index is not yours alone —",
+                "re-check before writing. Pass --allow-foreign-index if you know they are yours.")
+
+    message = args.message
+    for t in args.trailer:
+        if t not in message:
+            message = message.rstrip() + "\n\n" + t if "\n\n" not in message[-200:] else message.rstrip() + "\n" + t
+
+    cmd = ["commit", "-m", message, "--", *specs]
+    if args.dry_run:
+        print("would run:  git " + " ".join(
+            f'"{c}"' if " " in c or "\n" in c else c for c in cmd))
+        print("\ncovered changes:")
+        for p in changed_in_specs:
+            print(f"  {p}")
+        if renames:
+            print("\nrenames, both halves present:")
+            for o, n in renames:
+                print(f"  {o} -> {n}")
+        return 0
+
+    # `git commit -- <paths>` only takes TRACKED modifications; an untracked path makes it fail
+    # with "did not match any file(s) known to git". Staging exactly the paths you named is safe
+    # in a way `git add -A` is not -- it cannot pick up another session's work, which is the
+    # whole reason pathspecs are mandatory here.
+    untracked = [p for st, p, new in entries
+                 if st.strip() == "??" and (covered(new or p, specs) or covered(p, specs))]
+    if untracked:
+        acode, aout, aerr = git_full(vault, "add", "--", *untracked)
+        if acode != 0:
+            die(2, "could not stage the new files:", aerr.strip() or aout.strip())
+
+    code, out, err = git_full(vault, *cmd)
+    if out.strip():
+        print(out.strip())
+    if code != 0:
+        # Printing only stdout hid the reason entirely on the first failure of this tool.
+        print((err or "git commit failed with no message").strip(), file=sys.stderr)
+        return 2
+    _, head = git(vault, "log", "-1", "--format=%h %s")
+    print(f"\ncommitted {head.strip()}")
+    _, after = git(vault, "status", "--porcelain")
+    if after.strip():
+        print(f"tree still has {len(after.strip().splitlines())} uncommitted path(s) — expected if "
+              f"you are committing one scope at a time.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
