@@ -63,7 +63,9 @@ DEFAULT = ["CLAUDE.md", "GOTCHAS.md", "README.md", "BOOTSTRAPPING.md"]
 # the source of the tool that checks the port, whose comparison then silently becomes a no-op and
 # reports every file as diverging. Measured: it happened, and cost a debugging round.
 TOKEN = "{{" + "VAULT_PATH" + "}}"
-DIRS = ["agents", "skills", "tools"]
+# reference/ joined the shared set when the ontology design and the eval method shipped upstream:
+# they are generic enough that a clone wants them, so they are authored here like any other surface.
+DIRS = ["agents", "skills", "tools", "reference"]
 
 
 def main():
