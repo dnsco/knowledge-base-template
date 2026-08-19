@@ -48,8 +48,12 @@ WHAT THE RECORDS MUST KEEP CLAIMING
       "not looked at" cannot be spelled the same way as "already handled".
 
 USAGE
-  python3 tools/pass_log.py start --role librarian --scope workstreams/x --kind full
-  python3 tools/pass_log.py stop  --id <id> --result consolidated
+  python3 tools/pass_log.py start librarian "converting the workstream" --scope workstreams/x --kind full
+  python3 tools/pass_log.py stop  librarian "converted, 3 commits" --result consolidated
+    Role first, then one line of description; the timestamp and the HEAD sha are the tool's job.
+    `stop` resolves the id from the role (and --scope when you hold several open), because
+    hand-carrying a 62-char id between two commands is a transcription hazard, and a stop naming
+    the wrong id records the wrong pass as finished. --id still overrides.
   python3 tools/pass_log.py active [--scope S] [--stale-hours N]
   python3 tools/pass_log.py history --scope S [--limit N]
   python3 tools/pass_log.py baseline --scope S
@@ -253,9 +257,31 @@ def cmd_start(args, path):
     return 1
 
 
+def resolve_id(records, role, scope):
+    """The one open pass this caller means. Refuses rather than guesses between two.
+
+    Hand-carrying a 62-char id from `start` to `stop` is a transcription hazard, and a stop that
+    names the wrong id records the wrong pass as finished. So the id is derived: the newest open
+    start for this role (and scope, if given).
+    """
+    open_for_role = [r for r in open_passes(records)
+                     if r.get("role") == role and (not scope or overlaps(scope, r.get("scope")))]
+    if not open_for_role:
+        return None, "no open pass for that role"
+    if len(open_for_role) > 1:
+        ids = "\n  ".join(f"{r['id']}  scope={r.get('scope') or '(vault)'}" for r in open_for_role)
+        return None, f"{len(open_for_role)} open passes for that role -- pass --scope or --id:\n  {ids}"
+    return open_for_role[0]["id"], None
+
+
 def cmd_stop(args, path):
     records = read_records(path)
     starts = {r.get("id"): r for r in records if r.get("event") == "start"}
+    if not args.id:
+        args.id, why = resolve_id(records, args.role, args.scope)
+        if not args.id:
+            print(f"cannot resolve which pass to close: {why}", file=sys.stderr)
+            return 5
     start = starts.get(args.id)
     if start is None:
         print(f"no start record for id {args.id!r} in {path}", file=sys.stderr)
@@ -321,6 +347,27 @@ def cmd_history(args, path):
     return 0
 
 
+def legacy_tag_hint(scope):
+    """Tags anchored passes before this log existed, and the switchover is otherwise silent.
+
+    Measured on the first pass after the switchover: a librarian/<ws>/full/<date> tag existed with
+    a 9-commit delta while `baseline` reported nothing read at all. Without this line every scope
+    in the vault silently re-pays a full pass -- safe, and expensive.
+    """
+    tags = []
+    try:
+        pat = f"librarian/{norm_scope(scope)}/*" if norm_scope(scope) else "librarian/*"
+        out = subprocess.run(["git", "tag", "-l", pat], capture_output=True, text=True, check=True)
+        tags = [t for t in out.stdout.split() if t]
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        pass
+    if not tags:
+        return "legacy:   no pre-log git tag for this scope either."
+    return ("legacy:   " + str(len(tags)) + " pre-log git tag(s) still anchor this scope, newest "
+            + tags[-1] + "\n          A tag from before the pass log may still be a valid anchor. "
+            "Judge it, then\n          record a full run so the next pass reads the log instead.")
+
+
 def cmd_baseline(args, path):
     records = read_records(path)
     scoped = [r for r in records if overlaps(args.scope, r.get("scope"))]
@@ -330,6 +377,7 @@ def cmd_baseline(args, path):
         print(f"NO BASELINE for {norm_scope(args.scope) or 'the vault'} -- no full run has recorded "
               f"'consolidated'.")
         print("Your pass is necessarily full: nothing here has been read, so nothing may be skipped.")
+        print(legacy_tag_hint(args.scope))
         return 1
     last = baselines[-1]
     since = [r for r in scoped
@@ -340,6 +388,7 @@ def cmd_baseline(args, path):
         print(f"anchor:   {last['sha']}   -> your delta is `git diff --stat {last['sha'][:12]}..HEAD -- <scope>`")
     else:
         print("anchor:   none recorded -- the delta cannot be computed from this record; treat the pass as full")
+    print(legacy_tag_hint(args.scope))
     print(f"deltas since: {len(since)}")
     if since:
         print("Those are incremental and unconsolidated. Their accumulated weight is the signal "
@@ -361,17 +410,19 @@ def build_parser():
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("start", help="open a pass; prints its id and any concurrent overlapping pass")
-    s.add_argument("--role", required=True)
+    s.add_argument("role", help="who you are: librarian, frontier-clerk, context-dump, scout, …")
+    s.add_argument("note", nargs="?", default="", help="one line on what you are about to do")
     s.add_argument("--scope", default="", help="path the pass may write, e.g. workstreams/x")
-    s.add_argument("--kind", required=True, choices=KINDS)
+    s.add_argument("--kind", default="delta", choices=KINDS)
     s.add_argument("--parent", help="the id of the pass that dispatched you, if any")
     s.add_argument("--id", help="use this id instead of a generated one")
-    s.add_argument("--note")
 
     t = sub.add_parser("stop", help="close a pass and record what it established")
-    t.add_argument("--id", required=True)
-    t.add_argument("--result", required=True, choices=RESULTS)
-    t.add_argument("--note")
+    t.add_argument("role", help="the same role you opened with; the id is resolved from it")
+    t.add_argument("note", nargs="?", default="", help="one line on what you did")
+    t.add_argument("--result", default="incremental", choices=RESULTS)
+    t.add_argument("--scope", default="", help="narrow the match when you have several open")
+    t.add_argument("--id", help="close this exact id, skipping resolution")
 
     a = sub.add_parser("active", help="open passes -- who is on this ground right now")
     a.add_argument("--scope", default="")

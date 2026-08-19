@@ -19,12 +19,30 @@ WHAT OVER BUDGET MEANS -- AND THE ONE THING IT NEVER MEANS
   cross-task invariants. A workstream held under budget by deleting history has failed the check
   it appeared to pass, so this tool prints that with every breach.
 
+WHY THE PARENT IS JUDGED ON NON-REGISTER BYTES
+  Measured on the first pass run under this design (2026-08-19): converting a 56 KB parent moved it to 54 KB
+  and the tool still exited 2 -- because the register (26 KB) plus the live gates (7 KB) are ~34 KB, which is
+  2.1x the 16 KB signal BY CONSTRUCTION. The register stays in the parent: that is a settled owner decision and
+  a recorded DEAD END, on the argument that a document agents must be told to open is how a warning stops
+  firing. So a total-bytes signal on such a parent is permanently red, and a check that is permanently red gets
+  read past -- the exact failure this vault cites for prose.
+
+  So the parent's budget is measured against everything that is NOT the register and NOT the task index: the
+  restated subset, the prose, the companion lists. That is where the design says the pressure belongs. The
+  register is reported beside it with its own softer threshold, because the lever there is different and is a
+  question rather than a rule: move out the ALREADY-MITIGATED items, which are reference, and keep resident the
+  warnings that must fire unprompted.
+
 THE NUMBERS ARE HYPOTHESES
-  Parent: 12 KB target, 16 KB signal. Calibrated against one corpus and nothing else -- they
-  separate today's smallest parent (~9 KB) from the oversized ones (21-59 KB). Task: 8 KB / 12 KB,
-  a guess with a shape, on the argument that a task frontier is read more often than a parent and
-  carries pulled-forward warnings on top of its own. No unit built under this design has been
-  measured. Expect to move all four; that is what --parent-target and friends are for.
+  Parent: 8 KB target, 12 KB signal, against NON-REGISTER bytes. Task: 8 KB / 12 KB against the
+  whole file, since a task's gates are its live surface and it has no index to protect. Register:
+  a 20 KB soft mark that reports and asks, and never fails.
+
+  Where they come from: the first two frontiers built under this design landed at 7.3 and 7.6 KB
+  with no effort (2026-08-19), which is what set the task numbers; the same pass's parent carried
+  18.7 KB of non-register bytes, so the parent signal is set to bite it. The earlier 12/16 KB pair
+  was against total bytes and was unreachable by construction on any parent with a real register.
+  Expect to move all of these; that is what --parent-target and friends are for.
 
 USAGE
   python3 tools/budget_check.py workstreams/<ws>                 # parent + every task in it
@@ -45,10 +63,28 @@ import os
 import re
 import sys
 
-PARENT_TARGET, PARENT_LIMIT = 12 * 1024, 16 * 1024
+PARENT_TARGET, PARENT_LIMIT = 8 * 1024, 12 * 1024      # non-register bytes
 TASK_TARGET, TASK_LIMIT = 8 * 1024, 12 * 1024
+REGISTER_SOFT = 20 * 1024                              # report, ask, never mandate
+# A heading is register-or-index if it matches this. Both are exempt from the parent budget: the
+# register by owner decision, the index because "over budget never means trimming the task index".
+EXEMPT_HEADING = re.compile(
+    r"risk|gate|landmine|dead[ -]end|open q|register|task index|tasks\b|landed|closed|done\b", re.I)
+REGISTER_HEADING = re.compile(r"risk|gate|landmine|dead[ -]end|open q|register", re.I)
 TASK_DIR = re.compile(r"^\d{4}-\d{2}-\d{2}-")
 DATED_DOC = re.compile(r"^\d{4}-\d{2}-\d{2}-.*\.md$")
+
+
+def split_bytes(path):
+    """(total, register, index_and_other_exempt, budgeted) in bytes for one doc."""
+    total = os.path.getsize(path)
+    reg = exempt = 0
+    for head, nbytes in sections(path):
+        if REGISTER_HEADING.search(head):
+            reg += nbytes
+        elif EXEMPT_HEADING.search(head):
+            exempt += nbytes
+    return total, reg, exempt, max(0, total - reg - exempt)
 
 
 def sections(path):
@@ -137,20 +173,35 @@ def main(argv):
             seen.add(path)
             tgt = args.parent_target if kind == "parent" else args.task_target
             lim = args.parent_limit if kind == "parent" else args.task_limit
-            size = os.path.getsize(path)
+            total, reg, exempt, budgeted = split_bytes(path)
+            # A task frontier is judged whole: its own gates ARE its live surface, and it has no
+            # index to protect. Only a parent gets the register carve-out.
+            size = budgeted if kind == "parent" else total
             state = "OVER" if size > lim else ("WATCH" if size > tgt else "ok")
-            rows.append((state, kind, path, size, tgt, lim))
+            rows.append((state, kind, path, size, tgt, lim, total, reg, exempt))
 
-    worst = 0
-    for state, kind, path, size, tgt, lim in rows:
-        if state == "ok" and args.quiet:
+    worst, reg_flags = 0, []
+    for state, kind, path, size, tgt, lim, total, reg, exempt in rows:
+        if state == "ok" and args.quiet and reg <= REGISTER_SOFT:
             continue
-        print(f"{state:5} {kind:6} {size:6}B  target {tgt}B  signal {lim}B  {path}")
+        label = "budgeted" if kind == "parent" else "bytes"
+        print(f"{state:5} {kind:6} {size:6}B {label}  target {tgt}B  signal {lim}B  {path}")
+        if kind == "parent":
+            print(f"        of {total}B total: register {reg}B, index/ledger {exempt}B, "
+                  f"budgeted {size}B")
+            if reg > REGISTER_SOFT:
+                reg_flags.append((path, reg))
         if state != "ok" and args.sections:
             for head, nbytes in sections(path)[:args.sections]:
                 if nbytes:
                     print(f"        {nbytes:6}B  {head[:96]}")
         worst = max(worst, {"ok": 0, "WATCH": 1, "OVER": 2}[state])
+
+    for path, reg in reg_flags:
+        print(f"\nREGISTER {reg}B in {path} -- above the {REGISTER_SOFT}B soft mark, and not a breach.")
+        print("The register is resident by decision, so this is a question and not a rule: are the "
+              "ALREADY-MITIGATED\nitems still warnings? Those are reference and can move to design/; "
+              "the ones that must fire unprompted\nstay. Ask the owner. Never trim history to answer it.")
 
     if worst == 2:
         print("\nOver the signal. Two responses, cheaper first:")
