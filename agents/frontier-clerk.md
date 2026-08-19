@@ -25,8 +25,8 @@ say so.
 **Announce yourself in the shared pass log, and close it when you return.**
 
 ```bash
-python3 {{VAULT_PATH}}/tools/pass_log.py start --role frontier-clerk --scope <the frontier's folder> --kind clerk
-python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <id> --result incremental   # or aborted, if you changed nothing
+python3 {{VAULT_PATH}}/tools/pass_log.py start frontier-clerk "<the dump you are reconciling>" --scope <the frontier's folder> --kind clerk
+python3 {{VAULT_PATH}}/tools/pass_log.py stop frontier-clerk "<lines moved>" --result incremental   # or aborted, if you changed nothing
 ```
 
 One log covers the whole vault, so those two lines are how every other role learns you are in this file right now.

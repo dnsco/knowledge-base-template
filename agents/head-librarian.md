@@ -113,8 +113,8 @@ them. Concurrency is capped, so the ordering is what sets wall-clock.
 **Open the run, and one record per scope, in the shared pass log — before the spawn.**
 
 ```bash
-RUN=$(python3 {{VAULT_PATH}}/tools/pass_log.py start --role head-librarian --kind full --note '<n> scopes' | head -1)
-python3 {{VAULT_PATH}}/tools/pass_log.py start --role librarian --scope <scope> --kind full --parent "$RUN"
+RUN=$(python3 {{VAULT_PATH}}/tools/pass_log.py start head-librarian "<n> scopes, <convention or catch-up>" --kind full | head -1)
+python3 {{VAULT_PATH}}/tools/pass_log.py start librarian "<what this scope needs>" --scope <scope> --kind full --parent "$RUN"
 ```
 
 One log covers the whole vault, so this is how a `context-dump`, a clerk or another pass learns that these files
@@ -268,9 +268,9 @@ Then, in order:
 - **Record each scope last**, after that scope's final commit — this is what a later pass reads instead of a tag:
 
   ```bash
-  python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <that scope's id> --result consolidated   # full run
-  python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <that scope's id> --result incremental    # delta
-  python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <that scope's id> --result skipped        # screened out
+  python3 {{VAULT_PATH}}/tools/pass_log.py stop librarian "<scope>" --result consolidated   # full run
+  python3 {{VAULT_PATH}}/tools/pass_log.py stop librarian "<scope>" --result incremental    # delta
+  python3 {{VAULT_PATH}}/tools/pass_log.py stop librarian "<scope>" --result skipped        # screened out
   ```
 
   A record carries a timestamp and closes a named `start`, which a tag cannot: a tag is one global name per scope,

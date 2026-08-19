@@ -118,8 +118,8 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   append-only, one file for the whole vault so an agent can see what the others are doing right now:
   ```bash
   python3 {{VAULT_PATH}}/tools/pass_log.py active --scope workstreams/<ws>    # who is in here
-  python3 {{VAULT_PATH}}/tools/pass_log.py start --role <r> --scope <s> --kind <k>   # keep the id it prints
-  python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <id> --result <r>
+  python3 {{VAULT_PATH}}/tools/pass_log.py start <role> "<one line>" --scope <s> --kind <k>
+  python3 {{VAULT_PATH}}/tools/pass_log.py stop <role> "<what you did>" --result <r>
   ```
   Emit a `start` before you write and a `stop` when you finish — the pair is what keeps parallel agents off each
   other's files, and it replaces the git-tag anchors, which could say neither *when* a pass ran nor *who else is

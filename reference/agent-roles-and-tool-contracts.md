@@ -271,8 +271,8 @@ from N logs is not answering it. Untracked, because N worktrees appending to a t
 
 | command | contract |
 |---|---|
-| `start --role R --scope S --kind K [--parent ID]` | prints the pass id, which you keep. **exit 1** = a concurrent open pass overlaps your scope — judge it before writing. `--parent` keeps an orchestrator's own run from reading as a conflict with its children |
-| `stop --id ID --result R` | `consolidated` \| `incremental` \| `skipped` \| `aborted`. **exit 2** = a defect, not a judgement call: a non-full pass claiming `consolidated`, a stop with no start, a double stop |
+| `start <role> "<desc>" [--scope S] [--kind K] [--parent ID]` | prints the pass id, which you keep. **exit 1** = a concurrent open pass overlaps your scope — judge it before writing. `--parent` keeps an orchestrator's own run from reading as a conflict with its children |
+| `stop <role> "<desc>" [--result R]` | `consolidated` \| `incremental` \| `skipped` \| `aborted`. **exit 2** = a defect, not a judgement call: a non-full pass claiming `consolidated`, a stop with no start, a double stop |
 | `active [--scope S]` | open passes, with age, and STALE on any older than `--stale-hours` (default 4) — an agent that died, not one still working |
 | `baseline [--scope S]` | the last `consolidated` full run, its HEAD sha as the delta anchor, and the deltas since. **exit 1** = no baseline, so the pass is necessarily full |
 | `history [--scope S]` | what the recent passes did, and when |

@@ -79,10 +79,10 @@ conversion is deliberate — the mechanism that converts a workstream is the one
    **Then announce yourself in the shared pass log, before you write anything.**
 
    ```bash
-   python3 {{VAULT_PATH}}/tools/pass_log.py start --role context-dump --scope workstreams/<ws> --kind dump
+   python3 {{VAULT_PATH}}/tools/pass_log.py start context-dump "<what you are dumping>" --scope workstreams/<ws> --kind dump
    ```
 
-   Keep the id it prints; you close it in step 7. One log covers the whole vault so that every role can see what
+   You close it in step 7 by role, so there is no id to carry. One log covers the whole vault so every role sees what
    the others are doing — a `start` with no matching `stop` is how the next agent learns someone is in here now.
    Exit 1 means a concurrent pass overlaps your scope: read it and judge before writing.
 2. **Write the dump** — `workstreams/<ws>/YYYY-MM-DD-<task>/YYYY-MM-DD-topic.md` (today's date from `date`),
@@ -189,7 +189,7 @@ conversion is deliberate — the mechanism that converts a workstream is the one
 7. **Close the pass, and sync the pointer.**
 
    ```bash
-   python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <the id from step 1> --result incremental
+   python3 {{VAULT_PATH}}/tools/pass_log.py stop context-dump "<the dump you wrote>" --result incremental
    ```
 
    A dump is incremental by definition — it never consolidates anything, and the tool refuses if you claim it

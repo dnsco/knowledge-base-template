@@ -224,7 +224,34 @@ def parse_ts(s):
         return None
 
 
+def check_scope(scope, log_path):
+    """A scope is a path, and a description in that slot silently mislabels the record.
+
+    Measured on the first day of use: an agent passed its one-line description as --scope, and the
+    log recorded a pass on a scope named after a sentence -- which no overlap check can match, so
+    the record was invisible to exactly the coordination the log exists for. Whitespace is the
+    unambiguous tell, so that is refused; a path that simply does not exist is warned about,
+    because a pass may legitimately open on a scope it is about to create.
+    """
+    scope = norm_scope(scope)
+    if not scope:
+        return 0
+    if any(c.isspace() for c in scope):
+        print(f"refusing: --scope {scope!r} contains whitespace. A scope is a PATH, e.g. "
+              f"workstreams/x.\nThe description is the second positional argument: "
+              f"pass_log.py start <role> \"<description>\" --scope <path>", file=sys.stderr)
+        return 5
+    root = os.path.dirname(log_path)
+    if root and not os.path.exists(os.path.join(root, scope)):
+        print(f"note: {scope} does not exist under {root} -- fine if you are about to create it, "
+              f"wrong if it is a typo, and an overlap check cannot match a scope nobody else names.")
+    return 0
+
+
 def cmd_start(args, path):
+    bad = check_scope(args.scope, path)
+    if bad:
+        return bad
     records = read_records(path)
     when = now()
     pass_id = args.id or make_id(args.role, args.scope, when)

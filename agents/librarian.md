@@ -142,11 +142,11 @@ someone else's changes yourself.
 ```bash
 python3 {{VAULT_PATH}}/tools/pass_log.py baseline --scope workstreams/<ws>   # exit 1 = no baseline, so full
 LAST=<the anchor sha it printed>     # every "$LAST" below is this; no baseline -> the branch point
-python3 {{VAULT_PATH}}/tools/pass_log.py start --role librarian --scope workstreams/<ws> --kind <full|delta>
+python3 {{VAULT_PATH}}/tools/pass_log.py start librarian "<what this pass is for>" --scope workstreams/<ws> --kind <full|delta>
 git diff --name-status "$LAST"..HEAD -- workstreams/<ws>/
 ```
 
-**Keep the id `start` prints; you close it in step 9.** One shared log covers the whole vault, which is how any
+**You close it in step 9 by role**, so there is no id to carry; `--id` exists for the ambiguous case. One shared log covers the whole vault, which is how any
 other role — a `context-dump`, a clerk, a sibling pass — learns you are restructuring these files right now.
 Exit 1 on `start` means a concurrent pass overlaps your scope: read it, and unless the overlap is your own
 orchestrator's lineage, stop rather than race it. If a `head-librarian` spawned you, it opened your scope's record
@@ -368,9 +368,9 @@ The three surfaces carry different things — do not sync the same content into 
 pass reads as its base, so record last or the anchor swallows your own edits:
 
 ```bash
-python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <your id> --result consolidated   # a FULL pass
-python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <your id> --result incremental    # a delta
-python3 {{VAULT_PATH}}/tools/pass_log.py stop --id <your id> --result skipped        # you looked and did nothing
+python3 {{VAULT_PATH}}/tools/pass_log.py stop librarian "<one line>" --result consolidated   # a FULL pass
+python3 {{VAULT_PATH}}/tools/pass_log.py stop librarian "<one line>" --result incremental    # a delta
+python3 {{VAULT_PATH}}/tools/pass_log.py stop librarian "<one line>" --result skipped        # you looked and did nothing
 ```
 
 The record carries the timestamp and the HEAD sha, which is everything a tag carried plus the two things it could
