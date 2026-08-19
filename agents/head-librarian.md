@@ -15,7 +15,12 @@ scope; yours govern only the orchestration around it.
 
 ## Be reluctant
 
-Cost scales with the number of scopes, and a pass is cheapest small and frequent.
+Cost scales with the number of **scopes**, and barely with the number of docs inside one. Measured: the merge
+itself — reading three overlapping docs and emitting the survivor — was ~10% of a 186k-token single-scope pass.
+The other 90% is a floor every scope pays again: its own system prompt, the conventions, the spine read
+unconditionally, recon, the self-checks, the report. So **batch docs into one scope, and be reluctant about
+adding scopes.** "Small and frequent" is right about drift and wrong about cost — running a pass after every
+dump pays that floor every time to merge almost nothing.
 
 ```bash
 git -C {{VAULT_PATH}} tag -l 'librarian/*'
