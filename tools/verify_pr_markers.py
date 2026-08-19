@@ -20,8 +20,21 @@ USAGE
   python3 verify_pr_markers.py --json <refs...>          # machine-readable
   echo "owner/repo#123 owner/repo#124" | python3 verify_pr_markers.py -
 
-  A bare "#123" or "123" reuses the previous ref's repo, so a same-repo list stays short:
-  python3 verify_pr_markers.py acme/server#12091 12096 12193
+  A bare "#123" or "123" needs --repo, which keeps a same-repo list short:
+  python3 verify_pr_markers.py --repo acme/server 12091 12096 12193
+
+WHY A BARE NUMBER DOES NOT INHERIT POSITIONALLY
+  It used to: a bare "#123" reused the previous ref's repo. That shipped a false "settled"
+  fact. Two bare refs trailing one qualified ref inherited the qualified repo, resolved to
+  real PRs there that had MERGED years earlier, and those wrong rows went into two agent
+  prompts labelled "already resolved, do not re-run" — while the PRs actually meant were
+  OPEN in a different repo. Nothing was ambiguous *within* the argument list, so no
+  ambiguity check would have caught it: the binding was simply wrong, and plausible.
+  It was caught only by a downstream agent whose own notes contradicted the table.
+
+  So the inheritance is gone rather than validated. With --repo the binding is stated; a
+  bare number without --repo is refused. A verifier that can emit a confidently wrong row
+  is worse than one that refuses, because its output is what everything downstream trusts.
 
 OUTPUT
   repo     ref     state   mergedAt              mergeCommit
@@ -57,18 +70,37 @@ from collections import OrderedDict
 REF = re.compile(r"^(?:(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+))?#?(?P<num>\d+)$")
 
 
-def parse_refs(argv):
-    """-> OrderedDict[(owner, repo)] = [numbers]. A bare number inherits the previous repo."""
+def parse_refs(argv, default_repo=None):
+    """-> OrderedDict[(owner, repo)] = [numbers].
+
+    A bare number binds ONLY to an explicit default_repo (--repo). It never inherits from a
+    preceding qualified ref: that inheritance once bound two bare refs to the wrong repo,
+    where they resolved to real long-merged PRs and shipped a false "settled" row into two
+    agent prompts. The wrong binding was unambiguous within the argument list, so there is
+    nothing to validate — only a form to refuse.
+    """
     out = OrderedDict()
     owner = repo = None
+    if default_repo:
+        m = re.match(r"^(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+)$", default_repo.strip())
+        if not m:
+            sys.exit(f"--repo {default_repo!r} is not owner/name")
+        owner, repo = m.group("owner"), m.group("repo")
     for raw in argv:
         m = REF.match(raw.strip())
         if not m:
             sys.exit(f"unparseable ref {raw!r} — want owner/repo#123, #123, or 123")
         if m.group("owner"):
-            owner, repo = m.group("owner"), m.group("repo")
+            out.setdefault((m.group("owner"), m.group("repo")), []).append(int(m.group("num")))
+            continue
         if not repo:
-            sys.exit(f"{raw!r} has no repo and none was given before it")
+            sys.exit(
+                f"bare ref {raw!r} has no repo. Pass --repo owner/name, or qualify it as "
+                f"owner/name#{m.group('num')}.\n"
+                "A bare number does NOT inherit the previous ref's repo — that silently "
+                "shipped a wrong 'already settled' row once, and refusing is cheaper than "
+                "the false negative."
+            )
         out.setdefault((owner, repo), []).append(int(m.group("num")))
     return out
 
@@ -112,12 +144,19 @@ def main():
         return 0
     as_json = "--json" in argv
     argv = [a for a in argv if a != "--json"]
+    default_repo = None
+    if "--repo" in argv:
+        i = argv.index("--repo")
+        if i + 1 >= len(argv):
+            sys.exit("--repo needs an owner/name argument")
+        default_repo = argv[i + 1]
+        argv = argv[:i] + argv[i + 2:]
     if argv == ["-"]:
         argv = sys.stdin.read().split()
     if not argv:
         sys.exit(__doc__.strip().split("USAGE")[1].strip())
 
-    refs = parse_refs(argv)
+    refs = parse_refs(argv, default_repo)
     payload = run(build_query(refs))
     data = payload.get("data") or {}
 

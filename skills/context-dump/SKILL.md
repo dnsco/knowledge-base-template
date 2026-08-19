@@ -67,6 +67,17 @@ project root as `{{VAULT}}/`, so you can read and grep it as in-tree paths. Full
    may act only on markers in your entry, so an owner decision you were told but did not write down leaves the
    frontier stale and costs a second round trip — measured: two of three clerk invocations in one session existed
    only because a marker was missing. Write the decision, dated and attributed, as its own `✅ settled` line.
+
+   **One marker per separately-statused fact. Never a composite.** A marker covering several facts that do not
+   share a state is the single largest measured cause of a clerk overreaching: one entry's
+   *"✅ all four inherited defects hold"* covered four separately-statused facts, and the clerk collapsed two
+   distinctions off it — while the same clerk, on the same workstream a day earlier, **preserved** the identical
+   distinction when the marker was per-item. Same role, same context, opposite outcome; the marker was the
+   variable. So if you are tempted to write "all of X is done", write one line per member of X.
+
+   **Distinguish *settled* from *settled-and-executed*, and say which.** A decision the owner made is not work
+   that happened. `✅ settled … execution deferred` and `✅ done` licence completely different actions, and
+   collapsing them is how a deferred plan gets carried out.
 4. **Spawn the `frontier-clerk`, and do not report success until it returns.** Hand it the entry you just
    wrote and the workstream's folder-note. It flips the `status`, strikes next-moves your markers show
    completed, demotes superseded in-flight lines, and files landed items — the frontier work you may not do.
@@ -74,8 +85,13 @@ project root as `{{VAULT}}/`, so you can read and grep it as in-tree paths. Full
    frontier behind a dump that claimed success — the silent failure this vault exists to prevent.
 
    Frontier lines are **state plus a pointer, never a paraphrase** —
-   `- ⏳ in-flight — marzlevane survey, #4730 (draft). Detail: [[2026-08-18-survey]].` A line that explains
+   `- ⏳ in-flight — retention sweep, #4730 (draft). Detail: [[2026-01-02-retention-sweep]].` A line that explains
    rather than states is a paraphrase and belongs in your entry. Don't hand the clerk one.
+
+   **A mutable measurement is not state, so never hand the clerk one to transcribe.** A commit count, a
+   review-comment tally, a queue depth: cite the reference and let a tool answer the number. Measured — the one
+   restated figure of this kind in one vault was simultaneously wrong in two documents and went stale three times
+   in two days, while nothing that carried only a pointer did.
 
 5. **Second pass — what didn't make it in?** Before you commit, interrogate the entry: *what did I NOT write
    down that the next agent (or a cold-start you, weeks later) would need?* Sweep specifically for:

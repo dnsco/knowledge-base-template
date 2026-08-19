@@ -20,7 +20,18 @@ this reported 0 dangling while the index reported 6 unresolved, and both were ri
 """
 import re, sys, pathlib
 
+# Print usage rather than raising IndexError on a bare invocation. A traceback out of a
+# checker reads as "the tool is broken" and gets abandoned, where a usage line gets fixed
+# and re-run -- and this is the check whose 0-vs-6 disagreement with the Obsidian index is
+# the reason both must be run.
+if len(sys.argv) < 2 or sys.argv[1] in {"-h", "--help"}:
+    sys.exit("usage: dangling_links.py <vault-root> [memory-dir]\n"
+             "  e.g. python3 tools/dangling_links.py .\n"
+             "  exit 0 = no dangling links, 1 = at least one (read the classes it excluded)")
+
 root = pathlib.Path(sys.argv[1]).resolve()
+if not root.is_dir():
+    sys.exit(f"not a directory: {root}")
 memdir = pathlib.Path(sys.argv[2]).expanduser() if len(sys.argv) > 2 else None
 
 SKIP_DIRS = {".git", "obsidian-skills", ".obsidian", "node_modules"}

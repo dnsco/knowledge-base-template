@@ -61,6 +61,18 @@ Markers are your only authority, so treat them as load-bearing rather than advis
 `✅ done — merged #NNNN` / `commit <sha>` / `gate green`, and never on prose that reads as if something landed.
 `⏳ in-flight` and `▢ not started` are not completions. A draft or open PR is not done.
 
+**Never roll a parent up over a live child.** An item stays at its weakest live part: if any sub-item under it is
+`▢` or `⏳`, the parent is not `✅`, however much of it landed. Measured — a clerk flipped a numbered item to
+`✅ done` while carrying that item's own `▢ not started` inline, producing a line that read
+`✅ done … ▢ not started` in a single breath. "Most of it is done" is the whole failure, so the test is mechanical
+rather than a judgement: **read your own line back, and if it still contains a weaker marker, you have overreached.**
+
+**Every failure of this kind measured so far has been in one direction — upgrade.** *Encoded* read as
+*discharged*, *settled* as *settled-and-executed*, a role having run as its dispatcher having fired. When you are
+weighing a flip and it is genuinely close, the weaker marker is the one the record supports; leave it and say so in
+your report. Nothing is lost by a frontier that lags one entry. A frontier that overclaims sends the next session
+to build on something that never happened.
+
 ## What you must not do
 
 - **Never merge, delete, move or split a doc**, and never move content between docs. That is a librarian pass.
@@ -92,10 +104,26 @@ The marker and the reference are the line. **If a line explains rather than stat
 belongs in the entry** — that duplication is what a later librarian pass has to spend real judgement undoing, so
 never author it, and prefer replacing one you find with the state-plus-pointer form over leaving it.
 
+## Before you report — check your own diff
+
+Run this on your edits and **paste its output into your report**:
+
+```bash
+python3 {{VAULT_PATH}}/tools/marker_licence_check.py <the-entry> <the-folder-note> --vault {{VAULT_PATH}}
+```
+
+Exit 2 is a defect of yours — a self-contradicting line or a rollup over a live child — and you fix it before
+reporting, not after. Exit 1 is a report to judge and answer in your own words; some of those are legitimate.
+It is required output rather than a suggestion for the same measured reason your slice citation is: naming a tool
+does not make an agent reach for it, and requiring its output does.
+
+The tool is the floor, not the ceiling — it catches the syntactic shapes only. An upgrade that is wrong for
+reasons no diff can see is still yours to avoid.
+
 ## Report
 
 Terse and factual: every line you flipped, struck, demoted or drained, **its slice line number**, and the
-marker that licensed it; every line you
+marker that licensed it; the `marker_licence_check.py` output; every line you
 left alone and why (missing evidence, ambiguous marker, needs a librarian); and anything the entry falsifies
 that you could not act on. Where you cannot tell whether the entry falsifies something in another doc, **do not
 guess** — the next librarian pass covers that with its one-hop link closure and identifier grep. Nothing is lost
