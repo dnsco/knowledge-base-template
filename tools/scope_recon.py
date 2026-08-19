@@ -117,19 +117,21 @@ def canonicalise(refs):
     for r in refs:
         repo, _, num = r.rpartition("#")
         by_num.setdefault(num, []).append(repo)
-    out = []
+    out, unqualified = [], set()
     for num, repos in by_num.items():
         full = sorted({r for r in repos if "/" in r})
         short = {r for r in repos if r and "/" not in r}
         bare = any(r == "" for r in repos)
         covered = {f.split("/")[-1] for f in full}
         out += [f"{f}#{num}" for f in full]
-        # a short form whose repo name is not the tail of any qualified form is its own PR
-        out += [f"{s}#{num}" for s in sorted(short - covered)]
+        # A single-segment repo (`repo#N`) is a form verify_pr_markers.py REFUSES -- and it
+        # aborts the whole batch on one bad ref, so emitting these silently cost a scout its
+        # entire marker resolution. They are returned separately for a human to qualify.
+        unqualified.update(f"{sh}#{num}" for sh in sorted(short - covered))
         # a bare #num is only safe to drop if something qualified exists to stand for it
         if bare and not full and not short:
             out.append(f"#{num}")
-    return sorted(out)
+    return sorted(out), sorted(unqualified)
 
 
 def harvest_refs(root, scope):
@@ -264,12 +266,17 @@ def main():
 
     if args.markers:
         allrefs = sorted({k for r in results for k in (r.get("refs") or {})})
-        canon = canonicalise(allrefs)
+        canon, unqualified = canonicalise(allrefs)
         if canon:
-            dropped = len(allrefs) - len(canon)
+            dropped = len(allrefs) - len(canon) - len(unqualified)
             print(f"\nbatch these in one call ({len(canon)} refs"
                   + (f", {dropped} duplicate spellings folded" if dropped else "") + "):")
             print(f"  python3 tools/verify_pr_markers.py {' '.join(canon)}")
+        if unqualified:
+            print(f"\nNOT batched — cited with a single-segment repo, which the verifier refuses"
+                  f" (and it aborts the whole batch on one). Qualify as owner/repo#N by hand:")
+            for u in unqualified:
+                print(f"  {u}")
     print("\nScreening inputs are reported, not decided. A SKIP needs all three: no delta since")
     print("$FULL, a folder-note under your bound, and nothing at the scope's top level beside it.")
     return 0
