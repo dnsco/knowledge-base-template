@@ -19,9 +19,9 @@ WHAT THIS GUARDS THAT port_check.py DOES NOT
 THE THIRD FOOTGUN
   A mechanical substitution rewrites any shared file that contains the placeholder AS DATA. It
   corrupted port_check.py's own docstring, then its comparison code, turning the checker into a
-  silent no-op that reported every file as diverging. So: the token is assembled at runtime and
-  never written as a literal here, and substitution skips fenced blocks and inline code spans,
-  where a placeholder is being discussed rather than used.
+  silent no-op that reported every file as diverging. So the tokens, and the rules about where
+  one may legally appear, live in `placeholders.py` and are IMPORTED here — every past break of
+  this mechanism came from a second copy of those rules drifting from the first.
 
 DIRECTION
   down (default)  template -> vault, substituting the placeholder for the vault's real path
@@ -47,54 +47,26 @@ import re
 import sys
 from pathlib import Path
 
-# Assembled, never written as a literal — a substitution pass over this file would otherwise
-# rewrite the example and destroy the sentence explaining it. That has happened.
-TOKEN = "{{" + "VAULT_PATH" + "}}"
-NAME_TOKEN = "{{" + "VAULT" + "}}"
-ANY_PLACEHOLDER = re.compile(r"\{\{[A-Za-z0-9_]+\}\}")
-CODE = re.compile(r"`[^`\n]*`")
-FENCE = re.compile(r"^\s*(```|~~~)")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import placeholders as ph      # one home for the tokens and the where-may-one-appear rules
 
 
 def substitute(text, mapping):
-    """Replace tokens outside FENCED blocks. Inline code spans ARE substituted.
+    """Replace every token, everywhere — fenced blocks and inline spans included.
 
-    The two cases look alike and are not. A placeholder inside backticks is nearly always a
-    real USAGE -- paths are written in backticks throughout these docs, so `<placeholder>/tools`
-    is a path, not an example of one. A placeholder being DISCUSSED belongs in a fenced block,
-    or is written out in prose, which the convention for shared files forbids precisely because
-    a substitution pass cannot tell the two apart. So: fenced blocks are held; everything else
-    is substituted; and anything still holding a placeholder afterwards is reported, INCLUDING
-    inside inline spans, because at that point it is either a missed mapping or prose that
-    should not have written a placeholder out in the first place.
+    Holding code back is tempting and wrong, and it has now failed in both directions. Skipping
+    inline spans left every real path unsubstituted, because paths here are always written in
+    backticks. Skipping fenced blocks then shipped a live placeholder inside an agent's runnable
+    command block -- straight into a system prompt, which is the failure this whole mechanism
+    exists to prevent. In these documents a placeholder in code is a USAGE, always.
+
+    A placeholder being discussed is handled by the authoring rule instead of by this function:
+    in a shared file, describe the placeholders without writing one out. `hazards()` flags the
+    lines that break it, so the author is told rather than the substituter guessing.
     """
-    out, in_fence = [], False
-    for line in text.splitlines(keepends=True):
-        if FENCE.match(line):
-            in_fence = not in_fence
-            out.append(line)
-            continue
-        if in_fence:
-            out.append(line)
-            continue
-        for k, v in mapping.items():
-            line = line.replace(k, v)
-        out.append(line)
-    return "".join(out)
-
-
-def survivors(text):
-    """Placeholders left after substitution, outside fenced blocks — inline spans included."""
-    hits = set()
-    in_fence = False
-    for line in text.splitlines():
-        if FENCE.match(line):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
-        hits.update(ANY_PLACEHOLDER.findall(line))
-    return sorted(hits)
+    for k, v in mapping.items():
+        text = text.replace(k, v)
+    return text
 
 
 def main():
@@ -118,8 +90,8 @@ def main():
     vault_path = args.vault_path or str(vdir)
     vault_name = args.vault_name or vdir.name
 
-    down_map = {TOKEN: vault_path, NAME_TOKEN: vault_name}
-    up_map = {vault_path: TOKEN}          # name is too generic to reverse safely
+    down_map = ph.mapping(vault_path, vault_name)
+    up_map = ph.reverse_mapping(vault_path)   # NAME is too generic to reverse safely
 
     worst = 0
     for rel in args.paths:
@@ -133,7 +105,7 @@ def main():
 
         ported = substitute(src.read_text(errors="replace"), up_map if args.up else down_map)
 
-        left = survivors(ported)
+        left = ph.survivors(ported)
         if left:
             print(f"  PLACEHOLDER SURVIVES: {', '.join(left)}")
             print("  Not applied. An agent reads an unsubstituted placeholder literally, as a path,")
