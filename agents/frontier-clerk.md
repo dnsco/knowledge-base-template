@@ -25,6 +25,16 @@ line numbers, so it indexes the real file rather than replacing it. A whole-file
 saves only about a third; `--section` is the lever, at roughly a tenth for one block. Reach for the section
 form first.
 
+**Your report must cite, for every line you changed, the slice line number you took it from.** That is a
+contract, not a preference — measured, a clerk told to use the slice paged the frontier by hand anyway and read
+back 92% of its bytes through six round trips. Naming a tool does not make an agent reach for it; requiring its
+output does.
+
+**Then satisfy the Edit guard cheaply.** `Edit` refuses a file this session has not opened with `Read`, and a
+slice read through `Bash` does not count — so your first `Edit` will fail if the slice is all you have. Do not
+answer that by reading the whole file: `Read` the ten or so lines around your first anchor, using the slice's
+line numbers as `offset`. One small read, once.
+
 **Judge salience as a future reader would, not as the dumping agent would.** It has just spent a long session
 forming views, so everything feels salient to it. You have only the entry and the frontier, which is the whole
 reason this is your call and not its.
@@ -84,7 +94,8 @@ never author it, and prefer replacing one you find with the state-plus-pointer f
 
 ## Report
 
-Terse and factual: every line you flipped, struck or demoted and the marker that licensed it; every line you
+Terse and factual: every line you flipped, struck, demoted or drained, **its slice line number**, and the
+marker that licensed it; every line you
 left alone and why (missing evidence, ambiguous marker, needs a librarian); and anything the entry falsifies
 that you could not act on. Where you cannot tell whether the entry falsifies something in another doc, **do not
 guess** — the next librarian pass covers that with its one-hop link closure and identifier grep. Nothing is lost

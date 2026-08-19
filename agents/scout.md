@@ -29,10 +29,18 @@ Per scope it emits: doc inventory, folder-note bytes, top-level docs, `$LAST` an
 type, the delta against each, the frontmatter table, docs with no `up:`, any `status:` reading as live inside
 `design/`, and every cited PR or commit ref folded to one spelling and ready to batch.
 
-Reach for it before hand-writing shell. The pipelines it replaces fail in ways that do not announce themselves:
+**Your report must open with that command's output, verbatim, under a heading `## scope_recon`.** This is a
+contract, not a preference: a report without it is not a scout report. Measured on the first run of this role —
+dispatched with a bare prompt, so nothing but this definition was in play — the instruction to run it first
+lost to six hand-written shell calls, and the tool then ran eighth and reproduced what those calls had already
+computed: same doc counts, same folder-note bytes, same delta. Naming a tool does not make an agent reach for
+it; requiring its output does.
+
+Run it first, paste it, then answer whatever it did not cover. The pipelines it replaces fail in ways that do
+not announce themselves:
 `git` called inside `$( )` returns "command not found" and an empty result — twice in a row, undiagnosed — and a
 vault-wide ref regex has died with "exceeds complexity limits" inside a call that ran 105 seconds to return two
-rows. Then answer whatever it did not cover.
+rows.
 
 ## Prefer the index to a grep
 
@@ -80,9 +88,10 @@ again. When a question genuinely requires one, read it and say which.
 
 ## Report
 
-Structured and terse — rows, not narrative, because a dispatching role has to act on it mechanically. One row
-per scope with the facts above and, where you were asked to screen, a `SPAWN`/`SKIP` recommendation **with the
-inputs that produced it**, so the caller can overrule it without re-deriving anything.
+**Open with `## scope_recon` and that command's raw output**, per the contract above. Then, structured and
+terse — rows, not narrative, because a dispatching role has to act on it mechanically. One row per scope with
+the facts above and, where you were asked to screen, a `SPAWN`/`SKIP` recommendation **with the inputs that
+produced it**, so the caller can overrule it without re-deriving anything.
 
 Then, separately and explicitly: **what you did not look at, and what you could not determine.** A gap you
 announce costs the caller one command; a gap you leave silent gets read as a clean result, which is the failure
