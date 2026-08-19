@@ -36,7 +36,7 @@ so far came from a profile, not from re-reading a definition.
 | the dump skill | `~/.claude/skills/context-dump/SKILL.md`, `skills/context-dump/SKILL.md` in both repos |
 | subagent transcripts | `~/.claude/projects/<project-slug>/<session-id>/subagents/agent-<agentId>.jsonl` |
 | task-output symlinks to the same files | `/private/tmp/claude-502/<slug>/<session-id>/tasks/<id>.output` |
-| frozen profiling reports | `sources/evals/YYYY-MM-DD-HHMM-<subject>-profile.md` |
+| frozen profiling reports | `sources/evals/YYYY-MM-DD-HHMM-<subject>-profile.md`, **`HHMM` from `date -u` when you write it** — not the run's start, not its completion |
 | the findings drawn from them | `workstreams/vault-maintenance/` |
 
 Timestamp an eval filename **to the minute**, from the profiled agent's completion time, so several evals in one
@@ -105,6 +105,15 @@ Four traps, each of which has produced a wrong number here:
 - **Cache-creation is not context paid for.** Summing `cache_creation_input_tokens` against a peak read counts
   churn *within* one run as cost, and the number it produces looks like a context problem that is not there. Read
   `cache_read_input_tokens` for what a turn actually loaded, and report the peak rather than the sum.
+- **A backgrounded child's report is not in its parent's transcript.** It arrives out of band, so the delegate's
+  context cost cannot be attributed from the parent alone — measured 2026-08-19, a 28,436 B scout report was
+  absent from the dispatcher's file entirely. Profile the child's own transcript, or say the number is a floor.
+- **A worktree session gets its own project slug.** The artifact table above assumes one slug per repo; a session
+  rooted in `<repo>/.claude/worktrees/<name>` writes under a slug derived from that path, so transcripts are not
+  where the table says. Resolve the slug from the session, not from the repo.
+- **Never collapse newlines in a command preview.** The `gsub` in the recipe above uses ` ⏎ ` for exactly this
+  reason: collapsing to `|` fabricates pipelines, and five multi-line commands read as broken `x | echo` before
+  the raw input was checked. A trap that invents a defect is worse than one that hides a number.
 - **A live transcript grows while you read it.** Say where you stopped, and say the file was still being appended
   to. One profile here did exactly that and was right to.
 

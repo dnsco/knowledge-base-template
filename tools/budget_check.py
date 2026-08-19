@@ -61,6 +61,7 @@ EXIT CODES
 import argparse
 import os
 import re
+import subprocess
 import sys
 
 PARENT_TARGET, PARENT_LIMIT = 8 * 1024, 12 * 1024      # non-register bytes
@@ -73,6 +74,32 @@ EXEMPT_HEADING = re.compile(
 REGISTER_HEADING = re.compile(r"risk|gate|landmine|dead[ -]end|open q|register", re.I)
 TASK_DIR = re.compile(r"^\d{4}-\d{2}-\d{2}-")
 DATED_DOC = re.compile(r"^\d{4}-\d{2}-\d{2}-.*\.md$")
+
+
+def delta_since(path, ref, kind):
+    """Budgeted bytes now vs at a git ref. A pass needs to know it moved the number."""
+    d = os.path.dirname(os.path.abspath(path)) or "."
+    try:
+        # Resolve against the FILE's repo, not the caller's cwd -- these tools are invoked by
+        # absolute path from anywhere, and `git show ref:./rel` silently means the wrong tree.
+        top = subprocess.run(["git", "-C", d, "rev-parse", "--show-toplevel"],
+                             capture_output=True, text=True, check=True).stdout.strip()
+        rel = os.path.relpath(os.path.abspath(path), top)
+        blob = subprocess.run(["git", "-C", d, "show", f"{ref}:{rel}"],
+                              capture_output=True, text=True, check=True).stdout
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return f"not readable at {ref} (new file, or a ref that does not resolve)"
+    tmp = f"/tmp/.budget_check_{os.getpid()}.md"
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(blob)
+    try:
+        t0, r0, e0, b0 = split_bytes(tmp)
+        t1, r1, e1, b1 = split_bytes(path)
+        was, now = (b0, b1) if kind == "parent" else (t0, t1)
+        sign = "+" if now >= was else ""
+        return f"budgeted {was}B -> {now}B ({sign}{now - was}B), register {r0}B -> {r1}B"
+    finally:
+        os.unlink(tmp)
 
 
 def split_bytes(path):
@@ -150,7 +177,12 @@ def main(argv):
     ap.add_argument("--task-limit", type=int, default=TASK_LIMIT)
     ap.add_argument("--quiet", action="store_true", help="print breaches only")
     ap.add_argument("--sections", type=int, default=4,
-                    help="how many largest sections to show on a breach (0 = none)")
+                    help="how many largest sections to show on a breach (0 = none, -1 = all). "
+                         "Measured: with only the top four printed, a pass hand-rolled the rest")
+    ap.add_argument("--since", metavar="REF",
+                    help="also report the budgeted-byte delta against a git ref, so a pass can see "
+                         "whether it moved the number. Without it a mid-pass run can report a parent "
+                         "LARGER than it started and say nothing about why")
     args = ap.parse_args(argv)
 
     rows, seen = [], set()
@@ -191,8 +223,11 @@ def main(argv):
                   f"budgeted {size}B")
             if reg > REGISTER_SOFT:
                 reg_flags.append((path, reg))
+        if args.since:
+            print(f"        since {args.since}: {delta_since(path, args.since, kind)}")
         if state != "ok" and args.sections:
-            for head, nbytes in sections(path)[:args.sections]:
+            secs = sections(path) if args.sections < 0 else sections(path)[:args.sections]
+            for head, nbytes in secs:
                 if nbytes:
                     print(f"        {nbytes:6}B  {head[:96]}")
         worst = max(worst, {"ok": 0, "WATCH": 1, "OVER": 2}[state])

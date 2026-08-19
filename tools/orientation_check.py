@@ -122,7 +122,22 @@ def check(frontier):
 
 
 def main(argv):
-    ap = argparse.ArgumentParser(description="Does a task frontier cite what it reviewed on open.")
+    ap = argparse.ArgumentParser(
+        description="Does a task frontier cite what it reviewed on open.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""WHAT COUNTS AS CITING (measured: an agent read this tool's source to find out,
+which is 6 KB it should not have had to load)
+
+  A section headed `Carried across` (or Carried forward / Orientation / Pulled forward), holding
+  EITHER one or more items citing a source -- a [[wikilink]], or a path under done/ or historical/ --
+  OR an explicit nothing-to-carry line that STILL names what was read:
+      - Reviewed [[done/2026-07-01-x]] and historical/ -- nothing bears on this task.
+
+  The escape hatch is deliberate and deliberately not silent: "nothing applied" and "nobody looked"
+  are the two states this check exists to keep apart.
+
+  exit 0 cited · exit 1 cited but a done/ or historical/ goes unmentioned, judge it · exit 2 no
+  section or nothing cited: the pull did not happen · exit 5 bad invocation""")
     ap.add_argument("paths", nargs="+")
     args = ap.parse_args(argv)
 

@@ -34,9 +34,25 @@ WHAT COUNTS AS MUTABLE
 
 USAGE
   python3 tools/frontier_slice.py <folder-note.md> [--section 'What's next'] [--stats]
+  python3 tools/frontier_slice.py <note> --find PATTERN [--context N]     # where is X mentioned
+  python3 tools/frontier_slice.py <note> --lines 55,120 --lines 380,410   # numbered ranges, batched
+  python3 tools/frontier_slice.py <note> --numbered                       # the whole file, numbered
 
     exit 0   printed
-    exit 5   no such file
+    exit 1   --find matched nothing
+    exit 5   no such file, or a --lines range that is not A,B
+
+WHY --lines AND --numbered EXIST: A RESTRUCTURE CANNOT USE --section
+  Measured on the first pass under the mandate (2026-08-19): a librarian told to slice ran the tool
+  ZERO times and read 137% of a 55,990 B folder-note through six `sed`/`awk` pages and three
+  anchored reads -- worse than the 92% an unmandated clerk managed. The reason was not defiance. Its
+  diff had TWENTY hunks spanning lines 55-597, and `--section` serves one section at a time, so the
+  mandate as written was unsatisfiable for the work in front of it. An unsatisfiable requirement
+  teaches an agent to ignore the tool, which is worse than having no requirement.
+
+  So: `--lines` takes batched ranges in one call, and `--numbered` prints the whole file with line
+  numbers for the case where the honest answer is that the pass needs all of it. Declaring that is
+  the point -- a pass that prints the whole file has said so, where six `sed` pages say nothing.
 """
 
 import argparse
@@ -68,6 +84,12 @@ def main():
                          "repeatable. Use this INSTEAD of paging with sed -- one call, many needles.")
     ap.add_argument("--context", type=int, default=0, metavar="N",
                     help="with --find, also print N lines either side of each hit")
+    ap.add_argument("--lines", action="append", default=[], metavar="A,B",
+                    help="print lines A through B with numbers; repeatable, so a restructure "
+                         "touching nine sections is ONE call rather than nine sed pages")
+    ap.add_argument("--numbered", action="store_true",
+                    help="the whole file with line numbers. For a pass that genuinely needs all of "
+                         "it -- and saying so is the point")
     args = ap.parse_args()
 
     p = Path(args.path).expanduser()
@@ -75,6 +97,31 @@ def main():
         print(f"no such file: {p}", file=sys.stderr)
         return 5
     lines = p.read_text(errors="replace").splitlines()
+
+    if args.lines or args.numbered:
+        want = []
+        for spec in args.lines:
+            try:
+                a, b = (int(x) for x in spec.split(",", 1))
+            except ValueError:
+                print(f"--lines takes A,B (two integers), not {spec!r}", file=sys.stderr)
+                return 5
+            want.append((max(1, a), min(len(lines), b)))
+        if args.numbered:
+            want = [(1, len(lines))]
+        shown, prev = 0, 0
+        for a, b in sorted(want):
+            if prev and a > prev + 1:
+                print(f"     … {a - prev - 1} line(s)")
+            for i in range(max(a, prev + 1), b + 1):
+                print(f"{i:5}\t{lines[i - 1]}")
+                shown += 1
+            prev = max(prev, b)
+        total = len(lines)
+        pct = 100.0 * shown / total if total else 0
+        print(f"\n{shown} of {total} line(s) ({pct:.0f}%) of {p.name}. Line numbers index the real "
+              f"file: edit it with a uniquely-anchored replacement, not from this output.")
+        return 0
 
     # --find: the anti-paging mode. Measured on one clerk run -- 7 separate Bash round trips
     # doing `sed -n '117,152p'`-style line-range guessing to locate 5 mentions, ~25KB of a 51KB

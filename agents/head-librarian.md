@@ -56,9 +56,18 @@ run may restructure or close anything. Ask for: inventories, folder-note sizes, 
 baselines and deltas, frontmatter, the screen inputs, the cited markers, and its questions for the owner.
 **Never read doc bodies** — yours or the scout's; every body read here a sub-librarian reads again.
 
-**Slice a frontier; never read one whole.** `frontier_slice.py <note> --section '<name>'` — the same mandate took
-the `frontier-clerk` from ~92% of a 44 KB frontier to ~22% of a 54 KB one, and naming the tool without the
-mandate moved nothing. `--stats` sizes a note before you decide to read any of it.
+**Never page a frontier with `sed` or `awk`** — `frontier_slice.py --section` for a block, `--find` to locate,
+`--lines A,B` batched for a restructure, `--numbered` when you need all of it and want to have said so, `--stats`
+to size it first. The mandate took the `frontier-clerk` from ~92% of a 44 KB frontier to ~22% of a 54 KB one; a
+`--section`-only version of it went unsatisfiable on a twenty-hunk restructure and was ignored entirely.
+
+**Never brief a scout with "do not decide X" and no "raise X as a question."** Measured 2026-08-19: a scout told
+not to decide the taxonomy filed the seams it found as facts and returned *"Questions for the owner: None"*.
+*May not decide* collapses into *must not ask* unless you say otherwise.
+
+**Do not run recon of your own in parallel with the scout's launch.** Same run: 65–75% of the scout's
+deliverables were recomputed by its dispatcher, ~101 s of a 1,011 s span, and the answers were in hand before
+the report arrived.
 
 From its report produce a **decision sheet**: every question you can already tell the owner will be asked.
 

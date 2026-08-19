@@ -25,7 +25,7 @@ say so.
 **Announce yourself in the shared pass log, and close it when you return.**
 
 ```bash
-python3 {{VAULT_PATH}}/tools/pass_log.py start frontier-clerk "<the dump you are reconciling>" --scope <the frontier's folder> --kind clerk
+python3 {{VAULT_PATH}}/tools/pass_log.py start frontier-clerk "<the dump you are reconciling>" --scope <the frontier's folder> --kind clerk   # FIRST, before any read
 python3 {{VAULT_PATH}}/tools/pass_log.py stop frontier-clerk "<lines moved>" --result incremental   # or aborted, if you changed nothing
 ```
 
@@ -37,8 +37,10 @@ pass, stop rather than race it.
 **Do not page through the frontier with `sed`.** Ask for the part you need:
 
 ```bash
-python3 {{VAULT_PATH}}/tools/frontier_slice.py <folder-note> --section "What's next"
-python3 {{VAULT_PATH}}/tools/frontier_slice.py <folder-note>            # every mutable line, with line numbers
+python3 {{VAULT_PATH}}/tools/frontier_slice.py <frontier> --section "What's next"
+python3 {{VAULT_PATH}}/tools/frontier_slice.py <frontier>               # every mutable line, with line numbers
+python3 {{VAULT_PATH}}/tools/frontier_slice.py <frontier> --find PATTERN --context 2   # where is X
+python3 {{VAULT_PATH}}/tools/frontier_slice.py <frontier> --lines 55,120 --lines 380,410
 python3 {{VAULT_PATH}}/tools/obsidian.py outline file=<name>            # the heading map, no body
 ```
 

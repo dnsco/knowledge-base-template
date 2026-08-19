@@ -146,7 +146,9 @@ python3 {{VAULT_PATH}}/tools/pass_log.py start librarian "<what this pass is for
 git diff --name-status "$LAST"..HEAD -- workstreams/<ws>/
 ```
 
-**You close it in step 9 by role**, so there is no id to carry; `--id` exists for the ambiguous case. One shared log covers the whole vault, which is how any
+**You close it in step 9 by role**, so there is no id to carry; `--id` exists for the ambiguous case. **Open it
+before you read anything else** — measured, a pass ran `start` thirteenth, after twelve reads and a spawn, by
+which point the overlap check it exists for had protected nothing. One shared log covers the whole vault, which is how any
 other role — a `context-dump`, a clerk, a sibling pass — learns you are restructuring these files right now.
 Exit 1 on `start` means a concurrent pass overlaps your scope: read it, and unless the overlap is your own
 orchestrator's lineage, stop rather than race it. If a `head-librarian` spawned you, it opened your scope's record
@@ -180,9 +182,27 @@ When in doubt, widen. A skipped merge is silent; a doc read twice only costs tok
 folder-note (`workstreams/<name>/<name>.md`) **through the slice, never whole**:
 
 ```bash
-python3 {{VAULT_PATH}}/tools/frontier_slice.py workstreams/<ws>/<ws>.md --stats
-python3 {{VAULT_PATH}}/tools/frontier_slice.py workstreams/<ws>/<ws>.md --section '<name>'
-python3 {{VAULT_PATH}}/tools/budget_check.py workstreams/<ws>          # exit 2 = over the signal
+python3 {{VAULT_PATH}}/tools/frontier_slice.py <note> --section '<name>'   # one block, targeted
+python3 {{VAULT_PATH}}/tools/frontier_slice.py <note> --find PATTERN --context 2   # where is X
+python3 {{VAULT_PATH}}/tools/frontier_slice.py <note> --lines 55,120 --lines 380,410  # batched
+python3 {{VAULT_PATH}}/tools/frontier_slice.py <note> --numbered          # all of it, and say so
+python3 {{VAULT_PATH}}/tools/frontier_slice.py <note> --stats             # size it first
+```
+
+**A tool-based read does not satisfy the `Edit` guard.** `Edit` refuses a file this session has not opened with
+`Read`, and a slice read through `Bash` does not count — so your first `Edit` on the note will fail. Do not
+answer that by reading the whole file: `Read` the ten or so lines around your first anchor, using the slice's
+line numbers as `offset`. One small read, once. Measured: a pass met this fresh at its thirty-third call.
+
+**Never page a frontier with `sed` or `awk`.** That is the rule; which mode you use is your call.
+`--section` for a targeted read, `--find` to locate, **`--lines` batched in one call for a restructure that
+touches many sections**, `--numbered` when the honest answer is that you need all of it — and printing it says
+so, where six `sed` pages say nothing. Measured 2026-08-19: the first pass under a `--section`-only mandate ran
+the tool **zero times** and read 137% of a 56 KB note by hand, because its diff had twenty hunks and the
+mandate could not be satisfied. An unsatisfiable requirement teaches an agent to ignore the tool.
+
+```bash
+python3 {{VAULT_PATH}}/tools/budget_check.py workstreams/<ws> --since <the anchor sha> --sections -1
 ```
 
 You do the deepest reads in this system, so the mandate lands hardest here: the same requirement took the
@@ -193,6 +213,16 @@ moved nothing. A section at a time, and a whole read only where the merge target
 want extraction or a split), `closure` (which tasks look done), and `orientation` where a task is about to open.
 It writes nothing and asks the questions no other role's job is asking — a full run that raises no structural
 question has almost certainly not looked. Its context is discarded, so its reads cost you only the answer.
+
+**Then wait for it before running recon of your own.** Measured 2026-08-19: firing the inventory, the budget
+check and the log queries in parallel with the scout's launch duplicated **65–75% of its deliverables** — 8
+calls, ~101 s of a 1,011 s span — and the answers were already in hand when its report arrived, so its sizing
+brief bought nothing. Spawn it, then read only the spine.
+
+**When you brief it, never write "do not decide X" without "raise X as a question."** Measured the same day: a
+scout told not to decide the taxonomy filed the seams it had found as facts and returned *"Questions for the
+owner: None"*, reasoning that they were "exactly the split calls this scout must not make." *May not decide*
+collapses into *must not ask* unless you say otherwise.
 
 `budget_check.py` exit 2 is the split signal this pass has never had: over budget means **extract first, split
 second, and never trim the task index or delete history**. Both are proposals for the owner, not your call.

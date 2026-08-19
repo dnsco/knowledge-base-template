@@ -330,8 +330,11 @@ the weight signal already says when to consolidate, and a chain adds a second th
 ### What to measure
 
 **Measure what a role loads, and how much of it bore on the work at hand.** Tokens and wall clock are consequences;
-relevance is the quantity this design moves. ▢ No measurement of the relevant fraction exists — it is the number the
-design exists to move and the one nobody has taken.
+relevance is the quantity this design moves. ✅ **The relevant fraction now exists**: on the first full pass run
+under this design (2026-08-19), **69.8% for the `librarian`** over 165,132 B and 55 calls, **64.5% for its `scout`**
+over 63,614 B and 27 calls, 68.3% together, with 14.3% duplicated between the two and 9.3% never used. Method and
+per-read classification: `sources/evals/`. One data point, one workstream, and the denominator is a choice — read
+the method before arguing with the number.
 
 Two things easy to get backwards:
 
@@ -474,3 +477,22 @@ Two owner reversals, both taken before the measurements this document said would
 
 **Still unmeasured, and the same number as before:** the relevant fraction. Nothing is converted, so no check here
 has fired on a real task and every threshold remains a hypothesis. The first conversion is the eval, not cleanup.
+
+**2026-08-19 (third round, after the first pass) — the number exists, and the mandate that failed.** A full pass
+converted one workstream under this design and was profiled. The relevant fraction is **68.3%** across the two
+roles (§4), which is the first measurement of the quantity this document exists to move.
+
+Three things the run falsified, each already fixed:
+
+- **A `--section`-only slice mandate is unsatisfiable for a restructure.** The pass ran the tool **zero times**
+  and read 137% of a 56 KB note by hand, because its diff had twenty hunks. An unsatisfiable requirement teaches
+  an agent to ignore the tool, which is worse than no requirement. `--lines A,B` batched and `--numbered` exist
+  now, and the rule is *never page with `sed`*, not *use one mode*.
+- **A total-bytes parent budget is unreachable with a resident register.** Converting moved the parent from
+  22,921 B to 18,730 B of non-register bytes — an 18% cut — while the total barely moved, because promotions grew
+  the register. The budget is now non-register bytes, with the register on a soft mark that asks.
+- **The asking duty did not fire on prose.** The definition already said a report raising no question has
+  probably failed; the scout returned "Questions for the owner: None" while holding six. What did fire was the
+  *schema* — the required `scope_recon` opening ran first, as written. Enforceable shape beats exhortation, again.
+
+**Still open:** whether the gating of the clerk changed anything measurable, and the second conversion.

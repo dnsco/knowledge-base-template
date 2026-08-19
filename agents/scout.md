@@ -107,7 +107,9 @@ row, undiagnosed — and a vault-wide ref regex has died with "exceeds complexit
 ## Slice a frontier; never read one whole
 
 ```bash
-python3 {{VAULT_PATH}}/tools/frontier_slice.py <note> --section '<name>'   # --find PATTERN --context N
+python3 {{VAULT_PATH}}/tools/frontier_slice.py <note> --section '<name>'   # one block, targeted
+python3 {{VAULT_PATH}}/tools/frontier_slice.py <note> --find PATTERN --context 2   # where is X mentioned
+python3 {{VAULT_PATH}}/tools/frontier_slice.py <note> --lines 55,120 --lines 380,410   # batched, one call
 python3 {{VAULT_PATH}}/tools/frontier_slice.py <note> --stats              # size it before you read it
 ```
 
