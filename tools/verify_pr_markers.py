@@ -43,8 +43,9 @@ OUTPUT
   tracker  #168    CLOSED  -                     -   <- ISSUE, not a PR (completed)
   server   #99999  MISSING -                     -   <- check the number
 
-  Exit 0 if every ref resolved, 2 if any came back MISSING. A MISSING ref means the doc
-  citing it has a wrong number — that is a finding, not a tool failure.
+  Exit 0 if every ref resolved, 2 if any came back MISSING or any ref was malformed. Both are
+  findings about the doc citing them, not tool failures. A malformed ref is reported as its own
+  row and does NOT abort the batch — the good refs still resolve.
 
 THE ISSUE-VS-PR TRAP (the most common real finding)
   Docs cite a tracking *issue* as though it were a PR, and it then reads as unlanded work.
