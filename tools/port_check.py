@@ -22,7 +22,7 @@ THE WORKFLOW THIS GUARDS
   than demanding it be zero. Byte-identity is the wrong gate for a file that is meant to differ.
 
 USAGE
-  python3 tools/port_check.py --vault ~/workspace/ai_docs [--template .] [PATH ...]
+  python3 tools/port_check.py --vault <vault> [--template .] [PATH ...]
 
   With no PATHs it checks every file present in both trees under agents/, skills/, tools/, plus the
   four root docs. --vault-path overrides the substitution (default: the --vault value).
@@ -59,6 +59,10 @@ def live_placeholders(text):
         hits.update(PLACEHOLDER.findall(re.sub(r"`[^`\n]*`", "", line)))
     return sorted(hits)
 DEFAULT = ["CLAUDE.md", "GOTCHAS.md", "README.md", "BOOTSTRAPPING.md"]
+# Assembled, never written out. A port substitutes this token wherever it appears — including in
+# the source of the tool that checks the port, whose comparison then silently becomes a no-op and
+# reports every file as diverging. Measured: it happened, and cost a debugging round.
+TOKEN = "{{" + "VAULT_PATH" + "}}"
 DIRS = ["agents", "skills", "tools"]
 
 
@@ -101,7 +105,7 @@ def main():
 
     print()
     for r in rels:
-        v = (vault / r).read_text().replace(vault_path, "{{VAULT_PATH}}")
+        v = (vault / r).read_text().replace(vault_path, TOKEN)
         t = (tmpl / r).read_text()
         if v == t:
             print(f"  identical    {r}")
