@@ -7,3 +7,6 @@ __pycache__/
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
 .obsidian/cache
+
+# The shared pass log: machinery state, appended from N worktrees. Never tracked.
+pass-log.jsonl
