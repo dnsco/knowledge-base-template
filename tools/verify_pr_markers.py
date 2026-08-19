@@ -78,10 +78,18 @@ def parse_refs(argv, default_repo=None):
     where they resolved to real long-merged PRs and shipped a false "settled" row into two
     agent prompts. The wrong binding was unambiguous within the argument list, so there is
     nothing to validate — only a form to refuse.
+
+    A bad ref does NOT abort the batch. It is collected and returned as a problem, and every
+    good ref still resolves. This is the same partial-results stance the GOTCHA section takes on
+    GraphQL's partial NOT_FOUND: one wrong row must not throw away 23 right ones. Measured -- a
+    pass carrying 24 refs included 7 malformed ones, and a fail-hard parse would have lost the
+    whole batch, which is how a verifier stops being run at all.
     """
     out = OrderedDict()
+    problems = []
     owner = repo = None
     if default_repo:
+        # An invocation error, unlike a bad ref: nothing can be resolved, so this does exit.
         m = re.match(r"^(?P<owner>[\w.-]+)/(?P<repo>[\w.-]+)$", default_repo.strip())
         if not m:
             sys.exit(f"--repo {default_repo!r} is not owner/name")
@@ -89,20 +97,20 @@ def parse_refs(argv, default_repo=None):
     for raw in argv:
         m = REF.match(raw.strip())
         if not m:
-            sys.exit(f"unparseable ref {raw!r} — want owner/repo#123, #123, or 123")
+            problems.append((raw, "UNPARSEABLE", "want owner/repo#123, #123, or 123"))
+            continue
         if m.group("owner"):
             out.setdefault((m.group("owner"), m.group("repo")), []).append(int(m.group("num")))
             continue
         if not repo:
-            sys.exit(
-                f"bare ref {raw!r} has no repo. Pass --repo owner/name, or qualify it as "
-                f"owner/name#{m.group('num')}.\n"
-                "A bare number does NOT inherit the previous ref's repo — that silently "
-                "shipped a wrong 'already settled' row once, and refusing is cheaper than "
-                "the false negative."
-            )
+            problems.append((
+                raw, "NO-REPO",
+                f"bare ref needs --repo owner/name, or qualify it as owner/name#{m.group('num')}"
+                " — a bare number does NOT inherit the previous ref's repo",
+            ))
+            continue
         out.setdefault((owner, repo), []).append(int(m.group("num")))
-    return out
+    return out, problems
 
 
 def build_query(refs):
@@ -156,7 +164,11 @@ def main():
     if not argv:
         sys.exit(__doc__.strip().split("USAGE")[1].strip())
 
-    refs = parse_refs(argv, default_repo)
+    refs, problems = parse_refs(argv, default_repo)
+    if not refs:
+        for raw, kind, why in problems:
+            print(f"{kind:<12} {raw!r}: {why}", file=sys.stderr)
+        sys.exit("no resolvable refs")
     payload = run(build_query(refs))
     data = payload.get("data") or {}
 
@@ -190,7 +202,9 @@ def main():
                 })
 
     if as_json:
-        print(json.dumps(rows, indent=2))
+        print(json.dumps({"rows": rows, "problems": [
+            {"ref": r, "kind": k, "why": w} for r, k, w in problems]} if problems
+            else rows, indent=2))
     else:
         w = max(len(r["repo"]) for r in rows)
         print(f"{'repo':<{w}}  {'ref':<8} {'state':<8} {'mergedAt':<21} mergeCommit")
@@ -206,12 +220,21 @@ def main():
                 f"{r['repo']:<{w}}  {'#' + str(r['number']):<8} {r['state']:<8} "
                 f"{r['mergedAt'] or '-':<21} {(r['mergeCommit'] or '-')[:11]}{note}"
             )
+        # Bad refs are rows too, not an abort. Printed after the resolved ones so the good
+        # results are never buried by the noise, and counted so the caller cannot miss them.
+        for raw, kind, why in problems:
+            print(f"{'-':<{w}}  {raw[:8]:<8} {kind:<8} {'-':<21} -   <- {why}")
+        if problems:
+            print(f"\n{len(problems)} ref(s) not resolvable, {len(rows)} resolved. "
+                  "The batch was NOT aborted.", file=sys.stderr)
         for e in payload.get("errors") or []:
             if e.get("type") != "NOT_FOUND":
                 print(f"\nnon-NOT_FOUND error: {e.get('type')}: {e.get('message')}",
                       file=sys.stderr)
 
-    sys.exit(2 if missing else 0)
+    # A malformed ref is as much a finding as a MISSING one -- the doc citing it is wrong either
+    # way -- so both set exit 2, and neither loses the rows that did resolve.
+    sys.exit(2 if (missing or problems) else 0)
 
 
 if __name__ == "__main__":

@@ -43,7 +43,22 @@ import subprocess
 import sys
 from pathlib import Path
 
-REF = re.compile(r"(?:(?P<repo>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)|(?P<bare>[A-Za-z0-9_.-]+))?#(?P<num>\d{2,6})")
+# Two alternatives on purpose, because the digit floor can only safely differ between them.
+#
+#   QUALIFIED (owner/repo#N) accepts ONE digit. It used to demand two, and that silently lost
+#   every single-digit ref in the vault -- measured: `dnsco/knowledge-base-template#4` was cited
+#   in a doc the pass was mandated to fix, and the harvest returned {} for that scope. A young
+#   repo's PRs are #1-#9, so the floor lost most of its refs, and it lost them without a word.
+#   `owner/repo#4` cannot be prose or a heading, so there is nothing for the floor to protect.
+#
+#   BARE (#N) keeps the two-digit floor. There it earns its keep: `#1` appears in English
+#   ("the #1 cause") and a one-digit bare ref is not worth the noise.
+#
+# Do not merge these back into one alternation -- that is what coupled the two floors.
+REF = re.compile(
+    r"(?P<repo>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)#(?P<num>\d{1,6})"
+    r"|(?:(?P<bare>[A-Za-z0-9_.-]+))?#(?P<num2>\d{2,6})"
+)
 FM_KEYS = ("type", "status", "date", "up", "tier")
 
 
@@ -143,6 +158,7 @@ def harvest_refs(root, scope):
             continue
         for m in REF.finditer(text):
             repo = m.group("repo") or m.group("bare") or ""
+            num = m.group("num") or m.group("num2")
             # Prose hyphenates before a ref -- "post-#11605", "pre-#1885",
             # "rebase-that-drops-#11806" -- and the repo character class swallows the English.
             # A repo name never ends in a hyphen or a dot, so that alone separates them. Left
@@ -150,7 +166,6 @@ def harvest_refs(root, scope):
             # obvious noise is one whose real findings get dismissed with it.
             if repo.endswith(("-", ".")):
                 repo = ""
-            num = m.group("num")
             key = f"{repo}#{num}" if repo else f"#{num}"
             refs.setdefault(key, []).append(str(p.relative_to(root)))
     return refs

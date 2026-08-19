@@ -45,7 +45,12 @@ import sys
 from pathlib import Path
 
 MARKERS = re.compile(r"(✅|⏳|▢|⚠️|🔲|❌)")
-TYPED = re.compile(r"\[(GATE|LANDMINE|OPEN Q|DEAD END)\]")
+# BOTH spellings. The bracketed form was the only one matched, and the bold-prefix form is live in
+# real notes -- measured, 18 typed items in one folder-note and 8 in another were invisible to this
+# slice, i.e. it silently omitted exactly the lines a clerk is allowed to edit. Normalising the
+# corpus to one spelling was considered and declined (the convention emerged rather than being
+# designed), so reading both IS the settled resolution here, not a stopgap.
+TYPED = re.compile(r"\[(GATE|LANDMINE|OPEN Q|DEAD END)\]|\*\*(GATE|LANDMINE|OPEN Q|DEAD END)\b")
 HEADING = re.compile(r"^(#{1,6})\s+(.*)")
 # A wrapped item continues while the line is indented and non-empty and starts no new item.
 CONT = re.compile(r"^\s+\S")
@@ -58,6 +63,11 @@ def main():
     ap.add_argument("--section", default=None,
                     help="restrict to one heading's body (matched case-insensitively, as a substring)")
     ap.add_argument("--stats", action="store_true", help="print the size reduction and nothing else")
+    ap.add_argument("--find", action="append", default=[], metavar="PATTERN",
+                    help="every line matching PATTERN (case-insensitive regex), with line numbers; "
+                         "repeatable. Use this INSTEAD of paging with sed -- one call, many needles.")
+    ap.add_argument("--context", type=int, default=0, metavar="N",
+                    help="with --find, also print N lines either side of each hit")
     args = ap.parse_args()
 
     p = Path(args.path).expanduser()
@@ -65,6 +75,29 @@ def main():
         print(f"no such file: {p}", file=sys.stderr)
         return 5
     lines = p.read_text(errors="replace").splitlines()
+
+    # --find: the anti-paging mode. Measured on one clerk run -- 7 separate Bash round trips
+    # doing `sed -n '117,152p'`-style line-range guessing to locate 5 mentions, ~25KB of a 51KB
+    # file re-read by hand, ~60s of a 258s run. The slice's --section could not answer "where is
+    # X mentioned", so the agent fell back to guessing ranges. One --find call replaces all of it.
+    if args.find:
+        pats = [re.compile(pat, re.I) for pat in args.find]
+        hits = {i for i, l in enumerate(lines, 1) if any(pt.search(l) for pt in pats)}
+        if not hits:
+            print(f"no line matches {args.find!r} in {p}")
+            return 1
+        show = set()
+        for i in sorted(hits):
+            for j in range(max(1, i - args.context), min(len(lines), i + args.context) + 1):
+                show.add(j)
+        prev = 0
+        for i in sorted(show):
+            if prev and i > prev + 1:
+                print(f"     … {i - prev - 1} line(s)")
+            print(f"{i:5}{'>' if i in hits else ' '}\t{lines[i - 1]}")
+            prev = i
+        print(f"\n{len(hits)} matching line(s) for {len(pats)} pattern(s); '>' marks a hit.")
+        return 0
 
     # frontmatter
     keep = set()
