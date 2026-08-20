@@ -14,10 +14,10 @@ is owed — and you do NOT consolidate, merge, delete, archive or re-link, which
 separate deliberate pass. Concentrating all destruction in the librarian is what prevents parallel agents
 silently clobbering each other's notes.
 
-**Why the frontier is the clerk's and not yours.** Writing a narrative dump *and* paraphrasing it into the
-frontier means duplicating what you are forbidden to consolidate, and that is one step from merging and tidying.
-It is also not your judgement to make: you have just spent a long session forming views, so everything feels
-salient to you. A clerk seeing only your dump and the frontier judges salience as a future reader will.
+**Why the frontier is the clerk's and not yours: time management.** Dumping agents that also tidied the vault
+got sidetracked onto vault corrections, eating the working task's context and time. Keeping housekeeping off the
+working session's clock is the whole reason for the split — **not** a claim that your judgement is worse than a
+clerk's.
 
 The vault is its **own git repo** (separate from whatever repo you're working in) and an Obsidian graph. **One
 vault covers every project** — it is usually symlinked into the current project root as `{{VAULT}}/`, so you can
@@ -33,31 +33,31 @@ workstreams/<ws>/
   done/YYYY-MM-DD-<task>/      closed tasks
 ```
 
-**A workstream not yet converted has no task folders.** Do not convert it as a side effect of dumping: write into
-the workstream root as before, and say in your report that it wants a task folder next time it is opened. Lazy
-conversion is deliberate — the mechanism that converts a workstream is the one that operates it, and that is a
-`librarian` pass, not this skill.
+**A workstream not yet converted has no task folders.** Write into the workstream root as before, and say in
+your report that it wants a task folder next time it is opened. Conversion is lazy and deliberate: the mechanism
+that converts a workstream is the one that operates it, and that is a `librarian` pass.
 
 ## Do
 
-1. **Read the conventions, then guess the destination and ask.** If you have not already read
+1. **Read the conventions, then find the best home for the dump.** If you have not already read
    `{{VAULT_PATH}}/CLAUDE.md` this session, read it now — a session rooted in a code project does **not** load it
    automatically, so assume you haven't. Then skim `{{VAULT_PATH}}/README.md` (the map) + the relevant
    `workstreams/<name>/<name>.md` folder-note.
 
-   **Name your guess and ask the owner to confirm or redirect. Never infer it silently, and never interrogate.**
-   The guess is the **most recently edited task in the most recently edited workstream**, which is usually right:
+   **Find the home the dump belongs in, name your choice, and let the owner redirect it.** Never infer silently,
+   and never interrogate. Most often it is the **most recently edited task in the most recently edited
+   workstream**; it is a **new task** when the work is appreciably different from what that task is about, and
+   sometimes a **new workstream** entirely. Look before you choose:
 
    ```bash
    cd {{VAULT_PATH}} && git log -12 --name-only --pretty=format:'%h %ad %s' --date=short -- workstreams/
    python3 {{VAULT_PATH}}/tools/pass_log.py active --scope workstreams/<ws>   # is anyone else in here?
    ```
 
-   Ask in one breath, not as an interview: *"Dumping into `workstreams/x/2026-08-19-y/` — right place? And is
-   that task done?"* Both questions matter here and nowhere else. The destination is how work belonging to **no**
-   task — a debugging session, a spike — stops being appended wherever the session happened to be rooted. The
-   closure question is asked because **nobody else's job is asking**: a marker only exists if someone raised the
-   question, and a dump is the moment. You ask; the owner answers; the clerk acts on the marker.
+   Say it in one breath, not as an interview: *"Dumping into `workstreams/x/2026-08-19-y/` — and is that task
+   done?"* The destination is how work belonging to **no** task — a debugging session, a spike — stops being
+   appended wherever the session happened to be rooted. **Ask the closure question** because a marker only exists
+   if someone raised it, and a dump is the moment: you ask, the owner answers, the clerk acts on the marker.
 
    **If `pass_log.py active` shows an open pass on this workstream, say so before you write.** Another agent is
    editing these files right now — a `librarian` mid-restructure is the case that loses work. A STALE record (no
@@ -135,11 +135,10 @@ conversion is deliberate — the mechanism that converts a workstream is the one
    **Distinguish *settled* from *settled-and-executed*, and say which.** A decision the owner made is not work
    that happened. `✅ settled … execution deferred` and `✅ done` licence completely different actions, and
    collapsing them is how a deferred plan gets carried out.
-4. **Decide whether a clerk pass is owed. If it is, spawn it and wait. If it is not, say so and name the check.**
+4. **Decide whether a clerk pass is owed. If it is, dispatch it in the background. If it is not, say so and
+   name the check.**
 
-   **The clerk no longer runs on every dump** (owner decision, 2026-08-19, Dennis). It is a multi-minute agent
-   and it was sitting in front of the system's most frequent action, unconditionally. It runs when a dump
-   actually changes frontier state.
+   **The clerk does not run on every dump** — it runs when a dump actually changes frontier state.
 
    A pass is owed when **either** holds:
    - your dump carries a marker that moves the frontier — a `✅ done`, a `✅ settled` owner decision, a completed
@@ -157,18 +156,24 @@ conversion is deliberate — the mechanism that converts a workstream is the one
    When it **is** owed: hand the clerk your dump, the **task** frontier (the parent only if a marker is genuinely
    cross-task), and the lag-check output so it does not re-derive what you already have. It flips the `status`,
    strikes next-moves your markers show completed, demotes superseded in-flight lines, and files landed items —
-   the frontier work you may not do. **Do not report success until it returns.** Gating *which* dumps pay for a
-   clerk is the fix; skipping the wait on one that owes it is not, because a dump that reports done over a stale
-   frontier is the silent failure this split exists to prevent.
+   the frontier work you may not do.
 
-   Frontier lines are **state plus a pointer, never a paraphrase** —
+   **Dispatch it and let it run; you are the only synchronous step and you do not block on a second agent.**
+   Writing and then waiting on a clerk in series is most of what makes this the slowest frequent operation in the
+   vault. So **say in your report that a clerk was dispatched and has not returned** — never that the frontier is
+   reconciled. A dump that claims a current frontier over a stale one is the silent failure this split exists to
+   prevent, and the fix for it is honest reporting, not a blocking wait.
+
+   **A frontier line says what state something is in and where to read about it, not a summary of it** —
    `- ⏳ in-flight — retention sweep, #4730 (draft). Detail: [[2026-01-02-retention-sweep]].` A line that explains
-   rather than states is a paraphrase and belongs in your dump. Don't hand the clerk one.
+   rather than states is a summary: it duplicates your dump and then drifts from it, so it belongs in the dump.
+   Don't hand the clerk one.
 
-   **A mutable measurement is not state, so never hand the clerk one to transcribe.** A commit count, a
-   review-comment tally, a queue depth: cite the reference and let a tool answer the number. Measured — the one
-   restated figure of this kind in one vault was simultaneously wrong in two documents and went stale three times
-   in two days, while nothing that carried only a pointer did.
+   **Timestamp every metric you write** — "9 KB at 2026-08-19", never "9 KB" — so the next agent reads it as
+   point-in-time instead of correcting it. Better still for a commit count, a review tally or a queue depth: cite
+   the reference and let a tool answer the number. Measured — the one restated figure of this kind in one vault
+   was simultaneously wrong in two documents and went stale three times in two days, while nothing that carried
+   only a pointer did.
 
 5. **Second pass — what didn't make it in?** Before you commit, interrogate the dump: *what did I NOT write
    down that the next agent (or a cold-start you, weeks later) would need?* Sweep specifically for:
@@ -205,8 +210,8 @@ conversion is deliberate — the mechanism that converts a workstream is the one
 - **Don't edit the frontier yourself** — no `status` flip, no striking a next-move, no demoting a superseded
   line, not even one you just finished. Emit the marker; the clerk moves it, when one is owed. A clerk pass you
   judged unnecessary is not a licence to make its edits yourself.
-- **Don't convert a workstream to task folders** as a side effect of dumping, and don't move existing docs into
-  one. Conversion is a `librarian`'s.
+- **Don't move existing docs into a task folder**, and don't convert a workstream to the task shape — that is a
+  `librarian`'s.
 - Don't delete, merge, or restructure existing docs.
 - Don't move anything to `done/`, and don't edit `done/` docs.
 - Don't edit `sources/` or `external/` — raw inputs and already-delivered artifacts are read-only. Add a new

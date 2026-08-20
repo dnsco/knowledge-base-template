@@ -24,9 +24,8 @@ The fix is a split, and it's the whole design:
 |---|---|---|
 | **`context-dump` skill** — any session doing engineering | a dated journal entry, and nothing else | the frontier; deletes, merges, archives, restructures, re-links |
 | **`frontier-clerk` agent** — spawned by the dump | frontier state only: `status` flips, marker moves, striking items whose completion is recorded | moving content between docs; inferring completion; tagging |
-| **`librarian` agent** — a separate deliberate pass | structure within one workstream: consolidates overlapping docs into its one folder-note, archives finished work, fixes the `[[link]]` graph | engineering decisions; inferring that something is done |
-| **`head-librarian` agent** — several workstreams at once | shared surfaces, commits, anchor tags | any doc's substance; taxonomy calls |
-| **`scout` agent** — read-only reconnaissance | nothing at all | — |
+| **`librarian` agent** — a separate deliberate pass | structure at task, workstream or vault scope: consolidates overlapping docs, rewords and merges redundant facts, archives finished work, fixes the `[[link]]` graph; fans out one sub-librarian per scope at vault scope | engineering decisions; inferring that something is done |
+| **`scout` agent** — read-only reconnaissance | nothing in the corpus; it announces itself in the pass log | any edit, commit, or taxonomy call |
 
 Each boundary is a **capability, not a request for restraint**: the appending agent *cannot* rewrite, so the
 illegal state is unrepresentable rather than checked for afterwards. Working agents being append-only is what
@@ -42,10 +41,8 @@ GOTCHAS.md                   what bites after setup; measured, not assumed
 README.md                    (this file; replaced by your knowledge base's map at bootstrap)
 BOOTSTRAPPING.md             setup
 skills/context-dump/         the append-only capture skill
-agents/librarian.md          the compacting agent
+agents/librarian.md          the compacting agent; fans out per scope at vault scope
 agents/frontier-clerk.md     reconciles a frontier against a dump's entry, and writes nothing else
-agents/head-librarian.md     orchestrates one librarian per scope, in isolated worktrees, when
-                             several workstreams are overdue at once — rare; prefer the librarian
 agents/scout.md              read-only reconnaissance; reports, writes nothing
 tools/                       the librarian's verification tools: verify_pr_markers.py (batch
                              PR-state check), recall_check.py (did a rewrite drop a rule),

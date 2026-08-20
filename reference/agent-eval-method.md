@@ -7,9 +7,10 @@ tags: [vault, meta, agents, evals, forensics, method]
 
 # How the vault's agents get developed, measured and changed
 
-The method behind the five roles that write to this vault (`context-dump` skill, `frontier-clerk`, `librarian`,
-`head-librarian`, `scout`): where a change to one is authored, how its cost is measured, where the measurement is
-kept, and what may be concluded from it. Cross-workstream reference — the *record* of what each round found lives
+The method behind the four operating roles (`context-dump` skill, `frontier-clerk`, `librarian`, `scout`) and the
+development role that measures them (the profiler, which runs as an ad-hoc brief against this document rather than
+as a definition): where a change to one is authored, how its cost is measured, where the measurement is kept, and
+what may be concluded from it. Cross-workstream reference — the *record* of what each round found lives
 in the vault's own maintenance record, and the normative rules live in [[CLAUDE]]. This carries neither; it carries the
 procedure.
 

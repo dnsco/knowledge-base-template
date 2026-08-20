@@ -477,9 +477,11 @@ in-line duty reproduces it.
 
 **Governing rules.**
 
-- **Writes nothing, curates nothing, commits nothing.** ✅ Including the pass log: it *reads* the log and
-  reports who else is on the ground; the dispatching role appends. The write-nothing boundary is worth
-  more than a record of a read-only survey.
+- **Writes nothing in the corpus, curates nothing, commits nothing.** The guarantee is about the vault's
+  documents and it stops there. ✅ **It announces itself in the pass log like every other role** — `start`
+  before it reads, `stop` when it returns. The log is machinery state rather than corpus (§7), so a
+  write-nothing rule read as covering it made the one role that goes in ahead of everyone else invisible to
+  everyone else, which is the single thing the log exists to prevent.
 - **It returns findings and a recommendation**, with the inputs behind them, so the caller can disagree
   cheaply. It does not hold a question back for someone else to ask.
 - ✅ **Open the report with `scope_recon.py`'s raw output.** Naming the tool did not make an agent reach
@@ -497,7 +499,7 @@ in-line duty reproduces it.
 |---|---|
 | `scope_recon.py <scope> …` | every mechanical fact about a set of scopes in one call, replacing a long tail of forensic invocations. Does not emit refs the verifier aborts on |
 | `budget_check.py <ws>` | the `sizing` brief. **exit 2** over the signal → extract or split, never trim. Prints the largest sections, so *what to extract* comes from the same call |
-| `pass_log.py active --scope <s>` | who else is on this ground. Read-only for this role |
+| `pass_log.py start\|stop\|active` | announce itself, close it on return, and read who else is on this ground |
 | `frontier_slice.py`, `assert_isolated.py` | as above and §7 |
 
 ## 7. Cross-role machinery
@@ -773,6 +775,11 @@ cut is the part worth reading. The redesign it encodes, all owner decisions:
 - **Append is free; editing needs a semantic check.** Keep every fact, reword and merge freely. `done/`
   keeps its append-only status for a **read-cost** reason — the corpus is not a normalized store.
 - **Tools are encouraged, not rationed**, and logging moves inside them.
+
+- **Roles fall in two classes**, operating and vault-development, and only the operating ones carry §3's
+  budgets. The profiler was never an operating definition and was never counted as one.
+- **The `scout` announces itself in the pass log.** Its write-nothing guarantee covers the corpus, not the
+  machinery state that tells every other role where it is.
 
 Three claims the previous documents stated the other way, corrected here: the dump-and-reconcile split is
 **time management**, not a claim about the dumping agent's judgement; the slice mandate is the

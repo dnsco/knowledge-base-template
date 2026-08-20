@@ -43,10 +43,10 @@ The discipline, worth stating in the invocation whenever a session will touch th
   point-in-time; verify against the code.)
 - **Write only via `/context-dump`** — append a dated entry, and nothing else. Not a hand-edit that
   restructures, and not a frontier edit either.
-- **The frontier — `status` flips, striking a completed item: `frontier-clerk` only.** The dump spawns it and
-  waits for it; it is not something to do by hand on the way past.
-- **Delete / merge / archive / re-link: librarian only**, as its own deliberate pass, on a clean tree. Several
-  workstreams overdue at once is the `head-librarian`'s; one is not.
+- **The frontier — `status` flips, striking a completed item: `frontier-clerk` only.** The dump dispatches it in
+  the background; it is not something to do by hand on the way past.
+- **Delete / merge / archive / re-link: librarian only**, as its own deliberate pass, on a clean tree. It fans
+  out one sub-librarian per scope only when several workstreams are overdue at once.
 - **Never touch `done/`.** It is frozen.
 - Spotted overdue cleanup? **Recommend a librarian pass**; don't do it inline.
 

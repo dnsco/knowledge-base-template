@@ -27,24 +27,45 @@ it is to keep what a future session actually needs. Do not propose sweeps to cap
 channel or shipped document for completeness' sake; a thing earns a place here because someone will
 need it, not because it exists.
 
-**Roles — keep them separate.** A working agent (any session doing engineering) **only appends**: capture
-findings with the **`context-dump` skill** — a dated **dump** inside the live task, plus emitting the marker that
-flips a doc's `status` the moment work lands or a question settles — and **never** deletes, merges, archives,
-restructures, or re-links. Those destructive ops belong to the **`librarian` agent**, run as a separate deliberate
-pass ("run the librarian" / "tidy the vault", or at a phase boundary). Concentrating destruction there is what
-keeps parallel append-only agents from clobbering each other. Spot overdue cleanup? **Flag it and recommend a
-librarian pass**; don't do it inline. Each role's playbook lives in its own definition, not here. Two rules about
-the others that a session has to know:
+**Append is free; editing is what needs a check.** Adding a dump, appending to `done/`, appending a dated note
+to `sources/` or `external/` — nothing can be lost by adding, so nothing gates it. **Editing a live document
+needs a check, and the bar is semantic: keep every fact, and reword or merge redundant ones freely so long as
+meaning is preserved.** What must never happen is a fact becoming unfindable. `recall_check.py` is the gate and
+every flag is judged **in writing** — "reworded, fact intact" is an acceptable answer, a missing fact is not, and
+you never reword a file to satisfy a flag.
 
-- **The `frontier-clerk` runs when a dump changes frontier state, not on every dump** (2026-08-19, Dennis). It is
-  a multi-minute agent standing in front of the vault's most frequent action. A dump that carries a
-  state-changing marker, or a workstream `frontier_lag_check.py` reports as lagging, owes a clerk pass and waits
-  for it. A purely additive dump says *no clerk pass owed* and names the check it ran. Judging it unnecessary is
-  not a licence to make the clerk's edits yourself.
-- **The `scout` is the asking role.** It writes nothing and carries named briefs — `orientation`, `sizing`,
-  `closure`, `recon`. Detect-and-propose produced zero split proposals in practice because **nobody's job was
-  asking**, and a duty competing with the work in front of an agent loses. Send one rather than answering its
-  questions yourself.
+**Roles — four of them, and only the dump is synchronous.** A working agent (any session doing engineering)
+**only appends**: capture findings with the **`context-dump` skill** — a dated **dump** inside the live task,
+plus emitting the marker that flips a doc's `status` the moment work lands or a question settles — and **never**
+deletes, merges, archives, restructures, or re-links. Everything else runs in the background:
+
+- **The `frontier-clerk`** reconciles one frontier against the dumps, and must be very cheap in tokens and time.
+  It runs when a dump carries a state-changing marker, or when `frontier_lag_check.py` reports the frontier
+  already lagging — not on every dump. A purely additive dump says *no clerk pass owed* and names the check it
+  ran; judging it unnecessary is not a licence to make the clerk's edits yourself. The dump **dispatches** it and
+  does not block on it, and says so rather than claiming a reconciled frontier.
+- **The `librarian`** is the only role that destroys: consolidate, reword, merge, move, split, archive, sort
+  `historical/`, convert a workstream, and at vault scope fan out one sub-librarian per scope. Run it as a
+  separate deliberate pass ("run the librarian" / "tidy the vault", or at a phase boundary). Spot overdue
+  cleanup? **Flag it and recommend a librarian pass**; don't do it inline.
+- **The `scout`** goes ahead read-only and returns findings and a recommendation with the inputs behind them,
+  carrying named briefs — `orientation`, `sizing`, `closure`, `recon`. Its context is discarded on return, so its
+  reads cost the caller only the answer. Send one rather than doing its reading in the context you need to keep.
+
+**Act, then report for correction** — not ask, then act. Structural changes are made on the agent's best
+judgement and returned as a **change list**: every move, merge, reword and split, one line each, with how to
+reverse it. *Detect, propose, execute on approval* produced zero proposals in two separate homes. What still goes
+to the owner rather than into the diff is the small set that is not cheaply reversible — inventing or renaming a
+top-level folder, relocating a grand plan, an engineering decision.
+
+**Why the roles are split is time management, not judgement.** Dumping agents that also tidied the vault got
+sidetracked onto vault corrections and ate the working task's context. Keeping housekeeping off the working
+session's clock is the point. What keeps parallel background passes off each other's files is the shared pass log
+below, not a partition of who may write what. Each role's playbook lives in its own definition, not here.
+
+**Roles that measure the machinery are a different class**, and the budgets above do not apply to them: a
+profiling or eval run's subject is another agent's run rather than the corpus, and capping it buys a cheaper
+profile by reading less.
 
 The risky case is a session rooted in a **code project**, which sees this vault as just another directory in its
 tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
@@ -95,7 +116,9 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   Parent 12 KB / 16 KB, task 8 KB / 12 KB — **hypotheses, calibrated against one corpus and nothing else.** Over
   budget means **extract** reference-not-warning material to `reference/` or `design/`, or **split** a parent
   that is two efforts wearing one name. It **never** means trimming the task index or deleting history; a unit
-  held under budget that way has failed the check it appears to pass. Splitting is the owner's call, always.
+  held under budget that way has failed the check it appears to pass. **Nor may the budget restrict what a task
+  pulls forward** — a check that makes an agent carry less context has done harm. Splitting is the owner's call,
+  always.
 - **A task pulls forward what bears on it when it opens** — the still-live GATEs, LANDMINEs, DEAD ENDs and
   settled decisions from the workstream's closed tasks and `historical/`, into a `## Carried across` section of
   its frontier, each cited by source. Selection is paid once, by whoever knows what the task is about.
