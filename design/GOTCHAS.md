@@ -26,13 +26,13 @@ Three mitigations. Use all three, because each covers a different hole:
 1. The `~/.claude/CLAUDE.md` pointer from bootstrap step 5 — that one every session does load.
 2. Invoke `/context-dump` instead of hand-writing docs; the skill carries the conventions and tells the agent to
    read the rest.
-3. Say it out loud when the work is substantial: *"read `{{VAULT}}/CLAUDE.md` before you write anything."*
+3. Say it out loud when the work is substantial: *"read `<vault>/CLAUDE.md` before you write anything."*
 
 Default assumption: if a session did not invoke the skill, it has not read the conventions.
 
 ## 2. Reads are free; writes go through the skill, frontier and structure through their own agents
 
-A project session sees `{{VAULT}}/` in its tree and treats it like any other directory — it will edit a doc in
+A project session sees `<vault>/` in its tree and treats it like any other directory — it will edit a doc in
 place, "tidy" a section that reads as stale, delete what looks obsolete, or rewrite a frontier it has half the
 context for. Unlike a bad code change, nothing fails: the record is just quietly worse, and the loss shows up
 weeks later as a re-derived dead end.
@@ -53,7 +53,7 @@ The discipline, worth stating in the invocation whenever a session will touch th
 
 ## 3. It is a different git repo, and a dirty tree blocks the librarian
 
-Via the symlink, `cd <project>/{{VAULT}} && git …` operates on **this** repo, not the project's. Convenient, and
+Via the symlink, `cd <project>/<vault> && git …` operates on **this** repo, not the project's. Convenient, and
 a trap: a turn that touches code and docs leaves commits owed in two repos, and the knowledge-base ones are the
 easy ones to forget.
 
@@ -72,14 +72,14 @@ symlinked in:
 | `rg <pat>` | **no** | git exclude |
 | `rg --no-ignore <pat>` | **no** | still a symlink |
 | `rg --no-ignore --follow <pat>` | yes | both defeated |
-| `rg <pat> {{VAULT}}/` | yes | explicit path arg overrides both |
+| `rg <pat> <vault>/` | yes | explicit path arg overrides both |
 | `grep -r` | **no** | `-r` doesn't follow symlinks |
 | `grep -R` | yes | `-R` does |
 | `find .` | **no** | needs `-L` |
 | `find -L .` | yes | |
 
 So an agent told to "search the codebase" will not see the knowledge base, and will not know it missed it.
-**Name the path** — `rg 'encabulator' {{VAULT}}/` — rather than flipping `--follow` on globally. The default
+**Name the path** — `rg 'encabulator' <vault>/` — rather than flipping `--follow` on globally. The default
 exclusion is a feature: your notebook should not pollute code searches or land in a PR diff.
 
 ## 5. Project worktrees do not have the symlink
@@ -91,10 +91,10 @@ all — including the agent-created worktrees Claude Code uses.
 Fix per worktree, with an absolute target since a worktree sits at a different depth and is disposable anyway:
 
 ```bash
-ln -s ~/workspace/{{VAULT}} {{VAULT}}
+ln -s ~/workspace/<vault> <vault>
 ```
 
-If `git status` in that worktree then shows it untracked, add `/{{VAULT}}` to its exclude too.
+If `git status` in that worktree then shows it untracked, add `/<vault>` to its exclude too.
 
 ## 6. A librarian pass is slow and expensive — it is a deliberate operation, not a reflex
 

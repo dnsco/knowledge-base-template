@@ -3,8 +3,7 @@
 **LLM knowledge base for engineering work** — the durable memory Claude Code sessions read from and write back
 to, so context outlives the session that produced it. **One knowledge base across every repo I work in**, not
 one per project: dated, long-form handoff/working docs. It's an Obsidian vault plus a git repo (hence "vault"
-below, and "the graph" for its `[[link]]` structure). It lives at `{{VAULT_PATH}}` and is
-symlinked into each project root as `{{VAULT}}/` (local-only, via `.git/info/exclude`), so a session rooted in
+below, and "the graph" for its `[[link]]` structure). It is symlinked into each project root under its own name (local-only, via `.git/info/exclude`), so a session rooted in
 a project can read and grep vault docs as in-tree paths. The map of what's here is **[[README]]**; this file is
 how to use and maintain it. **[[GOTCHAS]]** is what bites after setup — starting with the fact that a session
 rooted in a code project may never have loaded this file.
@@ -119,7 +118,7 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
 - **A parent and a task each carry a byte budget, checked by a tool** — because "thin" in prose does not fire and
   a size in an exit code does:
   ```bash
-  python3 {{VAULT_PATH}}/tools/budget_check.py workstreams/<ws>     # exit 1 over target, exit 2 over the signal
+  lipika budget-check workstreams/<ws>     # exit 1 over target, exit 2 over the signal
   ```
   Parent 12 KB / 16 KB, task 8 KB / 12 KB — **hypotheses, calibrated against one corpus and nothing else.** Over
   budget means **extract** reference-not-warning material to `reference/` or `design/`, or **split** a parent
@@ -132,7 +131,7 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   settled decisions from the workstream's closed tasks and `historical/`, into a `## Carried across` section of
   its frontier, each cited by source. Selection is paid once, by whoever knows what the task is about.
   ```bash
-  python3 {{VAULT_PATH}}/tools/orientation_check.py workstreams/<ws>/YYYY-MM-DD-<task>/   # exit 2 = no pull
+  lipika orientation-check workstreams/<ws>/YYYY-MM-DD-<task>/   # exit 2 = no pull
   ```
   Nothing carries *up* on close, and the pull is what makes that safe: without it, promotion to `done/` is how a
   live warning goes dark quietly.
@@ -149,9 +148,9 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
 - **One shared pass log, and every role announces itself in it.** `pass-log.jsonl` at the vault root — untracked,
   append-only, one file for the whole vault so an agent can see what the others are doing right now:
   ```bash
-  python3 {{VAULT_PATH}}/tools/pass_log.py active --scope workstreams/<ws>    # who is in here
-  python3 {{VAULT_PATH}}/tools/pass_log.py start <role> "<one line>" --scope <s> --kind <k>
-  python3 {{VAULT_PATH}}/tools/pass_log.py stop <role> "<what you did>" --result <r>
+  lipika pass-log active --scope workstreams/<ws>    # who is in here
+  lipika pass-log start <role> "<one line>" --scope <s> --kind <k>
+  lipika pass-log stop <role> "<what you did>" --result <r>
   ```
   Emit a `start` before you write and a `stop` when you finish — the pair is what keeps parallel agents off each
   other's files. It replaced git-tag anchors, which are **dead**: nothing reads or writes one, and none were
@@ -177,36 +176,39 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   "I think" invites a check, a flat statement is the answer — and verification costs a turn, so it needs a
   reason: would the answer change your next action? This is **not deference**: silently swallowing a real
   contradiction is the same failure as silently overturning one. Say it once, plainly, either way.
-- **Commit** — this is its own git repo; commit doc changes in `{{VAULT_PATH}}` (don't conflate with the git of
-  whatever repo you're working in). Via the symlink, `cd <project>/{{VAULT}} && git …` resolves to the *vault's*
+- **Commit** — this is its own git repo; commit doc changes in this vault (don't conflate with the git of
+  whatever repo you're working in). Via the symlink, `cd <project>/<vault> && git …` resolves to the *vault's*
   repo, not the project's — convenient, and a trap if you forget which one you're in.
 
-## Changing a shared surface — the loop, and why it is a loop
+## Changing the machinery — it does not live here
 
-`CLAUDE.md`, `GOTCHAS.md`, `README.md`, `BOOTSTRAPPING.md`, `agents/*.md`, `skills/*/SKILL.md` and `tools/*.py`
-are **shared**: this template is upstream, and each vault built from it holds a copy. A change to one of them
-runs the same four steps every time, in order.
+The agent definitions, the capture skill and the tools are **not in this vault**. They live in Lipika
+(`github.com/dnsco/lipika`), installed as a Claude Code plugin, and there is exactly one copy of each.
+Nothing is shared-by-copy with this vault and nothing is ported into it.
 
-1. **Author here, in the template.** Never in the vault copy first. A vault-side edit guarantees a second
-   divergence, which is the failure the extraction exists to end.
-2. **Port down**, substituting `{{VAULT_PATH}}` and `{{VAULT}}`, then run
-   `python3 tools/port_check.py --vault <vault>`. **It is not a byte-identity check, deliberately.** A surviving
-   placeholder is a hard fail — an agent otherwise reads a literal `{{VAULT}}/` in its own system prompt. The
-   residual divergence it prints is for you to *judge*: some of it is meant to be there, because a vault names
-   its real project, repos, dates and shas where the template stays generic. Diffing to zero destroys exactly
-   that, and an identity check rewards you for it.
-3. **Try it** — on real work, not a rehearsal. Then run `python3 tools/recall_check.py <pre-change-ref> <path>`
-   in **both** repos, which is what proves no rule was dropped in either direction. A hand-written grep
-   checklist cannot: you write it from the same memory that did the cutting.
-4. **Profile it, and feed the findings back to step 1.** This is why it is a loop rather than a pipeline.
+**So: never hand-edit a definition, a skill or a tool from a session rooted here.** Author it in Lipika,
+where the loop is: author → try it on real work → `lipika recall-check <pre-change-ref> <path>` to prove
+no rule was dropped, every flag judged in writing → profile it, qualitative read before any figure →
+write the round's summary where the next agent will read it → feed the findings back. That last edge is
+what makes it a loop rather than a pipeline.
 
-**The lesson that keeps recurring, and the reason step 4 exists.** Instructions added to a definition
-repeatedly fail to fire, while a script with an exit code holds. Measured across one session: a scope-screening
-condition shipped unsatisfiable and nobody noticed until it was used; "dispatch a scout if recon runs past a
-handful of commands" did not fire across fourteen recon commands; and an agent told to prefer the Obsidian CLI
-never checked whether it was answering about the right tree. Each was fixed by moving the rule into `tools/`,
-where it fails loudly instead of being read past. **Prefer a tool that refuses to prose that asks.** It is also
-the cheaper end: a definition is a system prompt paid for on every invocation.
+What this vault holds is the **corpus** — the documents. What Lipika holds is the machinery that maintains
+them, plus its own design docs.
+
+**Where the two meet.** Tools are called by name (`lipika <command>`) because a plugin's `bin/` is on
+`PATH`; the vault's location comes from `~/.config/lipika/config.json`, which also carries the size and
+span budgets the tools enforce. **A number lives in the config, not in this document** — restating a
+threshold here is how it goes stale while a tool quietly enforces something else. That happened: this
+file advertised a parent budget of 12 KB / 16 KB long after the tool had superseded it with 8 KB / 12 KB
+against non-register bytes. Run `lipika vault-config show` for what is actually in force.
+
+**The lesson behind all of it.** Instructions added to a definition repeatedly fail to fire, while a
+script with an exit code holds. Measured across one session: a scope-screening condition shipped
+unsatisfiable and nobody noticed until it was used; "dispatch a scout if recon runs past a handful of
+commands" did not fire across fourteen recon commands; and an agent told to prefer the Obsidian CLI never
+checked whether it was answering about the right tree. Each was fixed by moving the rule into a tool,
+where it fails loudly instead of being read past. **Prefer a tool that refuses to prose that asks.** It
+is also the cheaper end: a definition is a system prompt paid for on every invocation.
 
 ## Values — `values/`
 Evergreen principles that outlive any one effort, and that the docs here lean on by name. Two are seeded:

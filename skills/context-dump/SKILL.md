@@ -1,11 +1,11 @@
 ---
 name: context-dump
-description: Append-only capture of working context, findings, and handoffs into the LLM knowledge base at {{VAULT_PATH}} — the durable cross-session memory for engineering work (a separate git repo / Obsidian vault spanning every project I work on; usually reachable as a {{VAULT}}/ symlink in the current project root). Use at the end of a work session, before a handoff, or whenever you've learned something worth persisting for the next session — to write a dated dump carrying evidence-bearing markers into the live task, then dispatch the `frontier-clerk` to reconcile the task's frontier against it when the dump actually changes frontier state. This skill only ADDS: it does not touch the frontier itself, and it never deletes, merges, restructures, archives, or re-links docs (the frontier is the `frontier-clerk`'s; that destructive cleanup is the separate "librarian" pass). Invoke when asked to "dump context", "write a handoff", "save findings to the vault", "checkpoint the workstream", or before ending a long session.
+description: Append-only capture of working context, findings, and handoffs into the knowledge-base vault — the durable cross-session memory for engineering work (a separate git repo / Obsidian vault spanning every project I work on; usually reachable as a symlink in the current project root). Use at the end of a work session, before a handoff, or whenever you've learned something worth persisting for the next session — to write a dated dump carrying evidence-bearing markers into the live task, then dispatch the `frontier-clerk` to reconcile the task's frontier against it when the dump actually changes frontier state. This skill only ADDS: it does not touch the frontier itself, and it never deletes, merges, restructures, archives, or re-links docs (the frontier is the `frontier-clerk`'s; that destructive cleanup is the separate "librarian" pass). Invoke when asked to "dump context", "write a handoff", "save findings to the vault", "checkpoint the workstream", or before ending a long session.
 ---
 
 # context-dump — append-only capture into the LLM knowledge base
 
-Persist what you did and learned into `{{VAULT_PATH}}` — the durable cross-session memory for engineering work —
+Persist what you did and learned into the vault — the durable cross-session memory for engineering work —
 so the next session can pick up where you left off.
 
 **This skill is append-only, and that includes the frontier.** You ADD a dated **dump** — the vault's word for
@@ -20,8 +20,8 @@ working session's clock is the whole reason for the split — **not** a claim th
 clerk's.
 
 The vault is its **own git repo** (separate from whatever repo you're working in) and an Obsidian graph. **One
-vault covers every project** — it is usually symlinked into the current project root as `{{VAULT}}/`, so you can
-read and grep it as in-tree paths. Full conventions: `{{VAULT_PATH}}/CLAUDE.md`. The shape your dump has to fit:
+vault covers every project** — it is usually symlinked into the current project root under its own name, so you can
+read and grep it as in-tree paths. Full conventions: the vault's `CLAUDE.md` — **resolve the vault with `lipika vault-config path`**, since no path to it is written here. The shape your dump has to fit:
 
 ```
 workstreams/<ws>/
@@ -40,8 +40,8 @@ that converts a workstream is the one that operates it, and that is a `librarian
 ## Do
 
 1. **Read the conventions, then find the best home for the dump.** If you have not already read
-   `{{VAULT_PATH}}/CLAUDE.md` this session, read it now — a session rooted in a code project does **not** load it
-   automatically, so assume you haven't. Then skim `{{VAULT_PATH}}/README.md` (the map) + the relevant
+   the vault's `CLAUDE.md` this session, read it now — a session rooted in a code project does **not** load it
+   automatically, so assume you haven't. Then skim `README.md` at the vault root (the map) + the relevant
    `workstreams/<name>/<name>.md` folder-note.
 
    **Find the home the dump belongs in, name your choice, and let the owner redirect it.** Never infer silently,
@@ -50,8 +50,8 @@ that converts a workstream is the one that operates it, and that is a `librarian
    sometimes a **new workstream** entirely. Look before you choose:
 
    ```bash
-   cd {{VAULT_PATH}} && git log -12 --name-only --pretty=format:'%h %ad %s' --date=short -- workstreams/
-   python3 {{VAULT_PATH}}/tools/pass_log.py active --scope workstreams/<ws>   # is anyone else in here?
+   cd "$(lipika vault-config path)" && git log -12 --name-only --pretty=format:'%h %ad %s' --date=short -- workstreams/
+   lipika pass-log active --scope workstreams/<ws>   # is anyone else in here?
    ```
 
    Say it in one breath, not as an interview: *"Dumping into `workstreams/x/2026-08-19-y/` — and is that task
@@ -70,7 +70,7 @@ that converts a workstream is the one that operates it, and that is a `librarian
    yourself, then:
 
    ```bash
-   python3 {{VAULT_PATH}}/tools/orientation_check.py workstreams/<ws>/YYYY-MM-DD-<task>/
+   lipika orientation-check workstreams/<ws>/YYYY-MM-DD-<task>/
    ```
 
    Exit 2 means the pull did not happen, and a warning that does not fire is indistinguishable from one nobody
@@ -79,7 +79,7 @@ that converts a workstream is the one that operates it, and that is a `librarian
    **Then announce yourself in the shared pass log, before you write anything.**
 
    ```bash
-   python3 {{VAULT_PATH}}/tools/pass_log.py start context-dump "<what you are dumping>" --scope workstreams/<ws> --kind dump
+   lipika pass-log start context-dump "<what you are dumping>" --scope workstreams/<ws> --kind dump
    ```
 
    You close it in step 7 by role, so there is no id to carry. One log covers the whole vault so every role sees what
@@ -104,7 +104,7 @@ that converts a workstream is the one that operates it, and that is a `librarian
    - what's next / open questions,
    - **reusable commands or scripts** you built or worked out — the exact `rg`/`git`/build incantation, a
      probe/analyzer script, a useful tool-call sequence — so the next agent re-runs instead of re-deriving.
-     Inline a short recipe copy-pasteably; persist a real script to `{{VAULT_PATH}}/tools/` (runnable by
+     Inline a short recipe copy-pasteably; persist a real script to Lipika's own `tools/`, not to the vault (runnable by
      any agent) and `[[link]]` it.
    - `[[wikilinks]]` to related vault docs; leave code-repo paths as literal text.
 3. **State progress as explicit, evidence-bearing markers — in your dump, not in the frontier.** Record it as
@@ -145,7 +145,7 @@ that converts a workstream is the one that operates it, and that is a `librarian
      next-move, a `status` that should flip, or a line the frontier asserts that your work **falsifies**;
    - the frontier has already fallen behind its own dumps:
      ```bash
-     python3 {{VAULT_PATH}}/tools/frontier_lag_check.py workstreams/<ws>    # exit 1 = signals, read them
+     lipika frontier-lag-check workstreams/<ws>    # exit 1 = signals, read them
      ```
 
    It is **not** owed when the dump is purely additive — findings, a recipe, a measurement, a question raised and
@@ -187,14 +187,14 @@ that converts a workstream is the one that operates it, and that is a `librarian
    Fold the answers back in — route any newly-surfaced GATE / LANDMINE / OPEN-Q / DEAD-END into the
    `## Risks, gates & landmines` block in the typed shape above, not into loose prose. This is the write-time
    version of the adversarial review — far cheaper than re-deriving the loss later.
-6. **Commit in the vault** (its own repo): `cd {{VAULT_PATH}} && git add <your specific files> && git commit -m
+6. **Commit in the vault** (its own repo): `cd "$(lipika vault-config path)" && git add <your specific files> && git commit -m
    "…" -- <your specific paths>`. Stage and commit **specific paths** — never `git add -A` and never a bare
    `commit`, because other sessions write here and a bare commit takes their staged work with yours. Don't push
    unless asked.
 7. **Close the pass, and sync the pointer.**
 
    ```bash
-   python3 {{VAULT_PATH}}/tools/pass_log.py stop context-dump "<the dump you wrote>" --result incremental
+   lipika pass-log stop context-dump "<the dump you wrote>" --result incremental
    ```
 
    A dump is incremental by definition — it never consolidates anything, and the tool refuses if you claim it

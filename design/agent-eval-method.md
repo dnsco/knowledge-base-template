@@ -161,7 +161,7 @@ closing paragraph — a profile that is only numbers reliably misses the thing w
 the evidence for the read rather than a substitute for it. Its material is the agent's own reasoning:
 
 ```bash
-python3 {{VAULT_PATH}}/tools/agent_transcript.py <agent-id> --thinking      # the largest blocks, in full
+lipika agent-transcript <agent-id> --thinking      # the largest blocks, in full
 ```
 
 Answer these in your own words, each pointing at a call number or a quoted line:
