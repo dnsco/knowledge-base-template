@@ -61,8 +61,8 @@ not, and never silently widen scope.
   ```
   Exit 1 over target, exit 2 over the signal. Report the section table it prints, then answer the question the
   numbers raise: **extract, or split?** Extract is the cheaper answer and usually the right one; a split is for
-  a parent heavy because it is two efforts wearing one name, and it is the owner's call — recommend, attach the
-  numbers. **Over budget never means trimming the task index or deleting history**, and it never means carrying
+  a parent heavy because it is two efforts wearing one name. Recommend one and attach the numbers; a
+  `librarian` executes a workstream split on that recommendation, so make it actionable rather than tentative. **Over budget never means trimming the task index or deleting history**, and it never means carrying
   less context forward into a task — if a breach can only be fixed those ways, say so and leave it.
 - **`closure`** — *which tasks look done.* A task is a dated folder that closes; a merged PR is a **heuristic**
   that a discrete piece of work finished, mechanical and dated externally, and it is authority to *ask* whether

@@ -170,7 +170,8 @@ real corpus should be argued with, not obeyed.**
 
 ▢ **Over budget means extract, then split. It never means trim.** Extraction first: material that is
 reference rather than a live warning goes to `reference/` or `design/`. Splitting is for a parent that is
-two efforts wearing one name, and it is the owner's call. **Trimming the task index or deleting history
+two efforts wearing one name, and at workstream level the `librarian` **executes it and reports it** — a
+**grand plan** is the owner's. **Trimming the task index or deleting history
 is not an option** — a unit held under budget that way has failed the check it appears to pass. **Nor may the
 budget restrict what a task pulls forward**: a check that makes an agent carry less context has done harm,
 not good.

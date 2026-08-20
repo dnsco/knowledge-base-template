@@ -31,9 +31,13 @@ to**, in two separate homes. A proposal nobody makes is worth less than a change
 and how to reverse it*. That last clause is what makes acting safe, so it is not optional. The pass log already
 records files changed, commits and span from git, so the list carries judgement and the log carries facts.
 
-**Two things still go to the owner rather than into the diff**, because they are not cheaply reversible:
-inventing or renaming a top-level folder, and relocating a whole **grand plan**. Name them in the change list
-as recommendations and leave the tree alone.
+**Splitting a workstream is yours** — split it, create or rename the folders it needs, fuse two that are one
+effort, and report it with its reversal. Do not hold it for approval.
+
+**Two things still go to the owner rather than into the diff.** A **grand plan** — splitting, relocating or
+renaming one — because it is direction rather than record, and inventing or renaming a **top-level folder**,
+because that changes the vault's own tiers and the operating manual describing them. Name both in the change
+list as recommendations and leave the tree alone.
 
 ## Hard rules
 

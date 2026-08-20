@@ -117,8 +117,8 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   budget means **extract** reference-not-warning material to `reference/` or `design/`, or **split** a parent
   that is two efforts wearing one name. It **never** means trimming the task index or deleting history; a unit
   held under budget that way has failed the check it appears to pass. **Nor may the budget restrict what a task
-  pulls forward** — a check that makes an agent carry less context has done harm. Splitting is the owner's call,
-  always.
+  pulls forward** — a check that makes an agent carry less context has done harm. **Splitting a workstream is
+  the `librarian`'s to execute and report**, like any other structural change; a **grand plan** is the owner's.
 - **A task pulls forward what bears on it when it opens** — the still-live GATEs, LANDMINEs, DEAD ENDs and
   settled decisions from the workstream's closed tasks and `historical/`, into a `## Carried across` section of
   its frontier, each cited by source. Selection is paid once, by whoever knows what the task is about.
