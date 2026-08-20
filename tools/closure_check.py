@@ -23,7 +23,9 @@ WHY IT EXISTS
 TWO MODES
 
   --scan <workstream>            which tasks look closeable, with the evidence
-      A heuristic and it says so. Authority to ASK whether a task is closed, never to close it --
+      A heuristic and it says so. A task written into within `--active-days` is ACTIVE and never
+      a candidate: dump count tracks activity rather than completion, so the fraction alone ranked
+      the most active task the strongest candidate on this tool's first real run. Authority to ASK whether a task is closed, never to close it --
       the same standing a merged PR has in the scout's `closure` brief. It prints the landed
       fraction, the residue that would have to carry across, and the live typed-register entries,
       so the answer to "is this closeable" arrives with the rollover manifest already written.
@@ -133,6 +135,22 @@ def residue(text):
     return nxt_u, risks_u
 
 
+def newest_dump(task_dir):
+    """The date in the newest dated filename under the task, as YYYY-MM-DD, or None."""
+    dates = [n[:10] for n in os.listdir(task_dir) if DATED_DOC.match(n)]
+    return max(dates) if dates else None
+
+
+def days_since(datestr, today):
+    from datetime import date
+    try:
+        a = date(*(int(x) for x in datestr.split("-")))
+        b = date(*(int(x) for x in today.split("-")))
+    except (ValueError, TypeError):
+        return None
+    return (b - a).days
+
+
 def landed(text, task_dir):
     """Evidence that a sizeable corpus finished — counted from the task's DUMPS, not only its
     frontier.
@@ -181,7 +199,7 @@ def one_line(text, width=96):
     return t if len(t) <= width else t[:width - 1] + "…"
 
 
-def scan(ws_dir, frac, min_landed, as_json):
+def scan(ws_dir, frac, min_landed, as_json, today, active_days):
     tasks = live_tasks(ws_dir)
     if not tasks:
         print(f"skip  no dated task folder in {ws_dir} — nothing to scan "
@@ -196,10 +214,21 @@ def scan(ws_dir, frac, min_landed, as_json):
         total = len(done) + len(nxt)
         f = (len(done) / total) if total else 0.0
         cand = total and len(done) >= min_landed and f >= frac
+        # RECENCY OVERRIDES THE FRACTION. Measured on this tool's first real run: the landed
+        # fraction ranked the MOST active task the strongest candidate (94%, 106 landed markers
+        # across 10 dumps, 7 open items) because dump count tracks activity, not completion --
+        # and its residue was the live agenda, so closing it would have been pure churn. A task
+        # still being written into today is not finished, whatever its arithmetic says.
+        newest = newest_dump(task_dir)
+        age = days_since(newest, today) if newest else None
+        active = age is not None and age <= active_days
+        if active:
+            cand = False
         rows.append({
             "task": os.path.relpath(task_dir, os.path.dirname(ws_dir.rstrip("/"))),
             "frontier_bytes": len(text.encode()),
-            "dumps": dumps,
+            "dumps": dumps, "newest_dump": newest, "days_idle": age,
+            "active": bool(active),
             "landed": len(done), "residue": len(nxt), "landed_fraction": round(f, 2),
             "live_risks": len(risks), "candidate": bool(cand),
             "carry_forward": [one_line(t) for t in nxt] + [one_line(t) for t in risks],
@@ -210,11 +239,14 @@ def scan(ws_dir, frac, min_landed, as_json):
         print(json.dumps(rows, indent=2))
         return worst, rows
     for r in rows:
-        label = "CANDIDATE" if r["candidate"] else "live"
+        label = "CANDIDATE" if r["candidate"] else ("ACTIVE" if r["active"] else "live")
         print(f"{label:10} {r['task']}  ({r['frontier_bytes']} B)")
         print(f"           {r['landed']} landed / {r['residue']} open "
               f"= {r['landed_fraction']:.0%} landed · {r['live_risks']} live typed entries "
-              f"· {r['dumps']} dumps")
+              f"· {r['dumps']} dumps · newest {r['newest_dump'] or '—'}")
+        if r["active"]:
+            print(f"           still being written into ({r['days_idle']}d) — active, not finished, "
+                  f"whatever the fraction says")
         if r["candidate"]:
             print("           would have to carry across:")
             for line in r["carry_forward"]:
@@ -317,6 +349,12 @@ Closure is a librarian's call. This tool refuses a lossy one; it never makes the
                     help="scan: fraction of items landed to raise a candidate (default 0.6)")
     ap.add_argument("--min-landed", type=int, default=3,
                     help="scan: minimum landed items to raise a candidate (default 3)")
+    ap.add_argument("--active-days", type=int, default=0,
+                    help="scan: a task written into within this many days is ACTIVE, never a "
+                         "candidate, whatever its landed fraction (default 0 — written into "
+                         "TODAY. Calibrated against a vault written into daily; raise it for a "
+                         "corpus that moves in weekly bursts)")
+    ap.add_argument("--today", default=None, help="scan: override today's date (YYYY-MM-DD)")
     ap.add_argument("--json", action="store_true")
     import vault_config
     vault_config.add_argument(ap)
@@ -328,7 +366,9 @@ Closure is a librarian's call. This tool refuses a lossy one; it never makes the
         if not os.path.isdir(ws):
             print(f"no such workstream: {args.scan}", file=sys.stderr)
             return 5
-        code, _ = scan(ws, args.landed_fraction, args.min_landed, args.json)
+        today = args.today or __import__("datetime").date.today().isoformat()
+        code, _ = scan(ws, args.landed_fraction, args.min_landed, args.json, today,
+                       args.active_days)
         return code
 
     if not args.target or not args.into:
