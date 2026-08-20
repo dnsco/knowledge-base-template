@@ -35,7 +35,23 @@ stale. Every command resolves the vault the same way: `--vault`, then `$LIPIKA_V
 then the checkout you are standing in. **A command that cannot resolve a vault refuses rather than
 guessing**, because a tool that guesses its target curates the wrong tree and reports success.
 
-Starting from nothing? `assets/vault-CLAUDE.md` is the conventions document a vault wants at its root.
+`lipika doctor` says whether the wiring is intact — the two halves resolve differently, so it checks them
+separately.
+
+## Set up a vault
+
+A vault is a git repo of markdown, readable as an Obsidian vault. It needs one document at its root saying how
+its documents are placed, named and maintained:
+
+```bash
+cp templates/vault-CLAUDE.md.template /path/to/your/vault/CLAUDE.md
+```
+
+That template is the **corpus half only** — placement, filenames, frontmatter, voice, the byte budgets' purpose
+(not their values). The machinery half is this repo's, and the template says so rather than restating it, because
+a rule restated in two places diverges and a threshold restated in prose goes stale while a tool enforces
+something else. Once copied it is that vault's own document and will diverge on purpose: it should name your real
+repos, your dated evidence, your concrete shas. **Edit the template here; never port a vault's copy back.**
 
 ## The roles
 
@@ -65,8 +81,20 @@ lipika pass-log active               # who else is working in this vault right n
 They are reached by name because a plugin's `bin/` is on `PATH`. `${CLAUDE_PLUGIN_ROOT}` is **not**
 populated in a subagent's shell — measured — so no definition here interpolates a path.
 
-## Design
+## Changing a role
 
-`design/` carries the machinery's own documents: `vault-and-agent-ontology.md` (the shape, the forces,
-and what would falsify each invariant), `agent-eval-method.md` (how a role gets changed and measured),
-`GOTCHAS.md` (what bites, all of it measured). Read the second before changing a definition.
+There is one copy of every definition, skill and tool, so there is nothing to port and nothing to diff. The loop:
+
+**author here → try it on real work → `lipika recall-check <pre-change-ref> <path>` → profile it → summarise the
+round where the next agent will read it → feed the findings back.** Every recall-check flag is judged in writing,
+and you never reword a file to satisfy one. That last edge is what makes it a loop rather than a checklist.
+
+Two things bite immediately. **A definition change is served stale for minutes** and the agent registry caches at
+session start, so probe with a question the old and new text answer differently before trusting any measurement —
+`SKILL.md` is exempt, being read from disk at invocation. And **`${CLAUDE_PLUGIN_ROOT}` is empty in a subagent's
+shell**, measured, so no definition may interpolate a path; that is why tools are called by name.
+
+`CLAUDE.md` here is the working guide for this repo. `design/` carries its own documents:
+`vault-and-agent-ontology.md` (the shape, the forces, and what would falsify each invariant),
+`agent-eval-method.md` (how a role gets changed and measured — read it before touching a definition),
+`GOTCHAS.md` (what bites, all of it measured).

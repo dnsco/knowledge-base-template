@@ -25,7 +25,9 @@ agents/       role definitions — flat .md, because the registry reads *.md and
 skills/       the capture skill; SKILL.md is read from disk at invocation, so edits take effect at once
 tools/        runnable python; every one resolves the vault rather than assuming cwd
 design/       this machinery's own design docs — the ontology, the eval method, the gotchas
-assets/       what `lipika init` writes into a new vault
+templates/    what a new vault is seeded from — `.template` suffixed, so nothing here is mistaken for
+              this repo's own config. `vault-CLAUDE.md.template` is the corpus half of a vault's
+              conventions; the machinery half is this repo and the template points at it
 ai_docs/      symlink to the vault this is developed against. Local, gitignored
 ```
 
