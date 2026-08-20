@@ -19,7 +19,7 @@ a symlinked one at that, so whether it gets read is a coin flip.
 
 An agent that writes here without it produces exactly what the conventions exist to prevent: an undated
 filename, a doc in the wrong tier, chat voice, agent-local codenames ("Option C"), or worst, a **rival
-plan-of-record** parked next to the real one.
+frontier** parked next to the workstream's real one.
 
 Three mitigations. Use all three, because each covers a different hole:
 
@@ -30,7 +30,7 @@ Three mitigations. Use all three, because each covers a different hole:
 
 Default assumption: if a session did not invoke the skill, it has not read the conventions.
 
-## 2. Reads are free; writes go through the skill, destruction through the librarian
+## 2. Reads are free; writes go through the skill, frontier and structure through their own agents
 
 A project session sees `{{VAULT}}/` in its tree and treats it like any other directory — it will edit a doc in
 place, "tidy" a section that reads as stale, delete what looks obsolete, or rewrite a frontier it has half the
@@ -41,8 +41,13 @@ The discipline, worth stating in the invocation whenever a session will touch th
 
 - **Read freely.** Any session may read and grep it. (As a strong prior, not ground truth — docs are
   point-in-time; verify against the code.)
-- **Write only via `/context-dump`** — append a dated entry, flip a `status`. Not a hand-edit that restructures.
-- **Delete / merge / archive / re-link: librarian only**, as its own deliberate pass, on a clean tree.
+- **Write only via `/context-dump`** — append a dated entry, and nothing else. Not a hand-edit that
+  restructures, and not a frontier edit either.
+- **The frontier — `status` flips, striking a completed item: `frontier-clerk` only.** The dump dispatches it in
+  the background; it is not something to do by hand on the way past.
+- **Delete / merge / archive / re-link: librarian only**, as its own deliberate pass, on a clean tree, and it
+  has full autonomy inside the scope you give it. Several workstreams overdue at once, or anything crossing a
+  scope boundary, is the `curator`'s.
 - **Never touch `done/`.** It is frozen.
 - Spotted overdue cleanup? **Recommend a librarian pass**; don't do it inline.
 
@@ -52,7 +57,7 @@ Via the symlink, `cd <project>/{{VAULT}} && git …` operates on **this** repo, 
 a trap: a turn that touches code and docs leaves commits owed in two repos, and the knowledge-base ones are the
 easy ones to forget.
 
-That matters more than tidiness. The librarian **halts on a dirty tree** (its hard rule 6) — it cannot `git show`
+That matters more than tidiness. The librarian **halts on a dirty tree** (its hard rule H) — it cannot `git show`
 an uncommitted original, so its carry-forward guarantee does not hold. One forgotten uncommitted doc is enough to
 block the next pass. Commit here in the same turn you write.
 
@@ -104,14 +109,14 @@ What follows from that:
 - **Never automate it.** Not a hook, not `/loop`, not a reflexive "tidy the vault" at the end of every session.
 - **Never point it at the whole vault**, and never run it on a small model when it will delete docs.
 - **Small and often beats big and rarely.** One workstream, at a phase boundary. Cost scales with the **delta
-  since the last pass** — each pass tags the vault, and the next one reads only what changed — so frequent
+  since the last pass** — each pass records its sha in the pass log, and the next reads only what changed — so frequent
   passes get cheap while a neglected workstream gets expensive. Nine docs and four same-day journals is a big
   pass; two or three docs is a quick one.
 - **A delta pass is not a full one.** It scopes what gets *read*, never what may be written into, and it skips
   the `done/` sweep. Ask for a full pass at phase boundaries; that is also the only thing that renews the
   licence to skip untouched docs.
 - **Front-load the decisions.** It is required to stop and ask on structural moves (merging or splitting whole
-  workstreams, relocating a doc across them, collapsing two plans-of-record). Every question handed back costs
+  workstreams, relocating a doc across them, fusing two workstreams' folder-notes). Every question handed back costs
   another pass, so pre-answer the ones you already know and name what is authoritative where docs disagree.
 - **Commit first.** A dirty tree halts the pass outright (§3) — the most common way to spend an invocation and
   get nothing.

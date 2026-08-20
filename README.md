@@ -22,13 +22,17 @@ The fix is a split, and it's the whole design:
 
 | | writes | never |
 |---|---|---|
-| **`context-dump` skill** — any session doing engineering | appends a dated journal entry; flips `status`; keeps the one live frontier truthful | deletes, merges, archives, restructures, re-links |
-| **`librarian` agent** — a separate deliberate pass | consolidates overlapping docs into the one plan-of-record, archives finished work, fixes the `[[link]]` graph, syncs the map | engineering decisions; inferring that something is done |
+| **`context-dump` skill** — any session doing engineering | a dated journal entry, and nothing else | the frontier; deletes, merges, archives, restructures, re-links |
+| **`frontier-clerk` agent** — spawned by the dump | frontier state only: `status` flips, marker moves, striking items whose completion is recorded | moving content between docs; inferring completion; tagging |
+| **`librarian` agent** — one scope, full autonomy inside it | structure within its scope: consolidates overlapping docs, rewords and merges redundant facts, splits the workstream, splits and merges tasks, archives finished work, fixes the `[[link]]` graph | reaching outside its prefix; the shared surfaces; engineering decisions; inferring that something is done |
+| **`curator` agent** — the vault feels messy | which scopes exist, everything crossing a boundary, and the shared surfaces | any document's substance |
+| **`scout` agent** — read-only reconnaissance | nothing in the corpus; it announces itself in the pass log | any edit, commit, or taxonomy call |
 
-Working agents are **append-only**, so any number of them can run in parallel without clobbering each other.
-All destruction is concentrated in the librarian, which runs alone, with full context, at a phase boundary
-("run the librarian" / "tidy the vault"). That's what makes the record safe to write to from many sessions and
-still small enough to read.
+Each boundary is a **capability, not a request for restraint**: the appending agent *cannot* rewrite, so the
+illegal state is unrepresentable rather than checked for afterwards. Working agents being append-only is what
+lets any number run in parallel without clobbering each other, and concentrating all destruction in the
+librarian — alone, with full context, at a phase boundary ("run the librarian" / "tidy the vault") — is what
+keeps the record safe to write to from many sessions and still small enough to read.
 
 ## What's in the box
 
@@ -38,13 +42,17 @@ GOTCHAS.md                   what bites after setup; measured, not assumed
 README.md                    (this file; replaced by your knowledge base's map at bootstrap)
 BOOTSTRAPPING.md             setup
 skills/context-dump/         the append-only capture skill
-agents/librarian.md          the compacting agent
-agents/master-librarian.md   orchestrates one librarian per scope, in isolated worktrees, when
-                             several workstreams are overdue at once — rare; prefer the librarian
-tools/verify_pr_markers.py   batch PR-state check — the librarian verifies done-markers with it
+agents/librarian.md          the compacting agent, scoped to one workstream
+agents/curator.md            vault-wide normalization; fans out one librarian per scope
+agents/frontier-clerk.md     reconciles a frontier against a dump's entry, and writes nothing else
+agents/scout.md              read-only reconnaissance; reports, writes nothing
+tools/                       the librarian's verification tools: verify_pr_markers.py (batch
+                             PR-state check), recall_check.py (did a rewrite drop a rule),
+                             frozen_tier_check.py (was frozen-tier substance altered),
+                             dangling_links.py (which [[links]] resolve to nothing)
 values/                      two seeded evergreen principles: parse-dont-validate, laconic-terse-salient
 grand-plans/<demo>/          folder-note + depth doc — the grand-plan shape; delete it
-workstreams/<demo>/          folder-note + plan-of-record + done/ — the full workstream shape; delete it
+workstreams/<demo>/          folder-note (map + frontier) + done/ — the full workstream shape; delete it
 obsidian-skills/             submodule: kepano/obsidian-skills (obsidian-cli, defuddle, …)
 reference/ done/             empty tiers, see below
 ```
@@ -55,10 +63,10 @@ Two placeholders — `{{VAULT}}` (the vault's directory name) and `{{VAULT_PATH}
 
 Sorted by **rate of change**, not by topic. That's the one idea to keep:
 
-- **`workstreams/<name>/`** — an active multi-session effort. Contains a `<name>.md` **folder-note** (its
-  mini-map) and exactly **one plan-of-record**: the single place mutable state lives — status, gates, PR
-  numbers, what's next, and one typed `Risks, gates & landmines` register. One frontier per workstream, no
-  second copy anywhere.
+- **`workstreams/<name>/`** — an active multi-session effort. Its `<name>.md` **folder-note** *is* the plan of
+  record: map and single frontier in one file, the only place mutable state lives — status, gates, PR numbers,
+  what's next, and one typed `Risks, gates & landmines` register. One frontier per workstream, no second copy
+  anywhere; there is no separate plan doc, because a workstream with one has two frontiers waiting to diverge.
 - **`workstreams/<name>/design/`** — still-consulted reference that no longer moves: the "why", as-built
   design, recipes. Carries no status.
 - **`done/`** — finished and frozen. Opened only to re-examine completed work, never for current state.
