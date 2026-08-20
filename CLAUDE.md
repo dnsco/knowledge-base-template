@@ -45,14 +45,25 @@ documents by hand from a session rooted here is the failure those roles exist to
 easy to do because the vault looks like just another directory in this tree.
 
 **The loop, and it is a loop:** author here → try it on real work → prove no rule was dropped
-(`recall_check.py <pre-change-ref> <path>`, every flag judged in writing, never reword to satisfy one) →
+(`lipika recall-check <pre-change-ref> <path>`, every flag judged in writing, never reword to satisfy one) →
 profile it, qualitative read before any figure → summarise the round where the next agent will read it →
 feed the findings back. That return edge is the difference between a design that stays true and one that
 becomes aspirational.
 
+**Why the check is a tool and not a careful re-read:** a grep checklist written from the memory that did the
+cutting can only confirm itself. It searches for what its author still remembers keeping, so the one class of
+loss it cannot find is the one that matters — a rule the cutter forgot was there.
+
 **Prefer a tool that refuses to prose that asks.** Measured repeatedly: a rule written into a definition
 gets read past, and the same rule with an exit code fails loudly. A definition is also a system prompt
 paid for on every invocation, so a tool is the cheaper end as well.
+
+**A role that measures the machinery is a different class, and the span and byte budgets do not apply to
+it.** A profiling or eval run's subject is another agent's run rather than the corpus, so capping it buys a
+cheaper profile by reading less — the opposite of what the cap is for. `eval-profiler` has recorded passes in
+the pass log and **no definition on disk**: it runs as an ad-hoc brief against `design/agent-eval-method.md`,
+which is itself the "prose does not fire" failure above, and giving it a real definition here is owed.
+The pass log has no `eval` kind either, so such a run must currently file itself as an operating one.
 
 ## Landmines
 
