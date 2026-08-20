@@ -1,0 +1,28 @@
+# A vault's .gitignore, seeded by Lipika (github.com/dnsco/lipika).
+# Every entry below is here because tracking it caused a problem, not for tidiness.
+
+.DS_Store
+
+# Obsidian writes per-machine UI state alongside config you DO want tracked:
+# app.json, appearance.json, core-plugins.json and snippets/ are settings and belong in git.
+# These four are window geometry and a derived index, and they churn on every launch.
+.obsidian/graph.json
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+
+# The shared pass log — every role's start/stop record, appended concurrently from every
+# worktree. Tracking it turns each pair of parallel passes into a merge conflict.
+# Consequence to expect: `lipika pass-invariants` reports its anchors check red, because the
+# sha it wants to diff from lives in a file git does not see. That is correct, not a defect.
+pass-log.jsonl
+
+# Agent worktrees are provisioned inside the vault, so a tracked one nests the repo in itself
+# — and a recursive grep from the root then double-counts every hit. Here rather than in
+# .git/info/exclude, because exclude does not survive a clone.
+.claude/worktrees/
+.claude/settings.local.json
+
+# Bytecode, if the vault carries analysis scripts of its own.
+__pycache__/
+*.pyc
