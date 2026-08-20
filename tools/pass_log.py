@@ -3,9 +3,10 @@
 Pass log — one shared, append-only record of what every role is doing to this vault.
 
 WHY ONE FILE AND NOT ONE PER UNIT
-  Git tags were the previous mechanism and they are the wrong shape: a tag is a single global
-  name per scope, so it cannot say WHEN a pass ran, and it cannot say that two agents are on
-  the same ground right now. An append-only log with timestamps says both.
+  Git tags were the previous mechanism and they were the wrong shape: a tag is a single global
+  name per scope, so it could say neither WHEN a pass ran nor that two agents are on the same
+  ground right now. An append-only log with timestamps says both. The tag mechanism is DEAD as of
+  2026-08-19 (owner) -- nothing reads one, nothing writes one, and none were imported.
 
   The first design of this log put one beside each unit -- one per workstream, one per task --
   on the argument that history belongs next to its subject. That was reversed by the owner
@@ -27,8 +28,8 @@ WHERE THE FILE LIVES, AND WHY IT IS NOT TRACKED
   caller happens to be in. A sub-agent in an isolated worktree must append to the same file the
   orchestrator reads, or the log answers the coordination question about a tree nobody shares.
 
-  A record carries the HEAD sha at the moment it was written, which is the part a tag was actually good for:
-  the baseline record's sha is what a later pass diffs from. Record a `stop` from the tree that holds the merged
+  A record carries the HEAD sha at the moment it was written, which is the only thing the tags were
+  ever good for: the baseline record's sha is what a later pass diffs from. Record a `stop` from the tree that holds the merged
   work, or the sha anchors a commit nobody else has. And never rewrite history afterwards -- a rebase or squash
   orphans every recorded sha, and then no delta can be computed.
 
@@ -38,7 +39,7 @@ WHERE THE FILE LIVES, AND WHY IT IS NOT TRACKED
   means "no baseline", which the tool reports rather than guessing around.
 
 WHAT THE RECORDS MUST KEEP CLAIMING
-  The log inherits the guarantee the tags carried, and the tool enforces it rather than asking:
+  The log carries the guarantee, and the tool enforces it rather than asking:
     - A FULL run's stop record with `--result consolidated` is what establishes a baseline. It
       is the only thing a later pass may skip work on the strength of.
     - DELTAS STACK. A delta may never record `consolidated` (exit 2 -- a defect, not a
@@ -324,20 +325,53 @@ def cmd_stop(args, path):
     if any(r.get("event") == "stop" and r.get("id") == args.id for r in records):
         print(f"refusing: {args.id} already has a stop record.", file=sys.stderr)
         return 2
+    sha = head_sha()
+    started = parse_ts(start.get("ts"))
     rec = {
         "ts": iso(now()), "event": "stop", "id": args.id, "role": start.get("role"),
         "scope": start.get("scope"), "kind": kind, "result": args.result,
-        "sha": head_sha(),
+        "sha": sha,
     }
+    if started:
+        rec["span_s"] = int((now() - started).total_seconds())
+    # What the pass actually moved, measured rather than claimed. A record that says only
+    # "consolidated" cannot feed a loop; commits and files changed can, and both are free here.
+    rec.update(work_done(start.get("sha"), sha, start.get("scope")))
+    for m in args.metric or []:
+        k, _, v = m.partition("=")
+        if k:
+            rec.setdefault("metrics", {})[k.strip()] = v.strip()
     if args.note:
         rec["note"] = args.note
     append_record(path, rec)
     started = parse_ts(start.get("ts"))
     span = age_str(now() - started) if started else "?"
-    print(f"stopped {args.id}  result={args.result}  span={span}")
+    moved = " ".join(f"{k}={v}" for k, v in rec.items()
+                     if k in ("commits", "files_changed"))
+    extra = " ".join(f"{k}={v}" for k, v in (rec.get("metrics") or {}).items())
+    print(f"stopped {args.id}  result={args.result}  span={span}  {moved} {extra}".rstrip())
     if args.result == "skipped":
         print("recorded as SKIPPED -- not consolidated. A later pass may not skip it on this record.")
     return 0
+
+
+def work_done(base_sha, head, scope):
+    """commits and files changed between a pass's start and stop, under its scope."""
+    out = {}
+    if not base_sha or not head or base_sha == head:
+        return {"commits": 0, "files_changed": 0}
+    rng = f"{base_sha}..{head}"
+    args = ["--", scope] if norm_scope(scope) else []
+    try:
+        c = subprocess.run(["git", "rev-list", "--count", rng] + args,
+                           capture_output=True, text=True, check=True).stdout.strip()
+        out["commits"] = int(c or 0)
+        f = subprocess.run(["git", "diff", "--name-only", rng] + args,
+                           capture_output=True, text=True, check=True).stdout.split()
+        out["files_changed"] = len(f)
+    except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
+        return {}
+    return out
 
 
 def cmd_active(args, path):
@@ -368,31 +402,15 @@ def cmd_history(args, path):
         return 0
     for r in records[-args.limit:]:
         extra = f" result={r['result']}" if r.get("result") else ""
+        for k in ("span_s", "commits", "files_changed"):
+            if r.get(k) is not None:
+                extra += f" {k}={r[k]}"
+        for k, v in (r.get("metrics") or {}).items():
+            extra += f" {k}={v}"
         note = f"  -- {r['note']}" if r.get("note") else ""
         print(f"{r['ts']}  {r['event']:5}  {r.get('role','?'):15} {r.get('kind','?'):6} "
               f"{r.get('scope') or '(vault)'}{extra}{note}")
     return 0
-
-
-def legacy_tag_hint(scope):
-    """Tags anchored passes before this log existed, and the switchover is otherwise silent.
-
-    Measured on the first pass after the switchover: a librarian/<ws>/full/<date> tag existed with
-    a 9-commit delta while `baseline` reported nothing read at all. Without this line every scope
-    in the vault silently re-pays a full pass -- safe, and expensive.
-    """
-    tags = []
-    try:
-        pat = f"librarian/{norm_scope(scope)}/*" if norm_scope(scope) else "librarian/*"
-        out = subprocess.run(["git", "tag", "-l", pat], capture_output=True, text=True, check=True)
-        tags = [t for t in out.stdout.split() if t]
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        pass
-    if not tags:
-        return "legacy:   no pre-log git tag for this scope either."
-    return ("legacy:   " + str(len(tags)) + " pre-log git tag(s) still anchor this scope, newest "
-            + tags[-1] + "\n          A tag from before the pass log may still be a valid anchor. "
-            "Judge it, then\n          record a full run so the next pass reads the log instead.")
 
 
 def cmd_baseline(args, path):
@@ -404,7 +422,6 @@ def cmd_baseline(args, path):
         print(f"NO BASELINE for {norm_scope(args.scope) or 'the vault'} -- no full run has recorded "
               f"'consolidated'.")
         print("Your pass is necessarily full: nothing here has been read, so nothing may be skipped.")
-        print(legacy_tag_hint(args.scope))
         return 1
     last = baselines[-1]
     since = [r for r in scoped
@@ -415,7 +432,6 @@ def cmd_baseline(args, path):
         print(f"anchor:   {last['sha']}   -> your delta is `git diff --stat {last['sha'][:12]}..HEAD -- <scope>`")
     else:
         print("anchor:   none recorded -- the delta cannot be computed from this record; treat the pass as full")
-    print(legacy_tag_hint(args.scope))
     print(f"deltas since: {len(since)}")
     if since:
         print("Those are incremental and unconsolidated. Their accumulated weight is the signal "
@@ -450,6 +466,10 @@ def build_parser():
     t.add_argument("--result", default="incremental", choices=RESULTS)
     t.add_argument("--scope", default="", help="narrow the match when you have several open")
     t.add_argument("--id", help="close this exact id, skipping resolution")
+    t.add_argument("--metric", action="append", default=[], metavar="KEY=VALUE",
+                   help="anything else worth measuring across passes: docs_merged=3, "
+                        "questions_raised=6, dumps_in_task=4. Repeatable. The point of a log is "
+                        "that the next loop can read it")
 
     a = sub.add_parser("active", help="open passes -- who is on this ground right now")
     a.add_argument("--scope", default="")

@@ -93,6 +93,21 @@ jq -r 'select(.message.content) | select(.message.content[]?|select(.type=="tool
 jq -r 'select(.message.usage) | "\(.message.usage.cache_read_input_tokens // 0)\t\(.message.usage.output_tokens // 0)"' "$F" | nl -ba
 ```
 
+**Do not hand-roll the mechanical half.** `tools/agent_transcript.py` finds a transcript (including under a
+worktree's own project slug), lists a session's subagents, and prints one row per tool call with the bytes that
+call returned into context, a per-tool aggregate, and the cost figures with every trap below already applied:
+
+```bash
+python3 tools/agent_transcript.py --list                      # sessions and subagents, newest first
+python3 tools/agent_transcript.py <agent-id>                  # calls, per-tool totals, cost
+python3 tools/agent_transcript.py <agent-id> --calls --min-bytes 2000   # just the expensive reads
+python3 tools/agent_transcript.py <agent-id> --grep frontier_slice      # did the mandate fire
+```
+
+Bytes-returned is the denominator of a relevant-fraction measurement; classifying each row as load-bearing,
+duplicated or never-used is the judgement, and that stays yours. The `jq` recipes below remain the reference for
+anything the tool does not answer.
+
 Four traps, each of which has produced a wrong number here:
 
 - **Number by CALL, not by line.** Heredocs span many lines and inflate every count. The `gsub` collapse above is
@@ -171,7 +186,7 @@ batched:
 
 - rejecting a sub-agent's finding as a false positive after reading the cited lines, where acting would have
   damaged a correct doc;
-- declining to tag a scope that did no work, so the anchor still reads "not looked at";
+- recording a scope that did no work as `skipped` rather than consolidated, so it still reads "not looked at";
 - refusing to invent a convention when a supplied decision's premise turned out to be wrong;
 - verifying a load-bearing manifest claim rather than trusting it, and verifying that deleted content survived in
   its named survivor;

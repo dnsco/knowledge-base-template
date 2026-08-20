@@ -20,11 +20,11 @@ WHY
   main checkout, before any worktree exists. That is exactly where a scout runs.
 
 WHAT IT EMITS PER SCOPE
-  doc count, top-level docs, folder-note bytes, the anchors ($LAST and $FULL) with their object
+  doc count, top-level docs, folder-note bytes, the anchors (BASELINE and LAST, from the pass log)
   type, the delta against each, the frontmatter table, and -- with --markers -- every PR/commit
   ref cited in the corpus, ready to hand to verify_pr_markers.py in one batch.
 
-  Screening is reported as inputs, never as a verdict: no-delta-since-$FULL, folder-note size,
+  Screening is reported as inputs, never as a verdict: no-delta-since-BASELINE, folder-note size,
   and whether anything sits at the scope's top level. The caller decides; a SKIP recommendation
   that hides its inputs cannot be overruled without re-deriving them.
 
@@ -87,27 +87,40 @@ def frontmatter(path):
 
 
 def anchors_for(vault, scope):
-    """Return (last, full) anchor tags for a scope, newest first, with object types."""
-    name = scope.strip("/").split("/")[-1]
-    code, out = git(vault, "tag", "-l", f"librarian/{name}/*")
-    tags = [t for t in out.splitlines() if t.strip()]
-    def newest(kind):
-        cand = sorted([t for t in tags if f"/{kind}/" in t])
-        return cand[-1] if cand else None
-    res = {}
-    for label, kind in (("LAST", "delta"), ("FULL", "full")):
-        t = newest(kind)
-        if t:
-            _, kindout = git(vault, "cat-file", "-t", t)
-            res[label] = {"tag": t, "object": kindout.strip()}
-        else:
-            res[label] = None
-    # $LAST is the newest of either kind
-    if tags:
-        newest_any = sorted(tags)[-1]
-        _, k = git(vault, "cat-file", "-t", newest_any)
-        res["LAST"] = {"tag": newest_any, "object": k.strip()}
-    res["all"] = tags
+    """The scope's anchors, read from the pass log. Git tags are gone -- see pass_log.py.
+
+    BASELINE is the newest stop record with result=consolidated: the only thing a later pass may
+    skip work on the strength of. LAST is the newest stop record of any result. Both carry the sha
+    recorded at that moment, which is what a delta is computed against.
+    """
+    scope = scope.strip("/")
+    log = Path(vault) / "pass-log.jsonl"
+    res = {"BASELINE": None, "LAST": None, "open": []}
+    if not log.is_file():
+        return res
+    recs = []
+    for line in log.read_text(errors="replace").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        rs = (r.get("scope") or "").strip("/")
+        if rs and scope and not (rs == scope or rs.startswith(scope + "/") or scope.startswith(rs + "/")):
+            continue
+        recs.append(r)
+    stops = [r for r in recs if r.get("event") == "stop"]
+    stopped = {r.get("id") for r in stops}
+    res["open"] = [r for r in recs if r.get("event") == "start" and r.get("id") not in stopped]
+    if stops:
+        res["LAST"] = {"sha": stops[-1].get("sha"), "ts": stops[-1].get("ts"),
+                       "role": stops[-1].get("role"), "result": stops[-1].get("result")}
+    cons = [r for r in stops if r.get("result") == "consolidated"]
+    if cons:
+        res["BASELINE"] = {"sha": cons[-1].get("sha"), "ts": cons[-1].get("ts"),
+                           "role": cons[-1].get("role"), "result": "consolidated"}
     return res
 
 
@@ -187,8 +200,8 @@ def recon_scope(vault, scope, want_markers):
 
     a = anchors_for(vault, scope)
     info["anchors"] = a
-    for label in ("LAST", "FULL"):
-        base = a[label]["tag"] if a[label] else None
+    for label in ("LAST", "BASELINE"):
+        base = a[label]["sha"] if a[label] else None
         d = delta(vault, base, scope)
         info[f"delta_vs_{label}"] = None if d is None else len(d)
         info[f"delta_vs_{label}_files"] = d or []
@@ -212,7 +225,7 @@ def recon_scope(vault, scope, want_markers):
 
     # screening INPUTS, not a verdict
     info["screen_inputs"] = {
-        "no_delta_since_FULL": info["delta_vs_FULL"] == 0,
+        "no_delta_since_BASELINE": info["delta_vs_BASELINE"] == 0,
         "folder_note_bytes": info["folder_note_bytes"],
         "top_level_docs_beside_note": [d for d in info["top_level_docs"]
                                        if note.is_file() and d != note.name],
@@ -259,20 +272,23 @@ def main():
             continue
         print(f"  docs {r['doc_count']}   folder-note {r['folder_note_bytes']:,}B   "
               f"top-level {len(r['top_level_docs'])}")
-        for label in ("FULL", "LAST"):
+        for label in ("BASELINE", "LAST"):
             a = r["anchors"][label]
             if a:
-                warn = "" if a["object"] == "commit" else f"  !! {a['object']}, not a commit"
-                print(f"  ${label:<4} {a['tag']}{warn}   delta {r[f'delta_vs_{label}']}")
+                sha = (a["sha"] or "no sha recorded")[:12]
+                print(f"  {label:<8} {sha}  {a['ts']}  {a['role']} ({a['result']})"
+                      f"   delta {r[f'delta_vs_{label}']}")
             else:
-                print(f"  ${label:<4} (none)")
+                print(f"  {label:<8} (none — nothing has recorded one, so a pass here is full)")
+        for o in r["anchors"].get("open", []):
+            print(f"  OPEN PASS {o.get('role')} since {o.get('ts')} — someone may be in here now")
         if r["live_status_in_design"]:
             print(f"  live status inside design/: {', '.join(r['live_status_in_design'])}")
         if r["missing_up"]:
             print(f"  no up: ({len(r['missing_up'])}): {', '.join(r['missing_up'][:3])}"
                   + (" …" if len(r["missing_up"]) > 3 else ""))
         si = r["screen_inputs"]
-        print(f"  screen inputs: no_delta_since_FULL={si['no_delta_since_FULL']}  "
+        print(f"  screen inputs: no_delta_since_BASELINE={si['no_delta_since_BASELINE']}  "
               f"note={si['folder_note_bytes']:,}B  "
               f"top_level_beside_note={len(si['top_level_docs_beside_note'])}")
         if r.get("refs"):
@@ -292,8 +308,9 @@ def main():
                   f" (and it aborts the whole batch on one). Qualify as owner/repo#N by hand:")
             for u in unqualified:
                 print(f"  {u}")
-    print("\nScreening inputs are reported, not decided. A SKIP needs all three: no delta since")
-    print("$FULL, a folder-note under your bound, and nothing at the scope's top level beside it.")
+    print("\nScreening inputs are reported, not decided. A SKIP needs all three: no delta since the")
+    print("consolidated BASELINE, a folder-note under your bound, and nothing at the scope's top level")
+    print("beside it. No baseline means no licence to skip.")
     return 0
 
 

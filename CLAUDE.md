@@ -119,11 +119,11 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   ```bash
   python3 {{VAULT_PATH}}/tools/pass_log.py active --scope workstreams/<ws>    # who is in here
   python3 {{VAULT_PATH}}/tools/pass_log.py start <role> "<one line>" --scope <s> --kind <k>
-  python3 {{VAULT_PATH}}/tools/pass_log.py stop <role> "<what you did>" --result <r>
+  python3 {{VAULT_PATH}}/tools/pass_log.py stop <role> "<what you did>" --result <r> [--metric k=v]
   ```
   Emit a `start` before you write and a `stop` when you finish — the pair is what keeps parallel agents off each
-  other's files, and it replaces the git-tag anchors, which could say neither *when* a pass ran nor *who else is
-  here*. A record carries the HEAD sha, so the next pass still has something to diff from. **Only a full run's
+  other's files. It replaced git-tag anchors, which are **dead**: nothing reads or writes one, and none were
+  imported (2026-08-19, owner). A record carries the HEAD sha, so the next pass still has something to diff from. **Only a full run's
   `--result consolidated` establishes a baseline**; deltas stack, and a scope you skipped is recorded `skipped`,
   never consolidated — "not looked at" must not be spelled the same way as "already handled".
 - **Frontmatter** — keep `type` / `status` / `date` / `tags` current (plus `up` / `links` for tier relationships).

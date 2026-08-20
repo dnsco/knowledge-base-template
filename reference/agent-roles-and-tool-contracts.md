@@ -79,8 +79,8 @@ closed item into the workstream's dated `done/` ledger.
 - **Acts strictly off the dump's markers.** It never infers completion and never decides that something is done.
 - **May create and append to `done/`; may never rewrite existing text there.** That is the frozen-tier rule with one
   narrow licence.
-- **Never moves or merges documents, never rewrites prose for quality, never tags.** Those are the librarian's or
-  nobody's.
+- **Never moves or merges documents, never rewrites prose for quality, never records a pass as consolidated.**
+  Those are the librarian's or nobody's.
 - **Never rolls a parent item up over a live child.** Measured: it refused this three times in one round and named the
   reason each time. Correct behaviour, do not "fix" it.
 - **Verify content survives before promoting it** — in the new dump, or in `done/`. That is the whole difference
@@ -144,7 +144,7 @@ other. Every other role's restraint depends on this one existing.
 | `assert_isolated.py <base>` | first command in any worktree — see cross-role below |
 | `frontier_slice.py` | mandated as of 2026-08-19: `--section` first, `--stats` before any whole read |
 | `budget_check.py <ws>` | **exit 2** = over the signal, so extract or split — never trim the index. Prints the largest sections |
-| `pass_log.py baseline\|start\|stop` | the anchor, the announcement, and the record that replaces the tag |
+| `pass_log.py baseline\|start\|stop` | the anchor, the announcement, and the record of what a pass established |
 | `orientation_check.py <task>` | **exit 2** = a new task cited nothing it reviewed |
 
 ## `head-librarian` — coordination, and it curates nothing
@@ -257,6 +257,17 @@ divergence, which is the failure the extraction exists to end.
 | `port_file.py <path>` then `--apply` | copies down, reporting what it would flatten. **`--apply` is a wholesale copier and will flatten deliberate divergence** — it would have deleted 18 lines of project-specific wording from one skill and 19 from one tool. Dry-run, read the loss list, hand-port anything real |
 | `placeholders.py` | the placeholders defined once and imported by every tool that ports or checks a port. Imported, not invoked |
 
+### `agent_transcript.py` — read another agent's run without reading it
+
+| command | contract |
+|---|---|
+| `--list [--cwd PATH]` | every session under that project slug and its subagent transcripts, newest first, with sizes, agent types, and a LIVE marker on anything still being appended. **A worktree session has its own slug**, so `--cwd` is how you reach it |
+| `<agent-id>` | calls, per-tool byte totals, and cost with the traps applied — peak `cache_read` never a sum, `cache_creation` reported separately and never added, newlines rendered ` <NL> ` because collapsing them to `|` fabricates pipelines |
+| `<agent-id> --calls --min-bytes N` · `--grep PATTERN` | the expensive reads; whether a mandated tool actually fired |
+
+Bytes returned per call is the **denominator** of a relevant-fraction measurement. The classification — load-bearing
+/ duplicated / never used — is judgement and stays with the profiler.
+
 ### `recall_check.py` — the check that earns its keep
 
 Run it in **both** repos for every rewritten file. In one design rewrite it caught four real drops, including a trap
@@ -272,14 +283,14 @@ from N logs is not answering it. Untracked, because N worktrees appending to a t
 | command | contract |
 |---|---|
 | `start <role> "<desc>" [--scope S] [--kind K] [--parent ID]` | prints the pass id, which you keep. **exit 1** = a concurrent open pass overlaps your scope — judge it before writing. `--parent` keeps an orchestrator's own run from reading as a conflict with its children |
-| `stop <role> "<desc>" [--result R]` | `consolidated` \| `incremental` \| `skipped` \| `aborted`. **exit 2** = a defect, not a judgement call: a non-full pass claiming `consolidated`, a stop with no start, a double stop |
+| `stop <role> "<desc>" [--result R]` | `consolidated` \| `incremental` \| `skipped` \| `aborted`. Records `span_s`, `commits` and `files_changed` automatically, plus any `--metric key=value` you pass — a record that says only *consolidated* cannot feed a loop. **exit 2** = a defect, not a judgement call: a non-full pass claiming `consolidated`, a stop with no start, a double stop |
 | `active [--scope S]` | open passes, with age, and STALE on any older than `--stale-hours` (default 4) — an agent that died, not one still working |
 | `baseline [--scope S]` | the last `consolidated` full run, its HEAD sha as the delta anchor, and the deltas since. **exit 1** = no baseline, so the pass is necessarily full |
 | `history [--scope S]` | what the recent passes did, and when |
 
 What it keeps claiming, now enforced rather than asked: **a full run's record means consolidated**, **deltas stack**
 (the tool refuses `consolidated` from a delta), and **a skipped scope is recorded `skipped`, never consolidated**. A
-record carries the HEAD sha — the part a tag was good for — so rewriting history still orphans the anchors.
+record carries the HEAD sha, so rewriting history orphans every anchor.
 
 **The one failure mode is an unclosed `start`**, and it fails safe: another agent backs off unnecessarily. Every role
 closes what it opened, including scopes it skipped.

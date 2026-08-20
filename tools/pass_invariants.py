@@ -21,16 +21,16 @@ WHAT IT RUNS
                              SKIPPED, not failed, when the index refuses (exit 3/4) -- inside
                              a worktree that refusal is correct and expected.
   3. frozen_tier_check.py    nothing altered substance in done/, sources/ or external/
-  4. anchor re-diff          every tag named with --anchor resolves to a commit (an annotated
-                             tag silently breaks the next pass's delta) and leaves an empty
-                             delta against its own scope, which is what "consolidated" means
+  4. anchor re-diff          every scope named with --anchor has a consolidated record in the
+                             pass log whose sha resolves and leaves an empty delta, which is
+                             what "consolidated" means. Git tags no longer anchor anything
 
   Whole-vault by design. These are greps over a few dozen files, and scoping them to the delta
   is how a pass misses the merge one scope got wrong.
 
 USAGE
   python3 tools/pass_invariants.py <base-ref> [--vault PATH] [--memory-dir PATH]
-                                   [--anchor 'librarian/<scope>/full/<date>=<scope-path>']...
+                                   [--anchor <scope-path>]...
 
     exit 0   every invariant clean (skips reported, not hidden)
     exit 1   at least one invariant failed -- read the section, do not re-run hoping
@@ -38,6 +38,7 @@ USAGE
 """
 
 import argparse
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -142,35 +143,55 @@ def check_frozen(vault, base):
 
 
 def check_anchors(vault, anchors):
+    """Every scope named here must have a recorded baseline whose sha leaves an empty delta.
+
+    Git tags used to be the anchor; the pass log replaced them (see pass_log.py), so this reads
+    the log. The claim being checked is unchanged: a scope recorded as consolidated must actually
+    match the tree, or the next pass skips work on a promise nobody kept.
+    """
     res = Result("anchors")
     if not anchors:
-        res.status, res.detail = "SKIP", "none named (pass --anchor to check them)"
+        res.status, res.detail = "SKIP", "no scope named (pass --anchor <scope> to check one)"
         return res
+    log = Path(vault) / "pass-log.jsonl"
+    if not log.is_file():
+        res.status, res.detail = "FAIL", f"no pass log at {log}, so no scope can be consolidated"
+        return res
+    recs = []
+    for line in log.read_text(errors="replace").splitlines():
+        line = line.strip()
+        if line:
+            try:
+                recs.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
     problems, lines = [], []
     for spec in anchors:
-        tag, _, scope = spec.partition("=")
-        code, out = run(["git", "cat-file", "-t", tag], vault)
-        kind = out.strip()
-        if code != 0:
-            problems.append(f"{tag}: does not resolve")
+        scope = spec.partition("=")[0].strip("/")
+        cons = [r for r in recs if r.get("event") == "stop" and r.get("result") == "consolidated"
+                and (r.get("scope") or "").strip("/") == scope]
+        if not cons:
+            problems.append(f"{scope}: no consolidated record")
             continue
-        if kind != "commit":
-            # An annotated tag resolves to a tag object, and the next pass's delta breaks.
-            problems.append(f"{tag}: is a {kind}, not a commit -- must be lightweight")
+        sha = cons[-1].get("sha")
+        if not sha:
+            problems.append(f"{scope}: consolidated record carries no sha, so no delta is computable")
             continue
-        if scope:
-            code, out = run(["git", "diff", "--name-only", f"{tag}..HEAD", "--", scope], vault)
-            changed = [l for l in out.splitlines() if l.strip()]
-            if changed:
-                problems.append(f"{tag}: {len(changed)} file(s) still differ under {scope}")
-                lines.extend(f"    {c}" for c in changed[:5])
-            else:
-                lines.append(f"  {tag}  commit, empty delta under {scope}")
+        code, out = run(["git", "cat-file", "-t", sha], vault)
+        if code != 0 or out.strip() != "commit":
+            problems.append(f"{scope}: recorded sha {sha[:12]} does not resolve to a commit "
+                            f"(history rewritten?)")
+            continue
+        code, out = run(["git", "diff", "--name-only", f"{sha}..HEAD", "--", scope], vault)
+        changed = [l for l in out.splitlines() if l.strip()]
+        if changed:
+            problems.append(f"{scope}: {len(changed)} file(s) changed since its consolidated record")
+            lines.extend(f"    {c}" for c in changed[:5])
         else:
-            lines.append(f"  {tag}  commit")
+            lines.append(f"  {scope}  consolidated at {sha[:12]}, empty delta")
     res.output = "\n".join(lines)
     res.status = "FAIL" if problems else "PASS"
-    res.detail = "; ".join(problems) if problems else f"{len(anchors)} anchor(s) verified"
+    res.detail = "; ".join(problems) if problems else f"{len(anchors)} scope(s) verified"
     return res
 
 
@@ -181,7 +202,7 @@ def main():
     ap.add_argument("--memory-dir", default=None)
     ap.add_argument("--anchor", action="append", default=[],
                     metavar="TAG[=SCOPE-PATH]",
-                    help="an anchor tag to verify; repeatable")
+                    help="a scope whose consolidated record must still hold; repeatable")
     ap.add_argument("--strict-unresolved", action="store_true",
                     help="also fail on path-style unresolved targets (markdown relative links)")
     ap.add_argument("-v", "--verbose", action="store_true",

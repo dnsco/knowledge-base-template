@@ -108,7 +108,7 @@ What follows from that:
 - **Never automate it.** Not a hook, not `/loop`, not a reflexive "tidy the vault" at the end of every session.
 - **Never point it at the whole vault**, and never run it on a small model when it will delete docs.
 - **Small and often beats big and rarely.** One workstream, at a phase boundary. Cost scales with the **delta
-  since the last pass** — each pass tags the vault, and the next one reads only what changed — so frequent
+  since the last pass** — each pass records its sha in the pass log, and the next reads only what changed — so frequent
   passes get cheap while a neglected workstream gets expensive. Nine docs and four same-day journals is a big
   pass; two or three docs is a quick one.
 - **A delta pass is not a full one.** It scopes what gets *read*, never what may be written into, and it skips

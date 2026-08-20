@@ -157,8 +157,7 @@ and owns the `stop` — do not open a second one for the same scope.
 No baseline yet means this pass is necessarily a full one. The `consolidated` baseline matters separately from
 the most recent record: the licence to skip an untouched doc is "a previous pass already consolidated it", and
 only a full run ever establishes that — so deltas after it stack without extending the guarantee, and a full pass
-takes the baseline sha as its base, not the latest delta's. Git tags from before the log exist and remain
-readable as history; a pass no longer creates one.
+takes the baseline sha as its base, not the latest delta's.
 
 **The delta is the trigger set, never the working set.** This is the trap: a new journal usually has to be merged
 *into* a doc that itself has not changed since the last pass, and a pass that reads only the delta leaves it
@@ -403,8 +402,8 @@ python3 {{VAULT_PATH}}/tools/pass_log.py stop librarian "<one line>" --result in
 python3 {{VAULT_PATH}}/tools/pass_log.py stop librarian "<one line>" --result skipped        # you looked and did nothing
 ```
 
-The record carries the timestamp and the HEAD sha, which is everything a tag carried plus the two things it could
-not say: *when*, and *who else was here*. The tool refuses `consolidated` from a delta — deltas stack, and only a
+The record carries the timestamp and the HEAD sha, so it says when the pass ran, who else was here, and what to
+diff from. The tool refuses `consolidated` from a delta — deltas stack, and only a
 full run establishes a baseline. **A scope you skipped is recorded `skipped`, never consolidated**: that would
 convert "not looked at" into "already handled", which is the guarantee every later delta leans on.
 

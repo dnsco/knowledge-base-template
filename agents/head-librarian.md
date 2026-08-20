@@ -252,8 +252,8 @@ What it is checking, so you can read a failure:
   and a pure append pass while altered substance flags and must be reverted. An argument set matching no changed
   frozen file is a hard error, not "nothing to check" — silently treating it as nothing printed
   `no frozen-tier files changed` nine times in one run having read no diff at all.
-- **Anchors (legacy).** `--anchor` verifies a git tag from the era before the pass log. Existing tags stay
-  readable as history; a pass no longer creates one, so pass the flag only when you are checking an old anchor.
+- **Anchors.** `--anchor <scope>` re-checks that the scope's consolidated record in the pass log still leaves an
+  empty delta. A record that no longer matches the tree is a promise the next pass would skip work on.
 - **Any mechanical sweep you ran.** Re-apply the intended transform to the old text and require byte equality
   with the new, then justify every residual line as a deliberate edit.
 - **Single-sourced state.** No mutable fact — status, gate, PR number, what's next — asserted in two live docs.
@@ -274,7 +274,7 @@ Then, in order:
   **Do not bundle a doc-body edit into the same write as a shared-surface edit.** `git commit -- <path>` cannot
   split hunks within a file, so the only way out afterwards is to un-apply the edit, commit, and re-apply it —
   two extra writes to a live doc to undo your own packaging. Plan the commits before you write.
-- **Record each scope last**, after that scope's final commit — this is what a later pass reads instead of a tag:
+- **Record each scope last**, after that scope's final commit — this is what a later pass reads:
 
   ```bash
   python3 {{VAULT_PATH}}/tools/pass_log.py stop librarian "<scope>" --result consolidated   # full run
@@ -282,10 +282,9 @@ Then, in order:
   python3 {{VAULT_PATH}}/tools/pass_log.py stop librarian "<scope>" --result skipped        # screened out
   ```
 
-  A record carries a timestamp and closes a named `start`, which a tag cannot: a tag is one global name per scope,
-  so it cannot say *when* a pass ran or that two agents are on the same ground. Every open `start` you leave
-  unclosed reads to the next agent as an agent still working in that scope.
-- **The record carries the HEAD sha**, which is the part a tag was good for: the next pass diffs from it. So run
+  A record carries a timestamp and closes a named `start`, so it says *when* a pass ran and who else is on the
+  ground. Every open `start` you leave unclosed reads to the next agent as an agent still working in that scope.
+- **The record carries the HEAD sha**, and the next pass diffs from it. So run
   the `stop` **after** that scope is merged into the tree the next pass will read, and **never rewrite history
   afterwards** — a rebase or squash orphans every recorded sha, and then no delta can be computed at all.
 - **Close every scope you opened, including the ones you skipped.** An unclosed `start` is the log's only failure

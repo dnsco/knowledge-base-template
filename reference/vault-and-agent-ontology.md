@@ -120,7 +120,7 @@ workstream has nothing to put there and should not have the folder.
 out of it into `done/` over time as it is understood.
 
 **It must not go into `done/` on conversion.** Doing so claims consolidation over material nobody has read, which is
-the same error as tagging a skipped scope — and it is how context gets lost rather than partitioned. Live means: not
+the same error as recording a skipped scope consolidated — and it is how context gets lost rather than partitioned. Live means: not
 claimed as consolidated, still reachable, still a `librarian`'s to sort.
 
 This is also what makes the lazy conversion in *Conversion is lazy* safe before the orientation check exists. Nothing
@@ -199,7 +199,7 @@ append-only agents run in parallel without clobbering each other.
 | role | write authority | may not |
 |---|---|---|
 | `context-dump` (skill) | appends a dated dump to the live task | touch a frontier; delete, merge, restructure, re-link |
-| `frontier-clerk` | frontier state — flips, strikes, demotions, promotions to `done/` | move or merge docs; rewrite prose for quality; infer completion; tag |
+| `frontier-clerk` | frontier state — flips, strikes, demotions, promotions to `done/` | move or merge docs; rewrite prose for quality; infer completion; record a pass consolidated |
 | `librarian` | structure — consolidate, archive, re-link, sort `historical/` | make engineering decisions; infer completion; decide taxonomy alone |
 | `head-librarian` | coordination, shared surfaces, invariants, anchors | curate a doc; make a taxonomy or engineering call |
 | `scout` | nothing — it reports | write or curate anything; decide a taxonomy; answer its own questions |
@@ -293,11 +293,12 @@ the conversation about extraction or splitting and then executes it.
 
 ### Recording what a pass did
 
-✅ **A pass appends a timestamped record to a JSONL log, and that is the history.** Git tags were the mechanism and
-they are the wrong shape: a tag is a single global name per scope, so it cannot say *when* a pass ran or that two
-agents are working the same ground. An append-only log with timestamps can, and line-at-a-time appends collide far less
-than a shared namespace does. This is what lets an agent see that someone else touched this five minutes ago. Existing
-tags stay readable as history; a pass no longer creates one. `tools/pass_log.py`.
+✅ **A pass appends a timestamped record to a JSONL log, and that is the history.** `tools/pass_log.py`. It lets an
+agent see that someone else touched this five minutes ago, and line-at-a-time appends collide far less than a shared
+namespace does. **The git-tag mechanism it replaced is dead** (2026-08-19, owner): nothing reads or writes a tag, and
+none were imported as baselines — a tag was one global name per scope, so it could say neither *when* a pass ran nor
+that two agents were on the same ground, and importing a mechanism to keep a claim nobody had checked was the more
+expensive option.
 
 ✅ **One shared log at the vault root** — `pass-log.jsonl` — and **every role emits a `start` and a `stop` around its
 pass.** This reverses *one log per unit*, settled and then overturned the same day (2026-08-19, owner), on a reason
@@ -310,12 +311,12 @@ The cost is real and accepted: the log is the one thing here that is *not* parti
 `--scope` filters it, one line per pass boundary stays small for years, and the direction is the safe one — merging
 many logs into one is mechanical, splitting one is not.
 
-✅ **A record carries the HEAD sha**, which is the part a tag was actually good for: the next pass diffs from it. So a
+✅ **A record carries the HEAD sha**, and the next pass diffs from it. So a
 `stop` is recorded from the tree holding the merged work, and rewriting history afterwards orphans every anchor.
 **Untracked**, because N worktrees appending to a tracked file conflict on every pass, and because this is machinery
 state rather than corpus — nothing in the vault should cite it.
 
-What a pass records still has to answer the question tags were answering — **what may a later pass skip:**
+What a pass records has to answer one question — **what may a later pass skip:**
 
 - **A full run's record means consolidated.** It is the only thing that establishes the baseline.
 - **Deltas after it are incremental work, not yet consolidated.** They stack freely, and their accumulated weight *is*

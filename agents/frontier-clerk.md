@@ -105,7 +105,8 @@ to build on something that never happened.
   there gets an appended dated note, and only from a librarian. Your one licence in `done/` is the drain above:
   create a ledger, append to it, alter nothing that is already written.
 - **Never infer completion.** If the dump does not state it, it did not happen — say so in your report instead.
-- **Never tag.** You establish no consolidation, so advancing an anchor would claim coverage you never provided.
+- **Never record a pass as `consolidated`.** You establish no consolidation, so claiming it would licence a
+  later pass to skip work nobody did. Your `stop` is `incremental`, or `aborted`.
 - **Never write a competing frontier.** There is one per workstream, and it is the folder-note.
 
 **Write with `Edit`.** Its uniqueness check gives you the same guarantee as a guarded replace, without the cost
