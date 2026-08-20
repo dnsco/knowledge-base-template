@@ -47,11 +47,12 @@ its documents are placed, named and maintained:
 cp templates/vault-CLAUDE.md.template /path/to/your/vault/CLAUDE.md
 ```
 
-That template is the **corpus half only** — placement, filenames, frontmatter, voice, the byte budgets' purpose
-(not their values). The machinery half is this repo's, and the template says so rather than restating it, because
-a rule restated in two places diverges and a threshold restated in prose goes stale while a tool enforces
-something else. Once copied it is that vault's own document and will diverge on purpose: it should name your real
-repos, your dated evidence, your concrete shas. **Edit the template here; never port a vault's copy back.**
+That template carries the **corpus half** — placement, filenames, frontmatter, voice, and what the byte budgets
+are for. It points here for the machinery half and for every threshold's value, because a rule restated in two
+places diverges and a number restated in prose goes stale while a tool enforces something else.
+
+A vault's copy diverges on purpose: it should name your real repos, your dated evidence, your concrete shas.
+**Edit the template here; never port a copy back.**
 
 ## The roles
 
@@ -83,11 +84,11 @@ populated in a subagent's shell — measured — so no definition here interpola
 
 ## Changing a role
 
-There is one copy of every definition, skill and tool, so there is nothing to port and nothing to diff. The loop:
+One copy of every definition, skill and tool exists, so authoring is the whole of it. The loop:
 
 **author here → try it on real work → `lipika recall-check <pre-change-ref> <path>` → profile it → summarise the
 round where the next agent will read it → feed the findings back.** Every recall-check flag is judged in writing,
-and you never reword a file to satisfy one. That last edge is what makes it a loop rather than a checklist.
+and you never reword a file to satisfy one. That last edge is what makes it a loop.
 
 Two things bite immediately. **A definition change is served stale for minutes** and the agent registry caches at
 session start, so probe with a question the old and new text answer differently before trusting any measurement —

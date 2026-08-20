@@ -59,7 +59,7 @@ that converts a workstream is the one that operates it, and that is a `librarian
    appended wherever the session happened to be rooted. **Ask the closure question** because a marker only exists
    if someone raised it, and a dump is the moment: you ask, the owner answers, the clerk acts on the marker.
 
-   **If `pass_log.py active` shows an open pass on this workstream, say so before you write.** Another agent is
+   **If `lipika pass-log active` shows an open pass on this workstream, say so before you write.** Another agent is
    editing these files right now — a `librarian` mid-restructure is the case that loses work. A STALE record (no
    stop record, older than a few hours) is an agent that died, not one still working; say which you saw.
 

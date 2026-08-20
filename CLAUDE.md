@@ -25,9 +25,9 @@ agents/       role definitions — flat .md, because the registry reads *.md and
 skills/       the capture skill; SKILL.md is read from disk at invocation, so edits take effect at once
 tools/        runnable python; every one resolves the vault rather than assuming cwd
 design/       this machinery's own design docs — the ontology, the eval method, the gotchas
-templates/    what a new vault is seeded from — `.template` suffixed, so nothing here is mistaken for
-              this repo's own config. `vault-CLAUDE.md.template` is the corpus half of a vault's
-              conventions; the machinery half is this repo and the template points at it
+templates/    what a new vault is seeded from, `.template` suffixed so it reads as a template rather than
+              as this repo's config. `vault-CLAUDE.md.template` is the corpus half of a vault's
+              conventions and points here for the machinery half
 ai_docs/      symlink to the vault this is developed against. Local, gitignored
 ```
 
@@ -52,20 +52,18 @@ profile it, qualitative read before any figure → summarise the round where the
 feed the findings back. That return edge is the difference between a design that stays true and one that
 becomes aspirational.
 
-**Why the check is a tool and not a careful re-read:** a grep checklist written from the memory that did the
-cutting can only confirm itself. It searches for what its author still remembers keeping, so the one class of
-loss it cannot find is the one that matters — a rule the cutter forgot was there.
+**Why a tool rather than a careful re-read:** a grep checklist searches for what its author still remembers
+keeping, so the one loss it cannot find is the one that matters — a rule the cutter forgot was there.
 
 **Prefer a tool that refuses to prose that asks.** Measured repeatedly: a rule written into a definition
 gets read past, and the same rule with an exit code fails loudly. A definition is also a system prompt
 paid for on every invocation, so a tool is the cheaper end as well.
 
-**A role that measures the machinery is a different class, and the span and byte budgets do not apply to
-it.** A profiling or eval run's subject is another agent's run rather than the corpus, so capping it buys a
-cheaper profile by reading less — the opposite of what the cap is for. `eval-profiler` has recorded passes in
-the pass log and **no definition on disk**: it runs as an ad-hoc brief against `design/agent-eval-method.md`,
-which is itself the "prose does not fire" failure above, and giving it a real definition here is owed.
-The pass log has no `eval` kind either, so such a run must currently file itself as an operating one.
+**A role that measures the machinery is exempt from the span and byte budgets.** Its subject is another
+agent's run rather than the corpus, so a cap buys a cheaper profile by reading less. `eval-profiler` has
+recorded passes in the pass log and **no definition on disk** — it runs as an ad-hoc brief against
+`design/agent-eval-method.md`, and it owes one. The pass log has no `eval` kind yet, so such a run files itself
+as an operating one.
 
 ## Landmines
 
@@ -75,7 +73,7 @@ The pass log has no `eval` kind either, so such a run must currently file itself
 - **Harness worktree isolation cuts from `origin/main`.** A vault that is never pushed has a stale
   `origin/main`, so a harness-isolated sub-agent lands in a tree where recent work does not exist and
   reports clean. Provision with `git worktree add … <base-sha>`; every sub-agent's first command is
-  `assert_isolated.py <base>`.
+  `lipika assert-isolated <base>`.
 - **The `Edit` tool needs its own `Read`.** A slice read through Bash does not satisfy the guard, so the
   first `Edit` fails. Read the ten lines around your anchor rather than re-reading the file — and do not
   route around the guard with in-place scripts, which trades auditability for a call.

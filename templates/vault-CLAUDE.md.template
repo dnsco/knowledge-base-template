@@ -1,12 +1,13 @@
 <!--
-  TEMPLATE. Lipika (github.com/dnsco/lipika) writes this to a vault's root as CLAUDE.md.
-  It is the *corpus* half only: how documents are placed, named, written and maintained.
-  The machinery half — the roles, the capture skill, the tools and their thresholds — is
-  Lipika's, and is deliberately not restated here. Anywhere this file needs to name a tool
-  it says `lipika <command>`; anywhere it would state a number, it points at
-  `lipika vault-config show` instead, because a threshold restated in prose goes stale while
-  a tool quietly enforces something else. Edit this template in Lipika, never the copy in a
-  vault — the copy is that vault's own document and will diverge on purpose.
+  TEMPLATE. Lipika (github.com/dnsco/lipika) seeds a vault's root CLAUDE.md from this file.
+
+  It carries the corpus half: how documents are placed, named, written and maintained. The
+  roles, the capture skill and the tools are Lipika's, so this file names them and points at
+  them. It names a tool as `lipika <command>` and a threshold as `lipika vault-config show`,
+  because a threshold restated in prose goes stale while a tool enforces something else.
+
+  Edit this template in Lipika. A vault's copy diverges on purpose — it should name that
+  vault's real repos, dated evidence and concrete shas — so it is never ported back.
 -->
 
 # How to use this knowledge base
