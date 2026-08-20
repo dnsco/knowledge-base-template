@@ -24,10 +24,25 @@ used, not written up afterwards from memory. Amendments are dated at the bottom.
    first — a vault-side edit guarantees a second divergence, which is the failure the extraction exists to end.
 2. **Port down** and check with `tools/port_check.py`. Deliberately not a byte-identity check.
 3. **Prove no rule was dropped**, in both repos, with `tools/recall_check.py`.
-4. **Try it on real work**, then **profile it**, and feed the findings back to step 1.
+4. **Try it on real work**, then **profile it** — the frozen, verbatim measurement goes in `sources/evals/`.
+5. **Write the round's summary** into the workstream's own `reference/`, and feed the findings back to step 1.
 
-Step 4's return edge is what makes this a loop rather than a checklist. Every durable improvement to these roles
+Step 5 is not a duplicate of step 4. **A frozen eval is written for whoever audits the measurement; the summary
+is written for the next agent, which will not read the eval.** So it is short — what changed this round, what was
+run, then the findings and the numbers an agent needs to size its own work: current definition bytes, the last
+measured span per role against its budget, and the traps that cost a call. One per round, dated,
+`workstreams/<ws>/reference/YYYY-MM-DD-<topic>.md`; the newest is the one to read. It carries **no live status
+and no next-moves** — those belong to the task frontier, and a summary that grows them has become a second
+frontier.
+
+Step 5's return edge is what makes this a loop rather than a checklist. Every durable improvement to these roles
 so far came from a profile, not from re-reading a definition.
+
+**One condition on step 4 that is easy to miss: a definition change is served stale for a few minutes.** After
+`agents/*.md` changes, spawns can still receive the previous text, and nothing in a transcript says which version
+produced the behaviour — so a round that ports and immediately profiles can measure the old definition and report
+clean. Probe with a question the two versions answer differently before trusting any figure. Skills are exempt:
+`SKILL.md` is read from disk at invocation.
 
 ## Where the artifacts live
 
@@ -40,6 +55,7 @@ so far came from a profile, not from re-reading a definition.
 | task-output symlinks to the same files | `/private/tmp/claude-502/<slug>/<session-id>/tasks/<id>.output` |
 | frozen profiling reports | `sources/evals/YYYY-MM-DD-HHMM-<subject>-profile.md`, **`HHMM` from `date -u` when you write it** — not the run's start, not its completion |
 | the findings drawn from them | `workstreams/vault-maintenance/` |
+| the round summary an agent actually reads | `workstreams/<ws>/reference/YYYY-MM-DD-<topic>.md`, newest first |
 
 Timestamp an eval filename **to the minute**, from the profiled agent's completion time, so several evals in one
 day cannot collide:

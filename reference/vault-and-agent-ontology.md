@@ -803,8 +803,9 @@ failed, however well it encodes a real measurement — rewrite it rather than re
 | this document | the **design** — the shape, the forces, the falsifiers |
 
 **Developed through the loop in `agent-eval-method.md`** — author upstream, port down, prove no rule was
-dropped in either direction, try it on real work, profile it, feed the findings back. That return edge is
-the difference between a design that stays true and one that becomes aspirational.
+dropped in either direction, try it on real work, profile it, summarise the round where the next agent will
+read it, feed the findings back. That return edge is the difference between a design that stays true and one
+that becomes aspirational.
 
 ## Amendments
 
