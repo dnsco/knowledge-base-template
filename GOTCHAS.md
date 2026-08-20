@@ -45,8 +45,9 @@ The discipline, worth stating in the invocation whenever a session will touch th
   restructures, and not a frontier edit either.
 - **The frontier — `status` flips, striking a completed item: `frontier-clerk` only.** The dump dispatches it in
   the background; it is not something to do by hand on the way past.
-- **Delete / merge / archive / re-link: librarian only**, as its own deliberate pass, on a clean tree. It fans
-  out one sub-librarian per scope only when several workstreams are overdue at once.
+- **Delete / merge / archive / re-link: librarian only**, as its own deliberate pass, on a clean tree, and it
+  has full autonomy inside the scope you give it. Several workstreams overdue at once, or anything crossing a
+  scope boundary, is the `curator`'s.
 - **Never touch `done/`.** It is frozen.
 - Spotted overdue cleanup? **Recommend a librarian pass**; don't do it inline.
 

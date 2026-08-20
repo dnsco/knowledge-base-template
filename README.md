@@ -24,7 +24,8 @@ The fix is a split, and it's the whole design:
 |---|---|---|
 | **`context-dump` skill** — any session doing engineering | a dated journal entry, and nothing else | the frontier; deletes, merges, archives, restructures, re-links |
 | **`frontier-clerk` agent** — spawned by the dump | frontier state only: `status` flips, marker moves, striking items whose completion is recorded | moving content between docs; inferring completion; tagging |
-| **`librarian` agent** — a separate deliberate pass | structure at task, workstream or vault scope: consolidates overlapping docs, rewords and merges redundant facts, archives finished work, fixes the `[[link]]` graph; fans out one sub-librarian per scope at vault scope | engineering decisions; inferring that something is done |
+| **`librarian` agent** — one scope, full autonomy inside it | structure within its scope: consolidates overlapping docs, rewords and merges redundant facts, splits the workstream, splits and merges tasks, archives finished work, fixes the `[[link]]` graph | reaching outside its prefix; the shared surfaces; engineering decisions; inferring that something is done |
+| **`curator` agent** — the vault feels messy | which scopes exist, everything crossing a boundary, and the shared surfaces | any document's substance |
 | **`scout` agent** — read-only reconnaissance | nothing in the corpus; it announces itself in the pass log | any edit, commit, or taxonomy call |
 
 Each boundary is a **capability, not a request for restraint**: the appending agent *cannot* rewrite, so the
@@ -41,7 +42,8 @@ GOTCHAS.md                   what bites after setup; measured, not assumed
 README.md                    (this file; replaced by your knowledge base's map at bootstrap)
 BOOTSTRAPPING.md             setup
 skills/context-dump/         the append-only capture skill
-agents/librarian.md          the compacting agent; fans out per scope at vault scope
+agents/librarian.md          the compacting agent, scoped to one workstream
+agents/curator.md            vault-wide normalization; fans out one librarian per scope
 agents/frontier-clerk.md     reconciles a frontier against a dump's entry, and writes nothing else
 agents/scout.md              read-only reconnaissance; reports, writes nothing
 tools/                       the librarian's verification tools: verify_pr_markers.py (batch

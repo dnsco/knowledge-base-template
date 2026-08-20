@@ -84,8 +84,8 @@ tiered by role, because a development task and a task someone waits on are not t
 | north star, any operation | **2 min, aspirational** |
 | `context-dump` — the only synchronous one | 2 min |
 | `frontier-clerk` | very cheap, in tokens and in time; 2 min |
-| `librarian`, scoped pass | ~5 min, realistically, for now |
-| `librarian`, full pass | aim under 5 min, **8 min hard limit** |
+| `librarian` — one scope | ~5 min, realistically, for now |
+| `curator` — vault-wide | aim under 5 min, **8 min hard limit** |
 | eval, profiling, or other developer work | **exempt** — a development task, not one anyone waits on |
 
 Current spans for every role: `pass-log.jsonl`, via `pass_log.py history`. **Nothing measured yet meets
@@ -251,17 +251,25 @@ A stale claim in any of the three gets an **appended dated note**, never an edit
 
 ## 6. The roles
 
-Five definitions became three. **The original organising principle was *who may write what*:**
+Five definitions became four. **The original organising principle was *who may write what*:**
 concentrating destructive operations in one role is what let append-only agents run in parallel without
 clobbering each other, and every other role's restraint depended on that one existing. **The pass log now
 answers concurrency directly** (§7), which is what the write partition was standing in for — so the
-principle is now **who loads what, and how long it takes**.
+principle is now **who loads what, how long it takes, and how far it reaches.**
+
+**Reach is what separates the `librarian` from the `curator`, and it is a cost decision.** Measured
+2026-08-20: folding the vault-wide orchestration into the `librarian` took its definition from 35,309 B to
+43,888 B, so every **scoped** pass — the common case — paid 13,767 B of fan-out prose it never used: **+23%**
+on a scoped pass and **+35%** on a three-scope run. Splitting the reach out into a `curator` beats both that
+state and the state before the fold, because the fold's real win was deleting duplicated *rules*, which is
+separable from merging the roles: both read `CLAUDE.md` first, so neither definition has to restate them.
 
 | role | scope | synchronous? | does |
 |---|---|---|---|
 | `context-dump` (skill) | the live task | **yes** — the only one | appends one dated dump |
 | `frontier-clerk` | one frontier | no — background | reconciles a frontier against the dumps |
-| `librarian` | task / workstream / vault | no — background | consolidate, reword, merge, move, split, archive, sort `historical/`, convert; fans out per scope at vault scope |
+| `librarian` | one task, workstream or grand plan | no — background | inside its scope: consolidate, reword, merge, split the workstream, split and merge tasks, archive, sort `historical/`, convert |
+| `curator` | the vault | no — background | which scopes exist, and everything crossing a boundary: fan out one `librarian` per scope, merge, repoint, normalize conventions, own the shared surfaces |
 | `scout` | any | on demand | read-only recon in a discarded context |
 
 **Only the dump is synchronous.** It is an event: you know it happened, and it does not return until it
@@ -390,14 +398,20 @@ a list, and drains a closed item into the workstream's dated `done/` ledger.
 
 ### `librarian` — structure, and the only role that destroys
 
-**What it does**, at one of three scopes:
+**What it does**, inside **one** scope handed to it — a task, a workstream, or a grand plan:
 
 - **task** — reconcile and tidy one task's frontier and its dumps.
-- **workstream** — consolidate overlapping notes, reword, merge redundant facts, promote finished work to
-  `done/`, repair the link graph, sort `historical/`, convert a workstream to the task shape.
-- **vault** — spawn one sub-`librarian` per scope in its own worktree, then do what none of them can:
-  merge their branches, apply cross-scope link repoints, correct claims that went false in another
-  agent's files, sync the shared surfaces, run the invariant checks, and commit.
+- **workstream** — consolidate overlapping notes, reword, merge redundant facts, split the workstream, split
+  and merge tasks, promote finished work to `done/`, repair the link graph, sort `historical/`, convert a
+  workstream to the task shape.
+
+▢ **Autonomy inside the scope is bounded by losslessness, not by permission** (owner decision, 2026-08-20). It
+does not ask; it keeps every fact and reports a change list. Handing it a taxonomy decision it could make
+itself is the duty that failed to fire in two previous homes.
+
+**What it may not do is reach past its prefix.** Which scopes exist, fusing two workstreams that are one
+effort, relocating a document to another workstream, a convention applied inconsistently across scopes, and a
+claim in another scope's files that its work falsified — all the `curator`'s. So are the shared surfaces.
 
 **Governing rules.**
 
@@ -426,14 +440,8 @@ a list, and drains a closed item into the workstream's dated `done/` ledger.
   same way as "already handled".
 - **A delta pass must never scope its *writes* to the delta.** Reading only changed documents leaves a new
   dump un-merged into an untouched frontier while the pass reports success.
-- **Two scopes in one invocation run sequentially, never in parallel** — both write the shared map and the
-  memory pointer, so parallel passes clobber each other. Partition by path and let the parent own the
-  shared files.
-- **Only fan out when several scopes are genuinely overdue.** **Adding a scope costs a whole pass floor**,
-  and the floor is most of a pass; batching documents into one scope is nearly free.
-- **A pass is not over until every spawned scope has returned or been accounted for.** ⏳ Regressed once
-  after being fixed — an orchestrator said it would wait and then returned, costing a full context resume.
-  **Live and unmitigated in prose**, which by §10 means it wants a tool.
+- **Never two scopes in parallel in one invocation** — both write the shared map and the memory pointer, so
+  parallel passes clobber each other. Sequentially, and the shared files are the `curator`'s.
 - ⏳ **Refusing to act is sometimes correct.** One sub-`librarian` declined to promote 25 dead ends — what
   a literal reading of its mandate asked, and the larger half of the material by bytes — citing two of the
   owner's own rulings. A refusal reversed or upheld on rule-reading is the behaviour a simplification pass
@@ -456,6 +464,46 @@ a list, and drains a closed item into the workstream's dated `done/` ledger.
 not here, because an inventory goes stale the way a count does and this document carries neither.
 **Vault machinery is defined by membership in the template**, which is what makes the boundary checkable:
 durable role machinery is shared upstream, one-off analysis is not.
+
+### `curator` — reach, and the surfaces no scope owns
+
+▢ **The role for "the vault feels messy."** It exists because reach is a cost: a `librarian` invoked on one
+workstream should not carry the prose for deciding what the vault needs. Added 2026-08-20 as the owner's answer
+to the +23%-per-scoped-pass measurement above; the earlier ruling that a `curator` *may earn its own role later*
+is discharged by it. **It is not a rename of the `librarian`** — that remains ruled out.
+
+**What it does.** Screens and partitions the vault into scopes, dispatches one `librarian` per scope in its own
+worktree, then does what no single-scope agent can: merges their branches, applies cross-scope link repoints,
+corrects claims another scope's work falsified, normalizes a convention applied inconsistently, fuses two
+workstreams that are one effort, syncs the shared surfaces, runs the invariants and commits.
+
+**Governing rules.**
+
+- **It never rewrites a document's substance.** Every judgement about what a document should say belongs to the
+  `librarian` it dispatched, which needs no permission inside its scope.
+- **It owns `README.md`, `CLAUDE.md` and the memory pointer**, and nothing else writes them. A `librarian`
+  reports its surfaces delta rather than applying it.
+- **Only run it when several scopes are genuinely overdue.** **Adding a scope costs a whole pass floor**, and the
+  floor is most of a pass; batching documents into one scope is nearly free. One or two scopes overdue is a
+  `librarian` invoked directly.
+- **Screen on shape, not delta.** A zero-file delta certifies nothing: the two largest restructures of one run
+  had empty deltas. Skip only on three git-or-filesystem facts together — no delta since the *consolidated*
+  baseline, a folder-note under bound, and nothing at the scope's top level beside it.
+- **A pass is not over until every spawned scope has returned or been accounted for.** ⏳ Regressed once after
+  being fixed — an orchestrator said it would wait and then returned, costing a full context resume. **Live and
+  unmitigated in prose**, which by §10 means it wants a tool.
+- **Validate and merge incrementally.** Holding the merge until the last scope lands has left 55% of a run's
+  span idle; paths are disjoint, so only the README sync needs them all.
+- **Isolation does not replace reconciliation.** Worktrees stop agents corrupting each other's work and do
+  nothing about links and claims that cross a boundary.
+- **A grand plan and a top-level folder stay the owner's**, as for the `librarian`.
+
+| tool | contract |
+|---|---|
+| `scope_manifest_validate.py <manifest> <branch>` | does a scope's structured return match the branch it wrote? **exit 0** holds, **UNVERIFIED reported rather than hidden** · **exit 1** an assertion failed · **exit 5** bad invocation. Unknown keys preserved and reported, never rejected |
+| `pass_invariants.py <ref>` | every end-of-pass check in one call, run **once, after the merge** |
+| `pass_log.py start --parent`, `stop` | one record per scope plus its own run; `--parent` keeps its lineage from reading as a conflict with itself |
+| `scope_recon.py`, `verify_pr_markers.py`, `assert_isolated.py`, `vault_commit.py` | as above and §7 |
 
 ### `scout` — read-only reconnaissance, in a context that is discarded
 
@@ -779,6 +827,11 @@ cut is the part worth reading. The redesign it encodes, all owner decisions:
 
 - **Roles fall in two classes**, operating and vault-development, and only the operating ones carry §3's
   budgets. The profiler was never an operating definition and was never counted as one.
+- **A `curator` takes the vault-wide reach back out of the `librarian`** (owner decision, 2026-08-20, after the
+  fold was measured at +23% on a scoped pass). A `librarian` now gets one scope and full autonomy inside it,
+  bounded by losslessness; the `curator` owns which scopes exist, everything crossing a boundary, and the shared
+  surfaces. Five definitions became three and then four.
+- **Splitting a workstream is the `librarian`'s to execute and report**; a grand plan stays the owner's.
 - **The `scout` announces itself in the pass log.** Its write-nothing guarantee covers the corpus, not the
   machinery state that tells every other role where it is.
 

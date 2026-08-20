@@ -34,7 +34,7 @@ meaning is preserved.** What must never happen is a fact becoming unfindable. `r
 every flag is judged **in writing** — "reworded, fact intact" is an acceptable answer, a missing fact is not, and
 you never reword a file to satisfy a flag.
 
-**Roles — four of them, and only the dump is synchronous.** A working agent (any session doing engineering)
+**Roles — five of them, and only the dump is synchronous.** A working agent (any session doing engineering)
 **only appends**: capture findings with the **`context-dump` skill** — a dated **dump** inside the live task,
 plus emitting the marker that flips a doc's `status` the moment work lands or a question settles — and **never**
 deletes, merges, archives, restructures, or re-links. Everything else runs in the background:
@@ -44,10 +44,18 @@ deletes, merges, archives, restructures, or re-links. Everything else runs in th
   already lagging — not on every dump. A purely additive dump says *no clerk pass owed* and names the check it
   ran; judging it unnecessary is not a licence to make the clerk's edits yourself. The dump **dispatches** it and
   does not block on it, and says so rather than claiming a reconciled frontier.
-- **The `librarian`** is the only role that destroys: consolidate, reword, merge, move, split, archive, sort
-  `historical/`, convert a workstream, and at vault scope fan out one sub-librarian per scope. Run it as a
-  separate deliberate pass ("run the librarian" / "tidy the vault", or at a phase boundary). Spot overdue
-  cleanup? **Flag it and recommend a librarian pass**; don't do it inline.
+- **The `librarian`** is the only role that destroys, and it works **one scope** — a task, a workstream or a
+  grand plan — with **full autonomy inside it, bounded by losslessness rather than permission**: consolidate,
+  reword, merge, split the workstream, split and merge tasks, archive finished ones, spin finished material out
+  as its own task or workstream and move it to `done/`, sort `historical/`, convert. It does not ask; it reports
+  a change list. Run it as a separate deliberate pass, or at a phase boundary. Spot overdue cleanup? **Flag it
+  and recommend a pass**; don't do it inline.
+- **The `curator`** is the role for *the vault feels messy*. It owns which scopes exist and everything crossing
+  a boundary — fanning out one `librarian` per scope, merging their branches, repointing links across scopes,
+  correcting a claim another scope's work falsified, normalizing a convention applied inconsistently, fusing two
+  workstreams that are one effort — plus `README.md`, `CLAUDE.md` and the memory pointer, which nothing else
+  writes. It never rewrites a document's substance. **One or two scopes overdue is a `librarian`, not a
+  curator:** adding a scope costs a whole pass floor.
 - **The `scout`** goes ahead read-only and returns findings and a recommendation with the inputs behind them,
   carrying named briefs — `orientation`, `sizing`, `closure`, `recon`. Its context is discarded on return, so its
   reads cost the caller only the answer. Send one rather than doing its reading in the context you need to keep.
@@ -118,7 +126,8 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   that is two efforts wearing one name. It **never** means trimming the task index or deleting history; a unit
   held under budget that way has failed the check it appears to pass. **Nor may the budget restrict what a task
   pulls forward** — a check that makes an agent carry less context has done harm. **Splitting a workstream is
-  the `librarian`'s to execute and report**, like any other structural change; a **grand plan** is the owner's.
+  the `librarian`'s to execute and report**, like any other structural change; a **grand plan**, and inventing
+  or renaming a top-level folder, are the owner's.
 - **A task pulls forward what bears on it when it opens** — the still-live GATEs, LANDMINEs, DEAD ENDs and
   settled decisions from the workstream's closed tasks and `historical/`, into a `## Carried across` section of
   its frontier, each cited by source. Selection is paid once, by whoever knows what the task is about.
