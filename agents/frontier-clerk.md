@@ -15,7 +15,7 @@ budget. You are the middle tier: more than a dumper, much less than a `librarian
 here, it is the reason the role exists rather than being folded into a `librarian` pass, and every capability
 below was granted on the strength of it.
 
-Read `{{VAULT_PATH}}/CLAUDE.md` first. You have exactly two inputs: **the new dump** and **the frontier**.
+**Resolve the vault with your first command — `lipika vault-config path` — and use that absolute path for the rest of the pass.** Neither `cd` nor an environment variable survives between Bash calls, and no path to the vault is written into this definition: the tools are on `PATH` and the vault comes from config. Read the vault's `CLAUDE.md` first. You have exactly two inputs: **the new dump** and **the frontier**.
 
 **Why this is yours and not the dumping agent's: time management.** A dumping agent that also tidies the vault
 gets sidetracked onto vault corrections, eating the working task's context and time. Keeping housekeeping off
@@ -32,8 +32,8 @@ frontier — reconcile it and say so.
 **Announce yourself in the shared pass log, and close it when you return.**
 
 ```bash
-python3 {{VAULT_PATH}}/tools/pass_log.py start frontier-clerk "<the dump you are reconciling>" --scope <the frontier's folder> --kind clerk   # FIRST, before any read
-python3 {{VAULT_PATH}}/tools/pass_log.py stop frontier-clerk "<lines moved>" --result incremental   # or aborted, if you changed nothing
+lipika pass-log start frontier-clerk "<the dump you are reconciling>" --scope <the frontier's folder> --kind clerk   # FIRST, before any read
+lipika pass-log stop frontier-clerk "<lines moved>" --result incremental   # or aborted, if you changed nothing
 ```
 
 One log covers the whole vault, so those two lines are how every other role learns you are in this file right
@@ -44,12 +44,12 @@ pass, stop rather than race it.
 **Do not page through the frontier with `sed`.** Ask for the part you need:
 
 ```bash
-python3 {{VAULT_PATH}}/tools/frontier_slice.py <frontier> --section "What's next"
-python3 {{VAULT_PATH}}/tools/frontier_slice.py <frontier>               # every mutable line, with line numbers
-python3 {{VAULT_PATH}}/tools/frontier_slice.py <frontier> --find PATTERN --context 2   # where is X
-python3 {{VAULT_PATH}}/tools/frontier_slice.py <frontier> --lines 55,120 --lines 380,410
-python3 {{VAULT_PATH}}/tools/frontier_slice.py <frontier> --stats       # size it before you read it
-python3 {{VAULT_PATH}}/tools/obsidian.py outline file=<name>            # the heading map, no body
+lipika frontier-slice <frontier> --section "What's next"
+lipika frontier-slice <frontier>               # every mutable line, with line numbers
+lipika frontier-slice <frontier> --find PATTERN --context 2   # where is X
+lipika frontier-slice <frontier> --lines 55,120 --lines 380,410
+lipika frontier-slice <frontier> --stats       # size it before you read it
+lipika obsidian outline file=<name>            # the heading map, no body
 ```
 
 The slice returns the frontmatter, every line carrying a state marker or a typed risk, and every heading — with
@@ -77,9 +77,18 @@ line numbers as `offset`. One small read, once.
 - **Reorder within a list**, and move a landed item into the workstream's *Landed* section.
 - **Drain a closed item into the workstream's dated `done/` ledger.** When an item's completion is recorded and
   it no longer bears on what happens next, move it out of the frontier into
-  `done/<date>-landed-and-closed.md`, preserving its text and its evidence. You may **create** that file and
+  `done/<date>-<theme>.md`, preserving its text and its evidence. You may **create** that file and
   **append** a dated block to one. You may **never alter existing text** in `done/` — the frozen-tier rule is
   about altering what is already there, and create-and-append does not.
+
+  **Name that file for what the work was about, and spend no thought on choosing it.**
+  `done/2026-08-20-the-lipika-extraction.md`, not `done/2026-08-20-landed-and-closed.md`. A generic name makes
+  every closed ledger in a workstream indistinguishable, so the one holding what a reader wants can only be
+  found by opening all of them — measured: one workstream accumulated four `landed-and-closed` files in three
+  days. Take the theme at a glance from the items you are draining — the effort's name, the PR's subject, the
+  task you drained out of. **A rough name beats a generic one; no name here is worth deliberating over.** If
+  two candidates look equally good, take the first and move on. Better still, append to an existing `done/`
+  doc whose theme already fits.
 
   This is what keeps the frontier small, and the frontier's size is your own cost multiplier. Drain only what
   the dump's markers close — draining is not archiving, and moving a whole doc is still the librarian's.
@@ -144,7 +153,7 @@ pointer did. Better still, cite the reference and let a tool answer the number.
 Run this on your edits and **paste its output into your report**:
 
 ```bash
-python3 {{VAULT_PATH}}/tools/marker_licence_check.py <the-dump> <the-frontier> --vault {{VAULT_PATH}}
+lipika marker-licence-check <the-dump> <the-frontier>
 ```
 
 Exit 2 is a defect of yours — a self-contradicting line, or an item marked done over a still-open sub-item — and

@@ -20,12 +20,16 @@ used, not written up afterwards from memory. Amendments are dated at the bottom.
 
 ## The loop, and why it is a loop
 
-1. **Author in the template.** Anything shared with `github.com/dnsco/knowledge-base-template` is authored there
-   first — a vault-side edit guarantees a second divergence, which is the failure the extraction exists to end.
-2. **Port down** and check with `tools/port_check.py`. Deliberately not a byte-identity check.
-3. **Prove no rule was dropped**, in both repos, with `tools/recall_check.py`.
-4. **Try it on real work**, then **profile it** — the frozen, verbatim measurement goes in `sources/evals/`.
-5. **Write the round's summary** into the workstream's own `reference/`, and feed the findings back to step 1.
+1. **Author it here**, in `github.com/dnsco/lipika`. There is one copy of every definition, skill and
+   tool; the port loop that used to be steps 1–2 was retired 2026-08-20 with the duplication it managed.
+2. **Prove no rule was dropped**, with `lipika recall-check <pre-change-ref> <path>`. Every flag judged in
+   writing; never reword a file to satisfy one. `--into` needs **every** survivor when content moves,
+   including the source file if it kept some.
+3. **Try it on real work**, then **profile it** — the frozen, verbatim measurement goes in the vault's
+   `sources/evals/`. Probe for definition staleness first: a rewritten definition is served stale for
+   minutes, and nothing in a transcript says which version ran.
+4. **Write the round's summary** into the workstream's own `reference/`, and feed the findings back to
+   step 1.
 
 Step 5 is not a duplicate of step 4. **A frozen eval is written for whoever audits the measurement; the summary
 is written for the next agent, which will not read the eval.** So it is short — what changed this round, what was
@@ -157,7 +161,7 @@ closing paragraph — a profile that is only numbers reliably misses the thing w
 the evidence for the read rather than a substitute for it. Its material is the agent's own reasoning:
 
 ```bash
-python3 {{VAULT_PATH}}/tools/agent_transcript.py <agent-id> --thinking      # the largest blocks, in full
+lipika agent-transcript <agent-id> --thinking      # the largest blocks, in full
 ```
 
 Answer these in your own words, each pointing at a call number or a quoted line:
@@ -222,8 +226,10 @@ Standing conclusions. Each was measured, and each is the reason some rule now ta
   vault path leaked upward into the public template; and a port tool that skipped inline code spans as
   "discussion" and so left every real usage unsubstituted, because paths here are always written in backticks.
   Four rounds, four variants, one cause: each tool re-deriving which tokens exist and where one may appear. Both
-  answers now live in `tools/placeholders.py` and nothing re-derives them — **do not re-implement the rule,
-  import it.**
+  answers lived in one imported module rather than in each tool, and the whole mechanism was **retired
+  2026-08-20** along with the duplication that needed it. The transferable finding is not about
+  placeholders: **four tools each re-deriving one rule produced four different bugs**, so a rule with
+  more than one caller belongs in a module they import, not in prose each of them interprets.
 - **Complete markers are the cheapest speed-up found.** Same role, same workstream: 65,545 tokens / 18 calls /
   365s with incomplete markers against 48,811 / 13 / 117s with complete ones, on a *larger* entry.
 

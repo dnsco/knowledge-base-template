@@ -119,11 +119,25 @@ def main_checkout():
 
 
 def log_path(arg):
+    """Where the shared log is. **The vault's root, never the caller's repository.**
+
+    This used to derive from the current checkout, which was right while the tools lived inside the
+    vault and wrong the moment they moved: running a tool from the machinery's own repo then wrote
+    coordination records into the machinery's repo, where no other agent looks. Silently — an
+    append always succeeds. One log per vault is the entire point of the file, so the vault
+    resolves it.
+    """
     if arg:
         return os.path.abspath(arg)
     env = os.environ.get("VAULT_PASS_LOG")
     if env:
         return os.path.abspath(env)
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import vault_config
+        return str(vault_config.resolve().path / LOG_NAME)
+    except Exception:
+        pass  # fall back to the checkout, which is right when it IS the vault
     root = main_checkout()
     if not root:
         return None

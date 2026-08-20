@@ -73,7 +73,9 @@ def covered(path, specs):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-m", "--message", required=True)
-    ap.add_argument("--vault", default=".")
+    ap.add_argument("--vault", default=None,
+                    help="vault path or a name from ~/.config/lipika/config.json; "
+                         "default: $LIPIKA_VAULT, the config, then this checkout")
     ap.add_argument("--trailer", action="append", default=[])
     ap.add_argument("--subject-max", type=int, default=72)
     ap.add_argument("--dry-run", action="store_true")
@@ -81,6 +83,8 @@ def main():
                     help="proceed even if changes are staged outside your pathspecs")
     ap.add_argument("paths", nargs="*")
     args = ap.parse_args()
+    import vault_config
+    args.vault = str(vault_config.resolve_or_exit(args.vault, "vault_commit"))
 
     vault = Path(args.vault).expanduser().resolve()
     specs = [p for p in args.paths if p != "--"]

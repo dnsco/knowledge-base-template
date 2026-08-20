@@ -91,6 +91,8 @@ def main():
                     help="the whole file with line numbers. For a pass that genuinely needs all of "
                          "it -- and saying so is the point")
     args = ap.parse_args()
+    import vault_config
+    args.path = vault_config.anchor(args.path) or args.path
 
     p = Path(args.path).expanduser()
     if not p.is_file():

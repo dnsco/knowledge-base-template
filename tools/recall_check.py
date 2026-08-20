@@ -83,7 +83,11 @@ GOTCHA THIS ENCODES
 
 import argparse
 import re
+import os
+import pathlib
 import subprocess
+
+GIT_CWD = None   # set from the resolved vault in main(); git must run in the vault
 import sys
 
 KEEP = re.compile(r"\b(never|must|don't|do not|always|only|halt|stop)\b", re.I)
@@ -98,12 +102,13 @@ def content(s):
 
 
 def rev(*args):
-    p = subprocess.run(["git", *args], capture_output=True, text=True)
+    p = subprocess.run(["git", *args], capture_output=True, text=True, cwd=GIT_CWD)
     return None if p.returncode else (p.stdout.strip() or None)
 
 
 def exists_at(ref, path):
-    p = subprocess.run(["git", "cat-file", "-e", f"{ref}:{path}"], capture_output=True)
+    p = subprocess.run(["git", "cat-file", "-e", f"{ref}:{path}"], capture_output=True,
+                       cwd=GIT_CWD)
     return p.returncode == 0
 
 
@@ -146,9 +151,31 @@ def main():
     ap.add_argument("--no-merge-base", action="store_true",
                     help="read the old side at <ref> exactly, not at merge-base(<ref>, HEAD)")
     a = ap.parse_args()
+    import vault_config
+    global GIT_CWD
+    # Follow the file's own repository when it has one -- this question is about a rewrite, not
+    # about a vault, and the definitions it most needs to check now live outside the vault.
+    _repo = vault_config.repo_for(a.path)
+    if _repo:
+        GIT_CWD = _repo
+        a.path = str(pathlib.PurePath(os.path.relpath(os.path.abspath(a.path), _repo)))
+        if a.into:
+            a.into = [os.path.relpath(os.path.abspath(i), _repo) for i in a.into]
+        os.chdir(GIT_CWD)
+    else:
+        # No repo at that path — it may have been given relative to the vault root.
+        # This tool reads the working tree AND asks git for older versions of the same path, so it
+        # needs one path that satisfies both. Working from the vault root is what it always did when
+        # it lived there; doing it explicitly is what lets it be invoked from anywhere.
+        _v = vault_config.resolve_or_exit(None, "recall_check")
+        GIT_CWD = str(_v.path)
+        a.path = vault_config.vault_relative(a.path, _v)
+        if a.into:
+            a.into = [vault_config.vault_relative(i, _v) for i in a.into]
+        os.chdir(GIT_CWD)
 
     base, why = resolve_base(a.ref, a.path, a.no_merge_base)
-    old = subprocess.run(["git", "show", f"{base}:{a.path}"],
+    old = subprocess.run(["git", "show", f"{base}:{a.path}"], cwd=GIT_CWD,
                          capture_output=True, text=True)
     if old.returncode:
         sys.exit(f"{old.stderr.strip()}\n"

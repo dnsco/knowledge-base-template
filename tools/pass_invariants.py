@@ -198,7 +198,9 @@ def check_anchors(vault, anchors):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("base", help="the pass's base ref")
-    ap.add_argument("--vault", default=".", help="vault root (default: cwd)")
+    ap.add_argument("--vault", default=None,
+                    help="vault path or a name from ~/.config/lipika/config.json; "
+                         "default: $LIPIKA_VAULT, the config, then this checkout")
     ap.add_argument("--memory-dir", default=None)
     ap.add_argument("--anchor", action="append", default=[],
                     metavar="TAG[=SCOPE-PATH]",
@@ -208,6 +210,8 @@ def main():
     ap.add_argument("-v", "--verbose", action="store_true",
                     help="print each check's full output, not just failures")
     args = ap.parse_args()
+    import vault_config
+    args.vault = str(vault_config.resolve_or_exit(args.vault, "pass_invariants"))
 
     vault = Path(args.vault).expanduser().resolve()
     if not (vault / ".git").exists():

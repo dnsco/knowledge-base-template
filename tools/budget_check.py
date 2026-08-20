@@ -64,9 +64,26 @@ import re
 import subprocess
 import sys
 
+# Fallbacks only. The live numbers come from ~/.config/lipika/config.json via vault_config, so
+# that a threshold has one home instead of being restated in prose that then goes stale -- which
+# is exactly what happened to the earlier 12/16 KB pair. Flags still win over both.
 PARENT_TARGET, PARENT_LIMIT = 8 * 1024, 12 * 1024      # non-register bytes
 TASK_TARGET, TASK_LIMIT = 8 * 1024, 12 * 1024
 REGISTER_SOFT = 20 * 1024                              # report, ask, never mandate
+
+
+def _configured():
+    """(parent, task, register_soft) from config, falling back to the constants above.
+
+    A tool that only measures must never die because a config is absent or malformed: it reports
+    what it can. The refusal-on-unresolvable rule is for tools that WRITE to a vault.
+    """
+    try:
+        import vault_config
+        v = vault_config.resolve()
+        return v.budget("parent"), v.budget("task"), v.soft("register") or REGISTER_SOFT
+    except Exception:
+        return (PARENT_TARGET, PARENT_LIMIT), (TASK_TARGET, TASK_LIMIT), REGISTER_SOFT
 # A heading is register-or-index if it matches this. Both are exempt from the parent budget: the
 # register by owner decision, the index because "over budget never means trimming the task index".
 EXEMPT_HEADING = re.compile(
@@ -170,11 +187,13 @@ def units(target):
 
 def main(argv):
     ap = argparse.ArgumentParser(description="Is a parent or task frontier over its byte budget.")
+    (p_tgt, p_lim), (t_tgt, t_lim), reg_soft = _configured()
     ap.add_argument("paths", nargs="+")
-    ap.add_argument("--parent-target", type=int, default=PARENT_TARGET)
-    ap.add_argument("--parent-limit", type=int, default=PARENT_LIMIT)
-    ap.add_argument("--task-target", type=int, default=TASK_TARGET)
-    ap.add_argument("--task-limit", type=int, default=TASK_LIMIT)
+    ap.add_argument("--parent-target", type=int, default=p_tgt)
+    ap.add_argument("--parent-limit", type=int, default=p_lim)
+    ap.add_argument("--task-target", type=int, default=t_tgt)
+    ap.add_argument("--task-limit", type=int, default=t_lim)
+    ap.add_argument("--register-soft", type=int, default=reg_soft)
     ap.add_argument("--quiet", action="store_true", help="print breaches only")
     ap.add_argument("--sections", type=int, default=4,
                     help="how many largest sections to show on a breach (0 = none, -1 = all). "
@@ -186,6 +205,11 @@ def main(argv):
     args = ap.parse_args(argv)
 
     rows, seen = [], set()
+    try:
+        import vault_config
+        args.paths = [vault_config.anchor(p) or p for p in args.paths]
+    except Exception:
+        pass
     for p in args.paths:
         if not os.path.exists(p):
             print(f"no such path {p!r} -- expected a workstream folder, a folder-note, or a dated "
@@ -214,14 +238,14 @@ def main(argv):
 
     worst, reg_flags = 0, []
     for state, kind, path, size, tgt, lim, total, reg, exempt in rows:
-        if state == "ok" and args.quiet and reg <= REGISTER_SOFT:
+        if state == "ok" and args.quiet and reg <= args.register_soft:
             continue
         label = "budgeted" if kind == "parent" else "bytes"
         print(f"{state:5} {kind:6} {size:6}B {label}  target {tgt}B  signal {lim}B  {path}")
         if kind == "parent":
             print(f"        of {total}B total: register {reg}B, index/ledger {exempt}B, "
                   f"budgeted {size}B")
-            if reg > REGISTER_SOFT:
+            if reg > args.register_soft:
                 reg_flags.append((path, reg))
         if args.since:
             print(f"        since {args.since}: {delta_since(path, args.since, kind)}")
@@ -233,7 +257,7 @@ def main(argv):
         worst = max(worst, {"ok": 0, "WATCH": 1, "OVER": 2}[state])
 
     for path, reg in reg_flags:
-        print(f"\nREGISTER {reg}B in {path} -- above the {REGISTER_SOFT}B soft mark, and not a breach.")
+        print(f"\nREGISTER {reg}B in {path} -- above the {args.register_soft}B soft mark, and not a breach.")
         print("The register is resident by decision, so this is a question and not a rule: are the "
               "ALREADY-MITIGATED\nitems still warnings? Those are reference and can move to design/; "
               "the ones that must fire unprompted\nstay. Ask the owner. Never trim history to answer it.")
@@ -244,8 +268,9 @@ def main(argv):
         print("  2. SPLIT, when the parent is heavy because it is two efforts wearing one name.")
         print("It never means trimming the task index or deleting history -- a unit held under "
               "budget that way\nhas failed the check it appears to pass. The pressure belongs on "
-              "the restated subset and the\ncross-task invariants. Splitting is an owner's call: "
-              "propose it, do not execute it.")
+              "the restated subset and the\ncross-task invariants. A librarian executes the split "
+              "inside its own scope and reports it;\nrelocating a grand plan, or inventing a "
+              "top-level folder, stays the owner's.")
     elif worst == 1:
         print("\nOver target, under the signal. Nothing to do yet; the section table above is "
               "where the weight is.")

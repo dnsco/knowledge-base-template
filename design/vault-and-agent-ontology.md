@@ -618,22 +618,39 @@ Background passes can overlap, so something has to keep them off each other's fi
 - **[DEAD END] A second status or lock file alongside the log.** One store with a derived projection, not
   two things that can disagree. **Do not re-propose.**
 
-### Porting a shared surface
+### Porting a shared surface — retired 2026-08-20
 
-`CLAUDE.md`, `GOTCHAS.md`, `README.md`, `agents/*.md`, `skills/*`, `tools/*.py` and the vault-machinery
-`reference/*` (this document and `agent-eval-method.md`) are shared with the template, which is
-**upstream**. **Author there first; a vault-side edit guarantees a second divergence**, which is the
-failure the extraction exists to end. Applies to a one-word fix.
+**There is one copy now.** The machinery moved into its own repo, so nothing is shared-by-copy with a
+vault and there is nothing to port: author here, once. The section below is kept as the record of what
+the loop cost and what it taught, because both are reasons not to rebuild it.
 
-| tool | contract |
+**Why it existed at all:** these files were duplicated into every vault that used them, and a
+placeholder substitution rewrote the vault's path into each copy. **Why it is gone:** the harness reads
+agent definitions and skills from `~/.claude`, never through the vault-as-project, so the second copy
+bought nothing — and a plugin's `bin/` is on `PATH`, so a definition can name a command instead of a
+path. Measured 2026-08-20: 6 files needed hand-ports on every change, and `${CLAUDE_PLUGIN_ROOT}` —
+the obvious replacement for the placeholder — is **empty in a subagent's shell**, which is why the
+answer is a command name rather than an interpolated path.
+
+**[DEAD END] Keeping the duplication and improving the port tooling.** Three tools existed for it, one
+written specifically because the substitution had broken a different way each time it was touched, and
+six files still needed hand-porting. **Do not re-propose.**
+
+**Two lessons worth keeping, both paid for:**
+
+- **A port check must not be byte-identity.** A vault names real repos, shas and dated evidence where a
+  generic copy stays generic, so diffing to zero destroys the part meant to differ — and an identity
+  check rewards you for it.
+- **A wholesale copier flattens deliberate divergence.** `--apply` would have deleted 18 lines of
+  project-specific wording from one skill and 19 from one tool.
+
+### Where a tool lives, and how a definition names it
+
+| mechanism | measured 2026-08-20 |
 |---|---|
-| `port_check.py --vault <v> --template <t>` | **exit 0** no placeholders, residue printed for review · **exit 2** an unsubstituted placeholder survived — a hard fail, because an agent otherwise reads a literal placeholder in its own system prompt · **exit 3** bad invocation. **Deliberately not a byte-identity check:** a vault names real repos, shas and dated evidence where the template stays generic, so diffing to zero destroys the part meant to differ, and an identity check rewards you for it |
-| `port_file.py <path>` then `--apply` | copies down, reporting what it would flatten. **`--apply` is a wholesale copier and will flatten deliberate divergence** — it would have deleted 18 lines of project-specific wording from one skill and 19 from one tool. It also substitutes the vault *name* as the path unless given the path explicitly. Dry-run, read the loss list, hand-port anything real |
-| `placeholders.py` | the tokens defined once and imported by every tool that ports or checks a port. Imported, not invoked |
-
-**Measure real divergence before trusting `--apply`:** substitute the placeholders into the template's
-committed copy and diff it against the vault's. Zero means `--apply` is lossless for that file; anything
-else is a hand-port.
+| `${CLAUDE_PLUGIN_ROOT}` | **empty** in the Bash environment of a subagent spawned from a plugin. Documented for component files; do not rely on it in a definition |
+| `<plugin>/bin` on `PATH` | **yes**, for three separately installed plugins. This is the mechanism: a definition writes `lipika <command>`, with no path to be correct about |
+| the vault's location | never written into a definition. `vault_config` resolves it — flag, then `$LIPIKA_VAULT`, then `~/.config/lipika/config.json`, then the checkout — and **refuses rather than guessing**, because a tool that guesses its target curates the wrong tree and reports success |
 
 ### `agent_transcript.py` — read another agent's run
 

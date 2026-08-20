@@ -1,0 +1,15 @@
+{
+  "name": "lipika",
+  "owner": {
+    "name": "Dennis Collinson",
+    "url": "https://github.com/dnsco"
+  },
+  "plugins": [
+    {
+      "name": "lipika",
+      "source": "./",
+      "description": "Agents and tools for a knowledge-base vault: capture, reconcile, consolidate, curate.",
+      "version": "0.1.0"
+    }
+  ]
+}

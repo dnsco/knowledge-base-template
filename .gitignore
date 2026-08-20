@@ -10,3 +10,6 @@ __pycache__/
 
 # The shared pass log: machinery state, appended from N worktrees. Never tracked.
 pass-log.jsonl
+
+# The vault this project is developed against, symlinked locally
+ai_docs
