@@ -1,3 +1,15 @@
+<!--
+  TEMPLATE. Lipika (github.com/dnsco/lipika) seeds a vault's root CLAUDE.md from this file.
+
+  It carries the corpus half: how documents are placed, named, written and maintained. The
+  roles, the capture skill and the tools are Lipika's, so this file names them and points at
+  them. It names a tool as `lipika <command>` and a threshold as `lipika vault-config show`,
+  because a threshold restated in prose goes stale while a tool enforces something else.
+
+  Edit this template in Lipika. A vault's copy diverges on purpose — it should name that
+  vault's real repos, dated evidence and concrete shas — so it is never ported back.
+-->
+
 # How to use this knowledge base
 
 **LLM knowledge base for engineering work** — the durable memory Claude Code sessions read from and write back
@@ -5,8 +17,8 @@ to, so context outlives the session that produced it. **One knowledge base acros
 one per project: dated, long-form handoff/working docs. It's an Obsidian vault plus a git repo (hence "vault"
 below, and "the graph" for its `[[link]]` structure). It is symlinked into each project root under its own name (local-only, via `.git/info/exclude`), so a session rooted in
 a project can read and grep vault docs as in-tree paths. The map of what's here is **[[README]]**; this file is
-how to use and maintain it. **[[GOTCHAS]]** is what bites after setup — starting with the fact that a session
-rooted in a code project may never have loaded this file.
+how to use and maintain it. What bites after setup is `lipika: design/GOTCHAS.md` — starting with the fact
+that a session rooted in a code project may never have loaded this file.
 
 ## Using it — start here
 1. Open **[[README]]** — a thin map of what exists and where. Find the workstream you're touching.
@@ -29,33 +41,33 @@ need it, not because it exists.
 **Append is free; editing is what needs a check.** Adding a dump, appending to `done/`, appending a dated note
 to `sources/` or `external/` — nothing can be lost by adding, so nothing gates it. **Editing a live document
 needs a check, and the bar is semantic: keep every fact, and reword or merge redundant ones freely so long as
-meaning is preserved.** What must never happen is a fact becoming unfindable. `recall_check.py` is the gate and
+meaning is preserved.** What must never happen is a fact becoming unfindable. `lipika recall-check` is the gate and
 every flag is judged **in writing** — "reworded, fact intact" is an acceptable answer, a missing fact is not, and
 you never reword a file to satisfy a flag.
 
-**Roles — five of them, and only the dump is synchronous.** A working agent (any session doing engineering)
-**only appends**: capture findings with the **`context-dump` skill** — a dated **dump** inside the live task,
-plus emitting the marker that flips a doc's `status` the moment work lands or a question settles — and **never**
-deletes, merges, archives, restructures, or re-links. Everything else runs in the background:
+**Who may write here — the boundary, not the playbooks.** The roles that maintain this vault are **Lipika's**,
+and **each role's playbook lives in its own definition**, not here: `lipika: agents/*.md` and
+`lipika: skills/context-dump/`. What this file states is the boundary a session working *in* the vault must
+respect.
 
-- **The `frontier-clerk`** reconciles one frontier against the dumps, and must be very cheap in tokens and time.
-  It runs when a dump carries a state-changing marker, or when `frontier_lag_check.py` reports the frontier
-  already lagging — not on every dump. A purely additive dump says *no clerk pass owed* and names the check it
-  ran; judging it unnecessary is not a licence to make the clerk's edits yourself. The dump **dispatches** it and
-  does not block on it, and says so rather than claiming a reconciled frontier.
-- **The `librarian`** is the only role that destroys, and it works **one scope** — a task, a workstream or a
-  grand plan — with **full autonomy inside it, bounded by losslessness rather than permission**: consolidate,
-  reword, merge, split the workstream, split and merge tasks, archive finished ones, spin finished material out
-  as its own task or workstream and move it to `done/`, sort `historical/`, convert. It does not ask; it reports
-  a change list. Run it as a separate deliberate pass, or at a phase boundary. Spot overdue cleanup? **Flag it
-  and recommend a pass**; don't do it inline.
-- **The `curator`** is the role for *the vault feels messy*. It owns which scopes exist and everything crossing
-  a boundary — fanning out one `librarian` per scope, merging their branches, repointing links across scopes,
-  correcting a claim another scope's work falsified, normalizing a convention applied inconsistently, fusing two
-  workstreams that are one effort — plus `README.md`, `CLAUDE.md` and the memory pointer, which nothing else
-  writes. It never rewrites a document's substance. **One or two scopes overdue is a `librarian`, not a
-  curator:** adding a scope costs a whole pass floor.
-- **The `scout`** goes ahead read-only and returns findings and a recommendation with the inputs behind them,
+**A working agent — any session doing engineering — only appends.** Capture findings with the
+**`context-dump` skill**: a dated **dump** inside the live task, plus the marker that flips a doc's `status` the
+moment work lands or a question settles. **Never** delete, merge, archive, restructure, or re-link. Everything
+else runs in the background, and only the dump is synchronous:
+
+- **The frontier is the `frontier-clerk`'s**, not yours — not even a `status` you just earned. It runs when a
+  dump carries a state-changing marker, or when the frontier already lags — not on every dump. A purely
+  additive dump says *no clerk pass owed* **and names the check it ran**; judging a pass unnecessary is not a
+  licence to make its edits yourself. The dump **dispatches** it and does not block on it, and says so rather
+  than claiming a reconciled frontier.
+- **Deleting, merging, archiving, splitting and re-linking are a `librarian`'s** — the only role that destroys —
+  one scope at a time, with full autonomy inside it **bounded by losslessness rather than permission**. It does
+  not ask; it reports a change list. Spot overdue cleanup? **Flag it and recommend a pass**; don't do it inline.
+- **Anything crossing a scope boundary is the `curator`'s**, which also owns which scopes exist, plus
+  `README.md`, this file and the memory pointer — **nothing else writes those** — and never rewrites a
+  document's substance. **One or two scopes overdue is a `librarian`, not a curator:** adding a scope costs a
+  whole pass floor.
+- **A `scout`** goes ahead read-only and returns findings and a recommendation with the inputs behind them,
   carrying named briefs — `orientation`, `sizing`, `closure`, `recon`. Its context is discarded on return, so its
   reads cost the caller only the answer. Send one rather than doing its reading in the context you need to keep.
 
@@ -67,15 +79,12 @@ top-level folder, relocating a grand plan, an engineering decision.
 
 **Why the roles are split is time management, not judgement.** Dumping agents that also tidied the vault got
 sidetracked onto vault corrections and ate the working task's context. Keeping housekeeping off the working
-session's clock is the point. What keeps parallel background passes off each other's files is the shared pass log
-below, not a partition of who may write what. Each role's playbook lives in its own definition, not here.
-
-**Roles that measure the machinery are a different class**, and the budgets above do not apply to them: a
-profiling or eval run's subject is another agent's run rather than the corpus, and capping it buys a cheaper
-profile by reading less.
+session's clock is the point — so when the housekeeping *is* the task, the split is not a reason to delegate it.
+What keeps parallel background passes off each other's files is the shared pass log below, not a partition of who
+may write what.
 
 The risky case is a session rooted in a **code project**, which sees this vault as just another directory in its
-tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
+tree and will happily hand-edit it — see `lipika: design/GOTCHAS.md` §1–2.
 
 **Conventions (per doc).**
 - **Placement & filenames** — `grand-plans/` (long-horizon direction), `workstreams/` (active efforts; a named
@@ -225,11 +234,16 @@ Evergreen principles that outlive any one effort, and that the docs here lean on
 Add to this folder when a principle starts getting restated across docs — that's the signal it's evergreen and
 belongs in one place under a name others can link to.
 
-## Bundled skills — `obsidian-skills/`
-The official Obsidian Agent Skills (`kepano/obsidian-skills`) ship as a git submodule, each symlinked into
-`~/.claude/skills/` so they're invocable as slash-commands (`/obsidian-cli`, …) from **any** session — including
-one rooted in a code project, which is where you usually are. `git submodule update --remote` upgrades it;
-`git submodule update --init` after a fresh clone, or the symlinks dangle.
+## Obsidian skills — installed alongside, not vendored here
+`kepano/obsidian-skills` is its own Claude Code marketplace, so install it as one rather than vendoring it in
+a vault:
+
+```bash
+/plugin marketplace add kepano/obsidian-skills
+```
+
+Its skills are then invocable as slash-commands (`/obsidian-cli`, …) from **any** session — including one
+rooted in a code project, which is where you usually are.
 
 - **obsidian-cli** — vault ops from the CLI. **Use it for renames/moves** — it keeps inbound `[[links]]`
   intact — and for vault-wide search.

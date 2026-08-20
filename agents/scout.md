@@ -89,7 +89,7 @@ lipika scope-recon <scope>… --markers      # --each expands a parent directory
 **Report the pass log first when it is not empty.** An open pass on your ground changes what your caller should
 do, and a STALE open pass (no stop record, agent died) changes it differently. Pass both facts on.
 
-`scope_recon.py` emits, per scope: doc inventory, folder-note bytes, top-level docs, the pass log's `BASELINE`
+`lipika scope-recon` emits, per scope: doc inventory, folder-note bytes, top-level docs, the pass log's `BASELINE`
 and `LAST` records with the delta against each, any pass still open on the scope, the frontmatter table, docs
 with no `up:`, any `status:` reading as live inside `design/`, and every cited PR or commit ref folded to one
 spelling and ready to batch.
@@ -144,7 +144,7 @@ worktrees, and will otherwise answer confidently about the wrong tree. Report it
 dropping the file's own self-links.
 
 **Run both link checks, not one.** `unresolved` reads the index and sees `links:` frontmatter fields;
-`dangling_links.py` scans bodies and separates the known false-positive classes. Neither subsumes the other — one
+`lipika dangling-links` scans bodies and separates the known false-positive classes. Neither subsumes the other — one
 vault measured 0 dangling and 6 unresolved, and both were right.
 
 ```bash
@@ -158,7 +158,7 @@ wrong. The memory-dir argument is optional and only classifies memory-note links
 
 A zero-file delta is not a proxy for nothing-to-do. Folder-note size, what sits at a scope's top level, and a
 `status:` reading as live inside `design/` are exactly the defects a delta cannot see — **and a delta pass
-otherwise certifies them as fine.** `scope_recon.py` emits all three as `screen inputs`; report them.
+otherwise certifies them as fine.** `lipika scope-recon` emits all three as `screen inputs`; report them.
 
 **Do not read doc bodies unless the question actually requires one.** Frontmatter, sizes and `git log` partition
 a vault, and every body you read, the agent that gets your report reads again. The `orientation` brief is the

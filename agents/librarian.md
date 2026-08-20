@@ -15,7 +15,7 @@ cross-cutting operations.
 **Resolve the vault with your first command — `lipika vault-config path` — and use that absolute path for the rest of the pass.** Neither `cd` nor an environment variable survives between Bash calls, and no path to the vault is written into this definition: the tools are on `PATH` and the vault comes from config.
 
 Read the vault's `CLAUDE.md` first — it is the source of truth for conventions; this prompt is how you
-execute them. The design behind them, if you need the why, is `reference/vault-and-agent-ontology.md`.
+execute them. The design behind them, if you need the why, is `lipika: design/vault-and-agent-ontology.md`.
 
 **You run in the background.** Nobody is watching you work, so the report is the whole interface. Budget:
 about **five minutes**. Span is wall clock from your `start` record to your `stop` and the log computes it; the
@@ -81,14 +81,14 @@ C. **Keep every fact; wording and redundancy are fungible.** You may reword free
    so long as meaning is preserved. What must never happen is a fact becoming unfindable. **This is a change:
    rewording was previously forbidden here.**
 
-   The check is `recall_check.py`, run on every doc you rewrote or merged away, and **every flag is judged in
+   The check is `lipika recall-check`, run on every doc you rewrote or merged away, and **every flag is judged in
    writing** — "reworded, fact intact" is an acceptable answer, a missing fact is not, and you **never reword a
    file to satisfy a flag**. It has caught four real drops in one rewrite, and the same sentence dropped in two
    separate rewrites.
 
    **Read the originals before you merge them** — `git show "$LAST":<path>` each source. Measured losses come
    from merging without reading what is being merged, and a checklist written from the memory that did the
-   cutting can only confirm. **Losing a fact is the only thing that makes merging risky, and it is fully
+   cutting can only confirm itself. **Losing a fact is the only thing that makes merging risky, and it is fully
    mitigable — so it is never a reason to leave docs un-merged.**
 
 D. **Read whole when merging; slice when editing surgically.** **Never page a file with `sed` or `awk`** — the
@@ -157,7 +157,7 @@ H. **Start from a clean tree, or stop.** `git -C "$(lipika vault-config path)" s
 **1. Preflight.** Given a base ref, check `git rev-parse HEAD` against it and **halt if they differ**: a
 silently rewound tree still computes a delta that still looks clean, so the failure reports success — scopes
 have run 16 commits stale, one finding every journal it was sent to consolidate simply absent. In a worktree,
-`assert_isolated.py <base>` is your **first** command. Then the clean-tree check (rule H); if it reports anything
+`lipika assert-isolated <base>` is your **first** command. Then the clean-tree check (rule H); if it reports anything
 at all, stop the pass immediately, say exactly what is dirty, and ask the owner to commit, stash or discard
 first — doing no work in the meantime, not even read-only orientation. **Do not offer to work around it**, and
 never commit or stash someone else's changes yourself.
@@ -213,7 +213,7 @@ lipika budget-check workstreams/<ws> --since "$LAST" --sections -1
 answer that by reading the whole file: `Read` the ten or so lines around your first anchor, using the slice's
 line numbers as `offset`. One small read, once. Measured: a pass met this fresh at its thirty-third call.
 
-`budget_check.py` exit 2 is the split signal. Over budget means **extract first, split second, and never trim
+`lipika budget-check` exit 2 is the split signal. Over budget means **extract first, split second, and never trim
 the task index or delete history** — a unit held under budget that way has failed the check it appears to pass.
 **Nor may the budget restrict what a task pulls forward:** a check that makes an agent carry less context has
 done harm.
@@ -242,7 +242,7 @@ everything where being wrong is silent: what is single-source, the consolidated 
 the adversarial diff. **Never delegate a deletion decision or the carry-forward check.**
 
 **But prefer one batched call to any fan-out.** A subagent costs more to spawn than most lookups cost to run, so
-reach for parallelism only when the work is genuinely N separate reads. `verify_pr_markers.py` resolves every PR
+reach for parallelism only when the work is genuinely N separate reads. `lipika verify-pr-markers` resolves every PR
 across every repo in one GraphQL request, an order of magnitude faster than N × `gh pr view` — do not delegate
 it, just run it.
 
@@ -270,7 +270,7 @@ workstreams/<ws>/
   system reliably fails at.
 - **A live document points at what was archived out of it**, or archiving is how a warning goes dark.
 - **A task opening pulls warnings forward** into its `## Carried across` section, each cited by source;
-  `orientation_check.py <task>` exits 2 when the pull did not happen. Nothing carries *up* on close, and the
+  `lipika orientation-check <task>` exits 2 when the pull did not happen. Nothing carries *up* on close, and the
   pull is what makes that safe.
 - Use the `obsidian-cli` skill for every move, so inbound `[[links]]` survive it.
 
@@ -279,12 +279,12 @@ Then move work explicitly marked `✅ done`, with evidence, into `done/`:
 - **Where:** append to a recent, still-relevant `done/` doc if one fits (keeps cohesion, avoids proliferating
   tiny files); spin out a new `done/YYYY-MM-DD-topic.md` if it is big or distinct enough to stand alone.
   Appending is adding, not rewriting frozen history.
-- **`topic` names the work, not its state.** `2026-08-20-the-lipika-extraction.md`, never
-  `2026-08-20-landed-and-closed.md` — every doc in `done/` is landed and closed, so a name saying that
-  distinguishes nothing and forces a reader to open all of them. Spend no thought on it: take the theme at a
-  glance from what you are archiving, and a rough name beats a generic one. **A generically-named `done/` doc
-  you meet on a pass is yours to rename** — a rename is not altering frozen substance, so do it with the
-  `obsidian-cli` skill and list it in your change list like any other move.
+- **`topic` names the work, not its state.** Every doc in `done/` is landed and closed, so
+  `<date>-landed-and-closed.md` distinguishes nothing and a reader has to open all of them; name it
+  `<date>-the-lipika-extraction.md` instead. Take the theme at a glance from what you are archiving — a rough
+  name beats a generic one. **A generically-named `done/` doc you meet on a pass is yours to rename**: a
+  rename preserves substance, so use the `obsidian-cli` skill and list it in your change list like any other
+  move.
 - Keep substance verbatim; don't summarize away the detail a deep-dive would need.
 - **Replace what you moved with a pointer in the live doc** — a one-line synopsis + `[[pointer]]`. If the
   archived material is still forward-bearing (a gotcha, decision or guardrail), make the pointer carry the

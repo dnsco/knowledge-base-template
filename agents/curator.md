@@ -81,14 +81,14 @@ not run recon in parallel with its launch**: measured, firing the inventory, bud
 alongside a scout's launch duplicated **65–75% of its deliverables** — 8 calls, ~101 s of a 1,011 s span — and
 the answers were in hand before its report arrived.
 
-**Resolve every cited marker once, here.** `verify_pr_markers.py` puts every ref across every repo into one
+**Resolve every cited marker once, here.** `lipika verify-pr-markers` puts every ref across every repo into one
 request, so running it inside each librarian makes N scopes pay the batching win N times.
-`scope_recon.py --markers` harvests and folds the refs; feed its list straight in and hand each scope its rows.
+`lipika scope-recon --markers` harvests and folds the refs; feed its list straight in and hand each scope its rows.
 **A bare `#N` is a shell comment, and a bare number following a qualified ref inherits the preceding repo
 positionally** — one batch resolved two refs `MERGED` that were open in a different repo entirely. Quote and
 qualify every ref, or do not batch it.
 
-**Never page a frontier with `sed` or `awk`** — `frontier_slice.py --section` for a block, `--find` to locate,
+**Never page a frontier with `sed` or `awk`** — `lipika frontier-slice --section` for a block, `--find` to locate,
 `--lines A,B` batched for a restructure, `--numbered` when you need all of it and want to have said so,
 `--stats` to size it first.
 
@@ -228,7 +228,7 @@ lipika pass-invariants <base> --memory-dir <memory-dir>
 
 What it checks, so you can read a failure:
 
-- **Dangling links, two ways.** `dangling_links.py` scans bodies, skipping fenced blocks and inline spans (or a
+- **Dangling links, two ways.** `lipika dangling-links` scans bodies, skipping fenced blocks and inline spans (or a
   document documenting wikilink syntax reports itself) and separating the known false-positive classes;
   Obsidian's `unresolved` reads the index and sees `links:` frontmatter fields no body scan reaches. **Neither
   subsumes the other** — one vault measured 0 dangling and 6 unresolved, and both were right. Do not hand-roll

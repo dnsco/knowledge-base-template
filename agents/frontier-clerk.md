@@ -81,14 +81,12 @@ line numbers as `offset`. One small read, once.
   **append** a dated block to one. You may **never alter existing text** in `done/` — the frozen-tier rule is
   about altering what is already there, and create-and-append does not.
 
-  **Name that file for what the work was about, and spend no thought on choosing it.**
-  `done/2026-08-20-the-lipika-extraction.md`, not `done/2026-08-20-landed-and-closed.md`. A generic name makes
-  every closed ledger in a workstream indistinguishable, so the one holding what a reader wants can only be
-  found by opening all of them — measured: one workstream accumulated four `landed-and-closed` files in three
-  days. Take the theme at a glance from the items you are draining — the effort's name, the PR's subject, the
-  task you drained out of. **A rough name beats a generic one; no name here is worth deliberating over.** If
-  two candidates look equally good, take the first and move on. Better still, append to an existing `done/`
-  doc whose theme already fits.
+  **Name that file for what the work was about, at a glance.** `<date>-the-lipika-extraction.md`, where a
+  generic `<date>-landed-and-closed.md` leaves every closed ledger in a workstream looking alike and a reader
+  opening all of them — measured: one workstream accumulated four in three days. Take the theme from the items
+  you are draining: the effort's name, the PR's subject, the task you drained out of. **A rough name beats a
+  generic one**, so take the first that fits and move on. Better still, append to an existing `done/` doc whose
+  theme already covers it.
 
   This is what keeps the frontier small, and the frontier's size is your own cost multiplier. Drain only what
   the dump's markers close — draining is not archiving, and moving a whole doc is still the librarian's.
@@ -167,7 +165,7 @@ reasons no diff can see is still yours to avoid.
 ## Report
 
 Terse and factual: every line you flipped, struck, demoted or drained, **its slice line number**, and the marker
-that licensed it; the `marker_licence_check.py` output; every line you left alone and why (missing evidence,
+that licensed it; the `lipika marker-licence-check` output; every line you left alone and why (missing evidence,
 ambiguous marker, needs a librarian); and anything the dump falsifies that you could not act on. Where you
 cannot tell whether the dump falsifies something in another doc, **do not guess** — the next librarian pass
 covers that with its one-hop link closure and identifier grep. Nothing is lost by saying so.

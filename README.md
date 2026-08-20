@@ -35,7 +35,31 @@ stale. Every command resolves the vault the same way: `--vault`, then `$LIPIKA_V
 then the checkout you are standing in. **A command that cannot resolve a vault refuses rather than
 guessing**, because a tool that guesses its target curates the wrong tree and reports success.
 
-Starting from nothing? `assets/vault-CLAUDE.md` is the conventions document a vault wants at its root.
+`lipika doctor` says whether the wiring is intact — the two halves resolve differently, so it checks them
+separately.
+
+## Set up a vault
+
+A vault is a git repo of markdown, readable as an Obsidian vault. It needs one document at its root saying how
+its documents are placed, named and maintained:
+
+```bash
+cp templates/vault-CLAUDE.md.template  /path/to/your/vault/CLAUDE.md
+cp templates/vault-gitignore.template  /path/to/your/vault/.gitignore
+```
+
+That template carries the **corpus half** — placement, filenames, frontmatter, voice, and what the byte budgets
+are for. It points here for the machinery half and for every threshold's value, because a rule restated in two
+places diverges and a number restated in prose goes stale while a tool enforces something else.
+
+A vault's copy diverges on purpose: it should name your real repos, your dated evidence, your concrete shas.
+**Edit the template here; never port a copy back.**
+
+The `.gitignore` earns its own template because two of its entries are load-bearing rather than tidy. The pass
+log is appended concurrently from every worktree, so tracking it makes each pair of parallel passes a merge
+conflict. And agent worktrees are provisioned inside the vault, so a tracked one nests the repo in itself and a
+recursive grep from the root double-counts every hit — which is `.gitignore` rather than `.git/info/exclude`
+precisely because exclude does not survive a clone.
 
 ## The roles
 
@@ -65,8 +89,20 @@ lipika pass-log active               # who else is working in this vault right n
 They are reached by name because a plugin's `bin/` is on `PATH`. `${CLAUDE_PLUGIN_ROOT}` is **not**
 populated in a subagent's shell — measured — so no definition here interpolates a path.
 
-## Design
+## Changing a role
 
-`design/` carries the machinery's own documents: `vault-and-agent-ontology.md` (the shape, the forces,
-and what would falsify each invariant), `agent-eval-method.md` (how a role gets changed and measured),
-`GOTCHAS.md` (what bites, all of it measured). Read the second before changing a definition.
+One copy of every definition, skill and tool exists, so authoring is the whole of it. The loop:
+
+**author here → try it on real work → `lipika recall-check <pre-change-ref> <path>` → profile it → summarise the
+round where the next agent will read it → feed the findings back.** Every recall-check flag is judged in writing,
+and you never reword a file to satisfy one. That last edge is what makes it a loop.
+
+Two things bite immediately. **A definition change is served stale for minutes** and the agent registry caches at
+session start, so probe with a question the old and new text answer differently before trusting any measurement —
+`SKILL.md` is exempt, being read from disk at invocation. And **`${CLAUDE_PLUGIN_ROOT}` is empty in a subagent's
+shell**, measured, so no definition may interpolate a path; that is why tools are called by name.
+
+`CLAUDE.md` here is the working guide for this repo. `design/` carries its own documents:
+`vault-and-agent-ontology.md` (the shape, the forces, and what would falsify each invariant),
+`agent-eval-method.md` (how a role gets changed and measured — read it before touching a definition),
+`GOTCHAS.md` (what bites, all of it measured).
