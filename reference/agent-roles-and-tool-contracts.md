@@ -283,7 +283,7 @@ from N logs is not answering it. Untracked, because N worktrees appending to a t
 | command | contract |
 |---|---|
 | `start <role> "<desc>" [--scope S] [--kind K] [--parent ID]` | prints the pass id, which you keep. **exit 1** = a concurrent open pass overlaps your scope — judge it before writing. `--parent` keeps an orchestrator's own run from reading as a conflict with its children |
-| `stop <role> "<desc>" [--result R]` | `consolidated` \| `incremental` \| `skipped` \| `aborted`. Records `span_s`, `commits` and `files_changed` automatically, plus any `--metric key=value` you pass — a record that says only *consolidated* cannot feed a loop. **exit 2** = a defect, not a judgement call: a non-full pass claiming `consolidated`, a stop with no start, a double stop |
+| `stop <role> "<desc>" [--result R]` | `consolidated` \| `incremental` \| `skipped` \| `aborted`. Records `span_s`, `commits` and `files_changed` **itself**, from git — an agent composing figures by hand is the expensive way to get a worse number, so there is no metric flag. Per-call figures come from `agent_transcript.py`. **exit 2** = a defect, not a judgement call: a non-full pass claiming `consolidated`, a stop with no start, a double stop |
 | `active [--scope S]` | open passes, with age, and STALE on any older than `--stale-hours` (default 4) — an agent that died, not one still working |
 | `baseline [--scope S]` | the last `consolidated` full run, its HEAD sha as the delta anchor, and the deltas since. **exit 1** = no baseline, so the pass is necessarily full |
 | `history [--scope S]` | what the recent passes did, and when |

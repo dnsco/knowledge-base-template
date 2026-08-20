@@ -119,7 +119,7 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   ```bash
   python3 {{VAULT_PATH}}/tools/pass_log.py active --scope workstreams/<ws>    # who is in here
   python3 {{VAULT_PATH}}/tools/pass_log.py start <role> "<one line>" --scope <s> --kind <k>
-  python3 {{VAULT_PATH}}/tools/pass_log.py stop <role> "<what you did>" --result <r> [--metric k=v]
+  python3 {{VAULT_PATH}}/tools/pass_log.py stop <role> "<what you did>" --result <r>
   ```
   Emit a `start` before you write and a `stop` when you finish — the pair is what keeps parallel agents off each
   other's files. It replaced git-tag anchors, which are **dead**: nothing reads or writes one, and none were

@@ -334,13 +334,14 @@ def cmd_stop(args, path):
     }
     if started:
         rec["span_s"] = int((now() - started).total_seconds())
-    # What the pass actually moved, measured rather than claimed. A record that says only
-    # "consolidated" cannot feed a loop; commits and files changed can, and both are free here.
+    # What the pass actually moved, measured rather than claimed -- and measured HERE, because an
+    # agent composing figures by hand is the expensive way to get a worse number. Every field in a
+    # record is either the tool's (ts, sha, span_s, commits, files_changed) or one short note. There
+    # is deliberately no --metric flag: the first run with one had an agent retyping a span its own
+    # child had already recorded (2026-08-19, owner: do not spend tokens emitting metrics). Anything
+    # per-call -- tool counts, bytes returned -- comes from agent_transcript.py, which reads the
+    # transcript and costs the agent nothing.
     rec.update(work_done(start.get("sha"), sha, start.get("scope")))
-    for m in args.metric or []:
-        k, _, v = m.partition("=")
-        if k:
-            rec.setdefault("metrics", {})[k.strip()] = v.strip()
     if args.note:
         rec["note"] = args.note
     append_record(path, rec)
@@ -348,8 +349,7 @@ def cmd_stop(args, path):
     span = age_str(now() - started) if started else "?"
     moved = " ".join(f"{k}={v}" for k, v in rec.items()
                      if k in ("commits", "files_changed"))
-    extra = " ".join(f"{k}={v}" for k, v in (rec.get("metrics") or {}).items())
-    print(f"stopped {args.id}  result={args.result}  span={span}  {moved} {extra}".rstrip())
+    print(f"stopped {args.id}  result={args.result}  span={span}  {moved}".rstrip())
     if args.result == "skipped":
         print("recorded as SKIPPED -- not consolidated. A later pass may not skip it on this record.")
     return 0
@@ -405,8 +405,6 @@ def cmd_history(args, path):
         for k in ("span_s", "commits", "files_changed"):
             if r.get(k) is not None:
                 extra += f" {k}={r[k]}"
-        for k, v in (r.get("metrics") or {}).items():
-            extra += f" {k}={v}"
         note = f"  -- {r['note']}" if r.get("note") else ""
         print(f"{r['ts']}  {r['event']:5}  {r.get('role','?'):15} {r.get('kind','?'):6} "
               f"{r.get('scope') or '(vault)'}{extra}{note}")
@@ -466,10 +464,6 @@ def build_parser():
     t.add_argument("--result", default="incremental", choices=RESULTS)
     t.add_argument("--scope", default="", help="narrow the match when you have several open")
     t.add_argument("--id", help="close this exact id, skipping resolution")
-    t.add_argument("--metric", action="append", default=[], metavar="KEY=VALUE",
-                   help="anything else worth measuring across passes: docs_merged=3, "
-                        "questions_raised=6, dumps_in_task=4. Repeatable. The point of a log is "
-                        "that the next loop can read it")
 
     a = sub.add_parser("active", help="open passes -- who is on this ground right now")
     a.add_argument("--scope", default="")
