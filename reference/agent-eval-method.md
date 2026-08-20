@@ -134,6 +134,37 @@ Four traps, each of which has produced a wrong number here:
 
 ## Reporting a profile
 
+**Every profile opens with a qualitative read of how the run went, before any figure.** Not optional, not a
+closing paragraph — a profile that is only numbers reliably misses the thing worth fixing, and the numbers are
+the evidence for the read rather than a substitute for it. Its material is the agent's own reasoning:
+
+```bash
+python3 {{VAULT_PATH}}/tools/agent_transcript.py <agent-id> --thinking      # the largest blocks, in full
+```
+
+Answer these in your own words, each pointing at a call number or a quoted line:
+
+- **Where did it thrash?** Repeated attempts at one thing, a range guessed three times, an approach abandoned
+  and resumed. Note what it was trying to satisfy — thrashing is usually a rule it could not meet, not
+  incompetence, and the fix is then the rule.
+- **What did it re-derive that it already had?** Its own earlier result, its dispatcher's brief, another
+  agent's report. This is the cheapest large saving available and it never shows up as a defect.
+- **Where did it sound confused, or confidently wrong?** A conclusion stated without the read that would
+  support it. A fabricated citation. A rule it restated in a form the definition does not contain.
+- **What did it do that nobody asked for**, and what did it decline that it should have raised?
+- **Where did it hesitate for the right reason?** Refusals and self-corrections are the most valuable thing in a
+  transcript and the easiest to optimise away by accident. Name them so a later round does not delete them.
+- **If you could tell this agent one thing before it started, what would it be?** That sentence is usually the
+  next definition change, and it is often not what the numbers point at.
+
+**A size is not a finding.** Reasoning bytes and block counts locate where to read; they say nothing about
+whether the thinking was good. Measured: one profile reported a 13,451 B thinking block belonging to a role
+whose largest was 6,539 B — the big block was the profiler's own. Quote the line, or say you did not read it.
+
+**And do not invent a defect out of transcript shape.** The harness emits reasoning in its own assistant
+message, separate from the one carrying the tool call, so *"turns that thought and called nothing"* counts every
+deliberation. That signal was built here, measured against a real run, and deleted rather than shipped.
+
 - **Lead with the glaring problems**, per the section above. A profile whose findings are all deltas has
   probably missed the thing worth fixing.
 - **Report tool calls, tokens and wall clock separately.** They are separate axes and they move independently —

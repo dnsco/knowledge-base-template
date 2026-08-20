@@ -34,6 +34,7 @@ USAGE
   python3 tools/agent_transcript.py <id> --calls --min-bytes 2000   # only the expensive reads
   python3 tools/agent_transcript.py <id> --tokens                   # cost, with the traps applied
   python3 tools/agent_transcript.py <id> --grep PATTERN             # calls whose input matches
+  python3 tools/agent_transcript.py <id> --thinking                 # the reasoning, biggest first
 
 EXIT CODES
   0  printed
@@ -138,23 +139,35 @@ def walk(recs):
             u = msg.get("usage")
             if u:
                 usages.append(u)
-            for c in msg.get("content") or []:
-                if isinstance(c, dict) and c.get("type") == "tool_use":
-                    row = {"n": len(calls) + 1, "tool": c.get("name"), "id": c.get("id"),
-                           "input": c.get("input") or {}, "ts": ts, "bytes": 0}
-                    calls.append(row)
-                    pending[c.get("id")] = row
+            content = msg.get("content") or []
+            thinks = [c.get("thinking") or "" for c in content
+                      if isinstance(c, dict) and c.get("type") == "thinking"]
+            uses = [c for c in content if isinstance(c, dict) and c.get("type") == "tool_use"]
+            if thinks and not uses:
+                # Deliberation that produced no action. One is normal (the final answer); a run of
+                # them is the agent thinking in circles with nothing to check itself against.
+                calls.append({"n": len(calls) + 1, "tool": "(thinking only)", "id": None,
+                              "input": {}, "ts": ts, "bytes": 0, "error": False,
+                              "thinking": sum(len(t.encode()) for t in thinks), "thoughts": thinks})
+            for c in uses:
+                row = {"n": len(calls) + 1, "tool": c.get("name"), "id": c.get("id"),
+                       "input": c.get("input") or {}, "ts": ts, "bytes": 0, "error": False,
+                       "thinking": sum(len(t.encode()) for t in thinks) if c is uses[0] else 0,
+                       "thoughts": thinks if c is uses[0] else []}
+                calls.append(row)
+                pending[c.get("id")] = row
         elif rec.get("type") == "user":
             text = result_text(rec)
             if not text:
                 continue
             content = (msg.get("content") or [])
-            ids = [c.get("tool_use_id") for c in content
-                   if isinstance(c, dict) and c.get("type") == "tool_result"]
-            for tid in ids:
-                row = pending.get(tid)
+            results = [c for c in content
+                       if isinstance(c, dict) and c.get("type") == "tool_result"]
+            for res in results:
+                row = pending.get(res.get("tool_use_id"))
                 if row is not None:
                     row["bytes"] += len(text.encode())
+                    row["error"] = bool(res.get("is_error"))
                     break
             else:
                 if calls:
@@ -194,6 +207,11 @@ def main(argv):
     ap.add_argument("--tokens", action="store_true", help="cost, with the traps applied")
     ap.add_argument("--grep", metavar="PATTERN", help="only calls whose input matches (regex, -i)")
     ap.add_argument("--min-bytes", type=int, default=0, help="with --calls, hide smaller results")
+    ap.add_argument("--thinking", nargs="?", type=int, const=6, default=None, metavar="N",
+                    help="print the N largest reasoning blocks in full (default 6), with the call "
+                         "each preceded. This is for READING, not counting: the qualitative half of "
+                         "a profile is a judgement about how a run went, and it needs the agent's "
+                         "own words")
     args = ap.parse_args(argv)
 
     slug_dir = PROJECTS / slug_for(args.cwd)
@@ -211,16 +229,35 @@ def main(argv):
         return 1
     recs = records(path)
     calls, usages, stamps = walk(recs)
+    # Thinking-only turns sit in the sequence so --thinking can place them, but they are not
+    # calls and must not inflate a count anybody compares across runs.
+    real = [c for c in calls if c["tool"] != "(thinking only)"]
     age = time.time() - path.stat().st_mtime
     live = age < LIVE_WINDOW_S
 
     show_all = not (args.calls or args.tokens or args.grep)
     print(f"{path}")
-    print(f"  {len(recs)} record(s), {len(calls)} tool call(s), {path.stat().st_size:,}B on disk")
+    print(f"  {len(recs)} record(s), {len(real)} tool call(s), {path.stat().st_size:,}B on disk")
     if stamps:
         print(f"  {stamps[0]} → {stamps[-1]}")
     if live:
         print("  LIVE: modified in the last two minutes, so every figure below is a FLOOR")
+
+    if args.thinking is not None:
+        blocks = [(c.get("thinking", 0), c) for c in calls if c.get("thoughts")]
+        blocks.sort(key=lambda b: -b[0])
+        total = sum(b[0] for b in blocks)
+        print(f"\n## reasoning — {len(blocks)} block(s), {total:,}B total, "
+              f"{len(blocks) and total // len(blocks):,}B mean")
+        for nbytes, c in blocks[:args.thinking]:
+            print(f"\n--- before call {c['n']} ({c['tool']}), {nbytes:,}B")
+            if c["tool"] != "(thinking only)":
+                print(f"    call: {preview(c['input'], 110)}")
+            for t in c["thoughts"]:
+                print("    " + t.replace("\n", "\n    "))
+        print("\nRead these for the qualitative half: where it thrashed, what it re-derived, where it\n"
+              "sounded confused, what it did that nobody asked for. A size is not a finding.")
+        return 0
 
     if show_all or args.tokens:
         peak_read = max((u.get("cache_read_input_tokens", 0) for u in usages), default=0)
@@ -236,25 +273,43 @@ def main(argv):
 
     if show_all or args.calls or args.grep:
         pat = re.compile(args.grep, re.I) if args.grep else None
-        rows = [c for c in calls
+        rows = [c for c in real
                 if (not pat or pat.search(json.dumps(c["input"], ensure_ascii=False)))
                 and c["bytes"] >= args.min_bytes]
         if not rows:
             print("\nno call matched")
             return 1
-        print(f"\n## calls ({len(rows)} shown of {len(calls)})")
+        print(f"\n## calls ({len(rows)} shown of {len(real)})")
+        print(f"{'':4} {'tool':14} {'returned':>9} {'think':>7}  input")
         for c in rows:
-            print(f"{c['n']:4} {c['tool']:14} {c['bytes']:>8,}B  {preview(c['input'])}")
+            think = f"{c.get('thinking', 0):,}" if c.get("thinking") else ""
+            err = " ERR" if c.get("error") else ""
+            print(f"{c['n']:4} {c['tool']:14} {c['bytes']:>8,}B {think:>7}{err}  "
+                  f"{preview(c['input'], 120)}")
         by_tool = {}
-        for c in calls:
+        for c in real:
             t = by_tool.setdefault(c["tool"], [0, 0])
             t[0] += 1
             t[1] += c["bytes"]
         print("\n## per tool")
         for tool, (n, b) in sorted(by_tool.items(), key=lambda kv: -kv[1][1]):
             print(f"  {tool:16} {n:4} call(s)  {b:>10,}B returned")
-        total = sum(c["bytes"] for c in calls)
-        print(f"  {'TOTAL':16} {len(calls):4} call(s)  {total:>10,}B returned into context")
+        total = sum(c["bytes"] for c in real)
+        print(f"  {'TOTAL':16} {len(real):4} call(s)  {total:>10,}B returned into context")
+        errs = [c["n"] for c in real if c.get("error")]
+        think_total = sum(c.get("thinking", 0) for c in calls)
+        # No "thought and called nothing" count: the harness emits reasoning in its own assistant
+        # message before the one carrying the tool_use, so EVERY deliberation looks like that from
+        # here. Shipping it would invent a defect, which is worse than missing one.
+        deliberation = sum(1 for c in calls if c.get("thoughts"))
+        print(f"  reasoning {think_total:,}B across {deliberation} block(s); "
+              f"--thinking prints them")
+        if errs:
+            print(f"  tool errors at call(s): {', '.join(map(str, errs))} — read what it did next")
+        if deliberation:
+            biggest = max((c.get("thinking", 0) for c in calls), default=0)
+            print(f"  largest single block {biggest:,}B — read it with --thinking before quoting "
+                  f"any figure about it")
         print("\nBytes returned is the denominator for a relevant-fraction measurement. Classifying "
               "each\nrow as load-bearing / duplicated / never-used is the judgement, and it is yours.")
     return 0

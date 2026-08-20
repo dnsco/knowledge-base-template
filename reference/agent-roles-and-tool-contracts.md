@@ -263,7 +263,8 @@ divergence, which is the failure the extraction exists to end.
 |---|---|
 | `--list [--cwd PATH]` | every session under that project slug and its subagent transcripts, newest first, with sizes, agent types, and a LIVE marker on anything still being appended. **A worktree session has its own slug**, so `--cwd` is how you reach it |
 | `<agent-id>` | calls, per-tool byte totals, and cost with the traps applied — peak `cache_read` never a sum, `cache_creation` reported separately and never added, newlines rendered ` <NL> ` because collapsing them to `|` fabricates pipelines |
-| `<agent-id> --calls --min-bytes N` · `--grep PATTERN` | the expensive reads; whether a mandated tool actually fired |
+| `<agent-id> --calls --min-bytes N` · `--grep PATTERN` | the expensive reads; whether a mandated tool actually fired. The call table carries a reasoning-bytes column and marks tool errors |
+| `<agent-id> --thinking [N]` | the N largest reasoning blocks in full, with the call each preceded. **For reading, not counting** — it is the material for the qualitative half of a profile, which is required and comes first |
 
 Bytes returned per call is the **denominator** of a relevant-fraction measurement. The classification — load-bearing
 / duplicated / never used — is judgement and stays with the profiler.
