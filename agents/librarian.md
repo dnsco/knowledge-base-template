@@ -279,6 +279,12 @@ Then move work explicitly marked `✅ done`, with evidence, into `done/`:
 - **Where:** append to a recent, still-relevant `done/` doc if one fits (keeps cohesion, avoids proliferating
   tiny files); spin out a new `done/YYYY-MM-DD-topic.md` if it is big or distinct enough to stand alone.
   Appending is adding, not rewriting frozen history.
+- **`topic` names the work, not its state.** `2026-08-20-the-lipika-extraction.md`, never
+  `2026-08-20-landed-and-closed.md` — every doc in `done/` is landed and closed, so a name saying that
+  distinguishes nothing and forces a reader to open all of them. Spend no thought on it: take the theme at a
+  glance from what you are archiving, and a rough name beats a generic one. **A generically-named `done/` doc
+  you meet on a pass is yours to rename** — a rename is not altering frozen substance, so do it with the
+  `obsidian-cli` skill and list it in your change list like any other move.
 - Keep substance verbatim; don't summarize away the detail a deep-dive would need.
 - **Replace what you moved with a pointer in the live doc** — a one-line synopsis + `[[pointer]]`. If the
   archived material is still forward-bearing (a gotcha, decision or guardrail), make the pointer carry the

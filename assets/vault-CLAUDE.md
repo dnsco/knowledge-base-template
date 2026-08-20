@@ -83,7 +83,11 @@ tree and will happily hand-edit it — see [[GOTCHAS]] §1–2.
   traced from source, cross-workstream — no status, no next-moves), `values/` (evergreen principles), `done/`
   (finished work), `sources/` (raw verbatim inputs, subdivided by kind — `sources/transcriptions/`),
   `external/` (artifacts written for an outside audience), `tools/` (runnable scripts, not notes). Files are
-  `YYYY-MM-DD-topic.md`; evergreen concepts and folder-notes skip the date.
+  `YYYY-MM-DD-topic.md`; evergreen concepts and folder-notes skip the date. **`topic` names the work, not its
+  state** — this bites hardest in `done/`, where every document is by definition landed and closed, so a name
+  saying so distinguishes nothing and a reader hunting one closure has to open all of them. Take the theme at a
+  glance and spend no thought on it: **a rough name beats a generic one**, and a generically-named `done/` doc
+  is a `librarian`'s to rename on the next pass.
 - **`sources/` and `external/` are read-only — correct them by appending, never by editing.** `sources/` holds
   raw verbatim inputs (meeting and session transcripts, clipped articles); a transcript that has been edited is
   no longer a transcript, and every doc citing it now quotes something that was never said. `external/` holds
