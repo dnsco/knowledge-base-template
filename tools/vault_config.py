@@ -366,3 +366,23 @@ def vault_relative(path, vault=None):
         return str(p.resolve().relative_to(v.path))
     except ValueError:
         return str(p)
+
+
+def repo_for(path):
+    """The git root containing `path`, or None.
+
+    Some tools ask a question about a *file* rather than about a vault — `recall_check` asks whether
+    a rewrite dropped a fact, which is true or false regardless of which repository the file is in.
+    Wiring those to the configured vault would make them useless for the machinery's own files, now
+    that the machinery is its own repo. So: follow the file, and fall back to the vault.
+    """
+    p = Path(path)
+    start = p if p.is_dir() else p.parent
+    if not start.exists():
+        return None
+    try:
+        out = subprocess.run(["git", "rev-parse", "--show-toplevel"], cwd=str(start),
+                             capture_output=True, text=True, check=True)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    return out.stdout.strip() or None

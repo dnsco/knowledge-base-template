@@ -1,85 +1,72 @@
-# knowledge-base-template
+# Lipika
 
-Seed for an **LLM knowledge base**: durable cross-session memory for engineering work — a git repo + Obsidian
-vault that Claude Code sessions write long-form handoff docs into, plus the two agents that keep it from rotting.
+Agents and tools that maintain a **knowledge-base vault** — an Obsidian-vault-plus-git-repo of dated,
+long-form engineering docs that Claude Code sessions write to and read back, so context outlives the
+session that produced it. One vault spans every project you work in.
 
-**One knowledge base, N code repos** — not one per project. It lives beside your project checkouts and is
-symlinked into each project root (excluded locally via `.git/info/exclude`, so it never lands in a teammate's
-tree or a PR diff). A workstream is a thread of *work*, which routinely spans several repos.
+*Lipika* — the celestial scribes who inscribe the Akashic records. The vault is the record; this is the
+scribe.
 
-Setup: **[BOOTSTRAPPING.md](BOOTSTRAPPING.md)**. Conventions once bootstrapped: **[CLAUDE.md](CLAUDE.md)**. What
-bites afterwards — above all, a project-rooted session that never read those conventions and hand-edits the
-record anyway: **[GOTCHAS.md](GOTCHAS.md)**. "Vault" throughout is the Obsidian term for the same thing.
+**This repo is not a vault.** It holds the machinery; the vault lives wherever you keep it and is named
+in config. Nothing here hardcodes a path to one.
 
-## Why a knowledge base, and why two roles
+## Install
 
-A session's context dies with the session. This is where it survives — dated working docs a cold session can
-orient from in two minutes. The problem with agents writing docs is not writing; it's **rot**: N sessions each
-add a doc, the same mutable state (status, PR#s, "what's next") gets restated in five places, and four copies go
-stale.
-
-The fix is a split, and it's the whole design:
-
-| | writes | never |
-|---|---|---|
-| **`context-dump` skill** — any session doing engineering | a dated journal entry, and nothing else | the frontier; deletes, merges, archives, restructures, re-links |
-| **`frontier-clerk` agent** — spawned by the dump | frontier state only: `status` flips, marker moves, striking items whose completion is recorded | moving content between docs; inferring completion; tagging |
-| **`librarian` agent** — one scope, full autonomy inside it | structure within its scope: consolidates overlapping docs, rewords and merges redundant facts, splits the workstream, splits and merges tasks, archives finished work, fixes the `[[link]]` graph | reaching outside its prefix; the shared surfaces; engineering decisions; inferring that something is done |
-| **`curator` agent** — the vault feels messy | which scopes exist, everything crossing a boundary, and the shared surfaces | any document's substance |
-| **`scout` agent** — read-only reconnaissance | nothing in the corpus; it announces itself in the pass log | any edit, commit, or taxonomy call |
-
-Each boundary is a **capability, not a request for restraint**: the appending agent *cannot* rewrite, so the
-illegal state is unrepresentable rather than checked for afterwards. Working agents being append-only is what
-lets any number run in parallel without clobbering each other, and concentrating all destruction in the
-librarian — alone, with full context, at a phase boundary ("run the librarian" / "tidy the vault") — is what
-keeps the record safe to write to from many sessions and still small enough to read.
-
-## What's in the box
-
-```
-CLAUDE.md                    the operating manual — read by every session rooted here
-GOTCHAS.md                   what bites after setup; measured, not assumed
-README.md                    (this file; replaced by your knowledge base's map at bootstrap)
-BOOTSTRAPPING.md             setup
-skills/context-dump/         the append-only capture skill
-agents/librarian.md          the compacting agent, scoped to one workstream
-agents/curator.md            vault-wide normalization; fans out one librarian per scope
-agents/frontier-clerk.md     reconciles a frontier against a dump's entry, and writes nothing else
-agents/scout.md              read-only reconnaissance; reports, writes nothing
-tools/                       the librarian's verification tools: verify_pr_markers.py (batch
-                             PR-state check), recall_check.py (did a rewrite drop a rule),
-                             frozen_tier_check.py (was frozen-tier substance altered),
-                             dangling_links.py (which [[links]] resolve to nothing)
-values/                      two seeded evergreen principles: parse-dont-validate, laconic-terse-salient
-grand-plans/<demo>/          folder-note + depth doc — the grand-plan shape; delete it
-workstreams/<demo>/          folder-note (map + frontier) + done/ — the full workstream shape; delete it
-obsidian-skills/             submodule: kepano/obsidian-skills (obsidian-cli, defuddle, …)
-reference/ done/             empty tiers, see below
+```bash
+/plugin marketplace add dnsco/lipika
+/plugin install lipika
 ```
 
-Two placeholders — `{{VAULT}}` (the vault's directory name) and `{{VAULT_PATH}}` — are filled in at bootstrap.
+Then tell it where your vault is:
 
-## The structure it grows into
+```bash
+mkdir -p ~/.config/lipika && cat > ~/.config/lipika/config.json <<'JSON'
+{
+  "default": "notes",
+  "vaults": { "notes": "/absolute/path/to/your/vault" }
+}
+JSON
+lipika vault-config show
+```
 
-Sorted by **rate of change**, not by topic. That's the one idea to keep:
+The config also carries the thresholds the tools enforce — size budgets, per-role time budgets, which
+directories are append-only — so a number has one home instead of being restated in prose that goes
+stale. Every command resolves the vault the same way: `--vault`, then `$LIPIKA_VAULT`, then the config,
+then the checkout you are standing in. **A command that cannot resolve a vault refuses rather than
+guessing**, because a tool that guesses its target curates the wrong tree and reports success.
 
-- **`workstreams/<name>/`** — an active multi-session effort. Its `<name>.md` **folder-note** *is* the plan of
-  record: map and single frontier in one file, the only place mutable state lives — status, gates, PR numbers,
-  what's next, and one typed `Risks, gates & landmines` register. One frontier per workstream, no second copy
-  anywhere; there is no separate plan doc, because a workstream with one has two frontiers waiting to diverge.
-- **`workstreams/<name>/design/`** — still-consulted reference that no longer moves: the "why", as-built
-  design, recipes. Carries no status.
-- **`done/`** — finished and frozen. Opened only to re-examine completed work, never for current state.
-- **`sources/`** and **`external/`** — read-only: raw verbatim inputs, and artifacts already delivered to an
-  audience. Correct either by appending a dated note, never by editing.
-- **`workstreams/parked/`** — shared shelf for on-hold efforts that may revive.
-- **`grand-plans/`** — the long-horizon direction the workstreams serve.
-- **`reference/`** — subsystem maps traced from source, cross-workstream. Kept so agents re-read instead of
-  re-tracing.
-- **`values/`** — evergreen principles that outlive any effort, linkable by name from any doc.
-- **`tools/`** — runnable scripts an agent can call, not notes.
-- **`README.md`** — a **thin map**: one line per doc, what it is and which effort it serves. No status, no PR
-  numbers, no dates. The moment it grows annotations it becomes a second frontier and starts drifting.
+Starting from nothing? `assets/vault-CLAUDE.md` is the conventions document a vault wants at its root.
 
-Docs are `YYYY-MM-DD-topic.md`, wired with `[[wikilinks]]`; frontmatter carries `type` / `status` / `date` /
-`tags` / `up`. Full rules in [CLAUDE.md](CLAUDE.md).
+## The roles
+
+Five, and only the first is synchronous — the rest run in the background so housekeeping stays off the
+working session's clock.
+
+| role | what it may do |
+|---|---|
+| **`context-dump`** (skill) | appends a dated entry. Cannot touch the plan of record |
+| **`frontier-clerk`** | owns one plan of record's state: flips a status, strikes a finished item, drains a closed one |
+| **`librarian`** | structure inside **one** scope, with full autonomy there — merge, split, archive, re-link — bounded by losslessness rather than by permission |
+| **`curator`** | anything crossing a scope boundary, plus the shared surfaces no scope owns |
+| **`scout`** | reads and reports. Writes nothing, and its context is discarded on return |
+
+Each acts and then reports a change list with a reversal per entry, rather than asking first —
+detect-propose-execute-on-approval produced zero proposals in two separate homes.
+
+## The tools
+
+```bash
+lipika                 # every command, with what it does
+lipika budget-check <path>
+lipika recall-check <ref> <path>     # did a rewrite silently drop a fact?
+lipika pass-log active               # who else is working in this vault right now
+```
+
+They are reached by name because a plugin's `bin/` is on `PATH`. `${CLAUDE_PLUGIN_ROOT}` is **not**
+populated in a subagent's shell — measured — so no definition here interpolates a path.
+
+## Design
+
+`design/` carries the machinery's own documents: `vault-and-agent-ontology.md` (the shape, the forces,
+and what would falsify each invariant), `agent-eval-method.md` (how a role gets changed and measured),
+`GOTCHAS.md` (what bites, all of it measured). Read the second before changing a definition.
