@@ -140,6 +140,8 @@ which is 6 KB it should not have had to load)
   section or nothing cited: the pull did not happen · exit 5 bad invocation""")
     ap.add_argument("paths", nargs="+")
     args = ap.parse_args(argv)
+    import vault_config
+    args.paths = [vault_config.anchor(p) or p for p in args.paths]
 
     frontiers = []
     for p in args.paths:

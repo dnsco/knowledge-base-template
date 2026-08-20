@@ -274,12 +274,16 @@ def check_scope_discipline(rep, vault, base, branch, manifest):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("manifest")
-    ap.add_argument("--vault", default=".")
+    ap.add_argument("--vault", default=None,
+                    help="vault path or a name from ~/.config/lipika/config.json; "
+                         "default: $LIPIKA_VAULT, the config, then this checkout")
     ap.add_argument("--branch", required=True, help="the sub-agent's branch")
     ap.add_argument("--base", default=None, help="override the manifest's own base")
     ap.add_argument("--memory-dir", default=None)
     ap.add_argument("--sample", type=int, default=6)
     args = ap.parse_args()
+    import vault_config
+    args.vault = str(vault_config.resolve_or_exit(args.vault, "scope_manifest_validate"))
 
     vault = Path(args.vault).expanduser().resolve()
     try:

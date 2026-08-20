@@ -200,7 +200,9 @@ def main():
     ap.add_argument("entry")
     ap.add_argument("frontier")
     ap.add_argument("--base", default="HEAD")
-    ap.add_argument("--vault", default=".")
+    ap.add_argument("--vault", default=None,
+                    help="vault path or a name from ~/.config/lipika/config.json; "
+                         "default: $LIPIKA_VAULT, the config, then this checkout")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("-h", "--help", action="store_true")
     try:
@@ -211,6 +213,11 @@ def main():
     if a.help:
         print(__doc__.strip())
         return 0
+
+    import vault_config
+    a.vault = str(vault_config.resolve_or_exit(a.vault, "marker_licence_check"))
+    a.entry = vault_config.anchor(a.entry) or a.entry
+    a.frontier = vault_config.anchor(a.frontier) or a.frontier
 
     try:
         entry_text = open(a.entry).read()

@@ -69,9 +69,13 @@ def linked_names(text):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("target", help="a workstream directory, or its folder-note")
-    ap.add_argument("--vault", default=".")
+    ap.add_argument("--vault", default=None,
+                    help="vault path or a name from ~/.config/lipika/config.json; "
+                         "default: $LIPIKA_VAULT, the config, then this checkout")
     ap.add_argument("--quiet", action="store_true", help="only print signals")
     args = ap.parse_args()
+    import vault_config
+    args.vault = str(vault_config.resolve_or_exit(args.vault, "frontier_lag_check"))
 
     vault = Path(args.vault).expanduser().resolve()
     t = Path(args.target).expanduser()

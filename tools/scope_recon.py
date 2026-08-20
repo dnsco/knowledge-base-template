@@ -236,12 +236,16 @@ def recon_scope(vault, scope, want_markers):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("scopes", nargs="+")
-    ap.add_argument("--vault", default=".")
+    ap.add_argument("--vault", default=None,
+                    help="vault path or a name from ~/.config/lipika/config.json; "
+                         "default: $LIPIKA_VAULT, the config, then this checkout")
     ap.add_argument("--each", action="store_true",
                     help="treat each argument as a parent and report one row per child directory")
     ap.add_argument("--markers", action="store_true", help="harvest cited PR/commit refs")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
+    import vault_config
+    args.vault = str(vault_config.resolve_or_exit(args.vault, "scope_recon"))
 
     vault = Path(args.vault).expanduser().resolve()
     if not (vault / ".git").exists():

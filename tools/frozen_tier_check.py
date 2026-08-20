@@ -72,13 +72,15 @@ GOTCHA THIS ENCODES
 import argparse
 import re
 import subprocess
+
+GIT_CWD = None   # set from the resolved vault in main(); git must run in the vault
 import sys
 
 FROZEN = re.compile(r"(^|/)(done|sources|external)/")
 
 
 def git(*args):
-    p = subprocess.run(["git", *args], capture_output=True, text=True)
+    p = subprocess.run(["git", *args], capture_output=True, text=True, cwd=GIT_CWD)
     if p.returncode:
         sys.exit(p.stderr.strip() or f"git {' '.join(args)} failed")
     return p.stdout
@@ -91,7 +93,8 @@ def norm(t):
 
 
 def show(ref, path):
-    p = subprocess.run(["git", "show", f"{ref}:{path}"], capture_output=True, text=True)
+    p = subprocess.run(["git", "show", f"{ref}:{path}"], capture_output=True, text=True,
+                       cwd=GIT_CWD)
     return None if p.returncode else p.stdout
 
 
@@ -142,6 +145,11 @@ def main():
     ap.add_argument("--ref-b", default=None,
                     help="compare <ref> against this ref instead of the working tree")
     a = ap.parse_args()
+    import vault_config
+    global GIT_CWD
+    _v = vault_config.resolve_or_exit(None, "frozen_tier_check")
+    GIT_CWD = str(_v.path)
+    a.paths = [vault_config.vault_relative(p, _v) for p in a.paths]
 
     rows = changed_frozen(a.ref, a.ref_b)
     rows = sorted(set(selected(rows, a.paths)), key=lambda r: r[1])
