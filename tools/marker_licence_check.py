@@ -68,23 +68,28 @@ import re
 import subprocess
 import sys
 
+import markers
+
 # Both spellings are live in the corpus: bracketed in some notes, bold-prefix in others.
 # Enforcing one everywhere was considered and declined -- the convention emerged rather than
 # being designed. So anything counting markers reads both. This is that requirement.
-TYPED = re.compile(r"\[(LANDMINE|GATE|DEAD END|OPEN Q)\]|\*\*(LANDMINE|GATE|DEAD END|OPEN Q)\b")
-
-DONE = re.compile(r"✅|\bdone\b|\bMitigated\b|\bFixed\b|\bsettled\b|\bdischarged\b|\bresolved\b", re.I)
-WEAK = re.compile(r"▢|⏳|\bnot started\b|\bin-flight\b|\bunfixed\b|\bunmitigated\b|\bUnresolved\b", re.I)
-STRONG_WORD = re.compile(r"\b(Mitigated|Fixed|discharged|settled|closed|done)\b", re.I)
-
-# Identifying material: shas, PR refs, quoted names, file paths, tool names. Deliberately
-# narrow -- matching on English prose produces noise, and a noisy verifier gets ignored.
-IDENT = re.compile(r"#\d{2,6}|\b[0-9a-f]{7,40}\b|`[^`]+`|\b\w+\.(?:py|md)\b")
+TYPED, DONE, WEAK = markers.TYPED, markers.DONE, markers.WEAK
+STRONG_WORD, IDENT = markers.STRONG_WORD, markers.IDENT
 
 RANK_DONE, RANK_WEAK, RANK_NONE = 2, 1, 0
 
 
 def rank(line):
+    """The state a line ASSERTS. A line that talks about markers asserts nothing.
+
+    THE DEFECT THIS FIXES: the tool could not tell a done-marker from a MENTION of one, so
+    every line explaining the convention -- "a ✅ done marker is the only authority", a
+    heading reading "Settled as direction", a `✅ settled … execution deferred` line about a
+    decision rather than about work -- was read as a completion claim and flagged. A check
+    that stays red on correct content gets dismissed, and takes the real findings with it.
+    """
+    if not markers.carries_marker(line):
+        return RANK_NONE
     if DONE.search(line):
         return RANK_DONE
     if WEAK.search(line):
@@ -130,7 +135,7 @@ def check(entry_text, frontier_text, added, removed):
     for ln in added:
         if not ln.strip():
             continue
-        if DONE.search(ln) and WEAK.search(ln):
+        if markers.carries_marker(ln) and DONE.search(ln) and WEAK.search(ln):
             findings.append({
                 "rule": "self-contradiction", "severity": "defect", "line": ln.strip()[:200],
                 "why": "carries a done-marker and a weaker marker on the same line",

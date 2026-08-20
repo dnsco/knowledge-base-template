@@ -38,6 +38,10 @@ OUTPUT
     exit 1   a SUBSTANCE or DELETED verdict
     exit 2   your filter matched nothing, so nothing was checked
 
+  --vault PATH is accepted like every other tool's: without it the tool answers about the
+  CONFIGURED vault rather than the tree you are standing in, which is how it handed a green
+  to every agent working somewhere else.
+
 WHY EXIT 2 EXISTS — THE BUG THIS TOOL SHIPPED WITH
   Arguments used to be filtered through the frozen-tier pattern and then used as the path
   list, so a workstream prefix such as `workstreams/h2db/` matched no frozen *file*, the
@@ -70,6 +74,7 @@ GOTCHA THIS ENCODES
 """
 
 import argparse
+import os
 import re
 import subprocess
 
@@ -99,11 +104,40 @@ def show(ref, path):
 
 
 def _read(path):
+    """Read a vault-relative path from the VAULT, not from wherever the process was launched.
+
+    THE DEFECT THIS FIXES: `open(path)` resolved against the process cwd, so every caller not
+    standing inside the vault got `None` back for a file that exists -- which this tool then
+    reported as `DELETED`, a rule-F violation, for files nobody had touched. Two false DELETED
+    findings reproduced 2026-08-20 from a sibling checkout. Paired with the tool having had no
+    `--vault` flag, it could be wrong in both directions at once.
+    """
     try:
-        with open(path) as fh:
+        with open(os.path.join(GIT_CWD or ".", path)) as fh:
             return fh.read()
     except OSError:
         return None
+
+
+def untracked_frozen():
+    """Frozen-tier files git does not know about yet.
+
+    THE DEFECT THIS FIXES (tenth recorded instance of this check reporting on a diff it did
+    not read): the verdict set comes from `git diff`, so a brand-new UNTRACKED file under
+    sources/ or done/ is invisible and the tool answers "no frozen-tier files changed" --
+    green, to a tier that just gained a document. An addition is usually sanctioned, but the
+    check cannot tell a sanctioned one from an unsanctioned one by staying silent about both.
+    Reproduced 2026-08-20 writing an eval into sources/evals/.
+    """
+    out = git("status", "--porcelain", "--untracked-files=all")
+    rows = []
+    for line in out.splitlines():
+        if not line.startswith("??"):
+            continue
+        path = line[3:].strip().strip('"')
+        if path.endswith(".md") and FROZEN.search(path):
+            rows.append(("?", path))
+    return rows
 
 
 def changed_frozen(ref, ref_b):
@@ -144,14 +178,18 @@ def main():
                     help="filter the diff to these exact paths or directory prefixes")
     ap.add_argument("--ref-b", default=None,
                     help="compare <ref> against this ref instead of the working tree")
-    a = ap.parse_args()
     import vault_config
+    vault_config.add_argument(ap)
+    a = ap.parse_args()
     global GIT_CWD
-    _v = vault_config.resolve_or_exit(None, "frozen_tier_check")
+    _v = vault_config.resolve_or_exit(getattr(a, "vault", None), "frozen_tier_check")
     GIT_CWD = str(_v.path)
     a.paths = [vault_config.vault_relative(p, _v) for p in a.paths]
 
     rows = changed_frozen(a.ref, a.ref_b)
+    # Untracked additions only exist relative to the working tree; a ref-to-ref comparison
+    # has no room for them.
+    new_rows = [] if a.ref_b else selected(untracked_frozen(), a.paths)
     rows = sorted(set(selected(rows, a.paths)), key=lambda r: r[1])
 
     # Say what was considered, always. A pass that printed nothing was indistinguishable
@@ -160,7 +198,7 @@ def main():
     scope = " ".join(a.paths) if a.paths else "the whole tree"
     print(f"considering: {a.ref}..{against}, frozen tiers under {scope}")
 
-    if not rows:
+    if not rows and not new_rows:
         if a.paths:
             print(f"  NOTHING MATCHED your filter, so nothing was checked: {scope}")
             print("  frozen-tier files this diff touches, unfiltered:")
@@ -173,6 +211,8 @@ def main():
 
     for _, path in rows:
         print(f"  considered  {path}")
+    for _, path in new_rows:
+        print(f"  UNTRACKED   {path}  (new file in a frozen tier — sanctioned addition, or not?)")
     print()
 
     bad = []
@@ -200,7 +240,8 @@ def main():
                 print(f"               … {len(missing) - 12} more")
             bad.append(path)
 
-    print(f"\nchecked {len(rows)} changed frozen file(s), {len(bad)} needing attention")
+    tail = f", {len(new_rows)} untracked addition(s)" if new_rows else ""
+    print(f"\nchecked {len(rows)} changed frozen file(s), {len(bad)} needing attention{tail}")
     return 1 if bad else 0
 
 

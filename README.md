@@ -41,11 +41,19 @@ separately.
 ## Set up a vault
 
 A vault is a git repo of markdown, readable as an Obsidian vault. It needs one document at its root saying how
-its documents are placed, named and maintained:
+its documents are placed, named and maintained. One command seeds all of it and registers the vault:
 
 ```bash
-cp templates/vault-CLAUDE.md.template  /path/to/your/vault/CLAUDE.md
-cp templates/vault-gitignore.template  /path/to/your/vault/.gitignore
+lipika init /path/to/your/vault          # --name KEY, --default, --no-git
+```
+
+It creates the tier directories, copies both templates, writes the config entry and runs `doctor`. Re-running is
+safe: anything already there is kept, never overwritten, which is also how an older vault picks up an entry it
+is missing. What it copies:
+
+```
+templates/vault-CLAUDE.md.template  ->  <vault>/CLAUDE.md
+templates/vault-gitignore.template  ->  <vault>/.gitignore
 ```
 
 That template carries the **corpus half** — placement, filenames, frontmatter, voice, and what the byte budgets
@@ -55,11 +63,12 @@ places diverges and a number restated in prose goes stale while a tool enforces 
 A vault's copy diverges on purpose: it should name your real repos, your dated evidence, your concrete shas.
 **Edit the template here; never port a copy back.**
 
-The `.gitignore` earns its own template because two of its entries are load-bearing rather than tidy. The pass
-log is appended concurrently from every worktree, so tracking it makes each pair of parallel passes a merge
-conflict. And agent worktrees are provisioned inside the vault, so a tracked one nests the repo in itself and a
-recursive grep from the root double-counts every hit — which is `.gitignore` rather than `.git/info/exclude`
-precisely because exclude does not survive a clone.
+The `.gitignore` earns its own template because three of its entries are load-bearing rather than tidy. The
+pass log is appended concurrently by every role, so tracking it makes each pair of parallel passes a merge
+conflict. `.lipika/` holds agent-to-agent reports — a scout's recon, a scope's manifest — which are machinery
+state rather than corpus. And agent worktrees get provisioned inside the vault, so a tracked one nests the repo
+in itself and a recursive grep from the root double-counts every hit. All three are `.gitignore` rather than
+`.git/info/exclude` precisely because exclude does not survive a clone.
 
 ## The roles
 

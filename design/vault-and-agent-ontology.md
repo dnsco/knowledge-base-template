@@ -76,21 +76,26 @@ reasoning time — the rest of the wall clock is tool calls, file reads and, for
 blocked while children run. A pass can be cheap in tokens and still take seven minutes. The three
 numbers move independently, which is why the budget is stated in one of them.
 
-**Two minutes is the north star for any operation.** It is aspirational rather than enforced, and it is
-tiered by role, because a development task and a task someone waits on are not the same thing.
+**Two minutes is the north star for the one SYNCHRONOUS operation** — the dump, which somebody is waiting
+on. For the background roles it was a hypothesis, and it is now falsified: **not one pass, of any role, has
+ever met it.**
 
-| operation | budget |
-|---|---|
-| north star, any operation | **2 min, aspirational** |
-| `context-dump` — the only synchronous one | 2 min |
-| `frontier-clerk` | very cheap, in tokens and in time; 2 min |
-| `librarian` — one scope | ~5 min, realistically, for now |
-| `curator` — vault-wide | aim under 5 min, **8 min hard limit** |
+| operation | what it should cost | last measured (2026-08-20) |
+|---|---|---|
+| `context-dump` — the only synchronous one | 2 min | — |
+| `frontier-clerk` | 2 min | 133 s, simulated; no real span on record |
+| `librarian` — one scope | beat the baseline below | **533 s** delta · **1,817 s** full on a 59 KB parent |
+| `curator` — vault-wide | beat the baseline below | **1,407 s** / 6 scopes · **2,155 s** / 2 scopes |
 | eval, profiling, or other developer work | **exempt** — a development task, not one anyone waits on |
 
-Current spans for every role: `pass-log.jsonl`, via `pass_log.py history`. **Nothing measured yet meets
-the flat two-minute form of this**, including the role it was originally written for — which is why the
-tiers exist and why they are the test rather than a decoration.
+✅ **A ceiling nothing has ever met is worse than no ceiling**, because every honest report then reads as a
+failure and gets discounted — which is what happened to the 480 s figure, overridden twice in one run by an
+agent that had priced the overrun correctly. So the background roles carry **observed baselines to beat**
+rather than a target already missed, and the numbers live in `~/.config/lipika/config.json` so there is one
+home for them. Re-measure and move them down; do not restate them in a definition.
+
+**And width is not the lever.** Six scopes cost 1,407 s while two cost 2,155 s — one full pass over a 59 KB
+parent outweighed a six-scope catch-up. A per-run ceiling cannot express that; a per-scope baseline can.
 
 **What the ceiling implies.**
 
@@ -181,22 +186,46 @@ conversion cut a parent's non-register bytes by 18% while the total barely moved
 promotions grew the register. The budget is **non-register bytes**, with the register on a soft mark that
 asks a question and never fails.
 
-### Carry-across on open, not carry-up on close
+### Carry-across sideways: closing a task is opening its successor
 
-▢ **When a task opens it pulls forward the warnings that bear on it** — the still-live gates, landmines,
+✅ **When a task opens it pulls forward the warnings that bear on it** — the still-live gates, landmines,
 dead ends and settled decisions from the workstream's closed tasks and `historical/` — into a
 `## Carried across` section, each cited by source. Selection is paid **once per task**, by whoever knows
-what the task is about.
+what the task is about. `orientation_check.py` requires the section and treats *nothing applied* and
+*nobody looked* as different states, by refusing an uncited "nothing to carry".
 
 **Rejected: migrating live context up into the parent on close.** The parent then accumulates
 monotonically, reproducing the problem one level up — and correctness makes it worse, because reversing
 an overreach means re-*expanding* distinctions a previous pass collapsed, so a register grows while being
 deliberately drained.
 
-✅ **A shape check forces the pull.** `orientation_check.py` requires the section and treats *nothing
-applied* and *nobody looked* as different states, by refusing an uncited "nothing to carry". Nothing
-carries *up* on close, and the pull is what makes that safe: without it, promotion to `done/` is how a
-live warning goes dark quietly.
+✅ **So the residue goes SIDEWAYS, into the successor.** That is the third option, and its absence is why
+nothing ever closed: a task closes when the work it was opened for has landed and what remains no longer
+describes it, and the remains have to live somewhere. Closing one therefore *is* opening the next —
+
+1. open the successor task;
+2. carry every unstruck item and every live GATE / LANDMINE / OPEN Q / DEAD END into its
+   `## Carried across`, cited by source, reworded freely;
+3. extract what is durable but not forward-bearing into a workstream-local `reference/` or `design/`
+   document — the option that keeps a successor thin, for knowledge a reader wants *when they go looking*
+   rather than fired unprompted;
+4. `git mv` the closed folder into `done/YYYY-MM-DD-<task>/`, whole. Basenames do not change, so no
+   inbound link breaks;
+5. point at it from the parent's task index and from the successor.
+
+**The measurement that forced this.** 2026-08-20: three live tasks in one workstream, every workstream in
+the vault `status: active`, four ledger files in `done/` and **zero** closed task folders — nothing had
+ever closed since the ontology was written. The cause was not compliance. No role was chartered to close,
+because *never infer completion* — correct about **items** — had been read as covering **task closure**,
+and every real task carries a `▢`. Those are different questions: *did this land*, which only a marker
+answers, and *does the remaining work still describe this task*, which is a partition judgement.
+
+✅ **`closure_check.py` is the gate, in two modes.** `--scan` weighs landed markers across a task's *dumps*
+against the residue on its frontier and prints the residue as the manifest a rollover must carry — a
+heuristic, and authority to ask only. `<task> --into <successor>` refuses a rollover that leaves residue
+with no trace in the successor. **Losslessness is `recall_check.py`'s; cohesion-of-what-is-next is this
+one's, and nothing checked it before.** Matching is deliberately fuzzy — a carried item is *meant* to be
+reworded, so an identifier localizes and prose corroborates, and only a total absence hard-fails.
 
 ### Conversion is lazy, and that is the design
 
@@ -458,12 +487,12 @@ claim in another scope's files that its work falsified — all the `curator`'s. 
 | `scope_manifest_validate.py <manifest> <branch>` | does a sub-agent's structured return match the branch it wrote? **exit 0** holds, **UNVERIFIED reported rather than hidden** · **exit 1** an assertion failed · **exit 5** bad invocation or unparseable. Unknown keys are preserved and reported, never rejected |
 | `vault_commit.py -m "…" -- <paths>` | refuses a bare commit and a half-rename. **exit 2** a rule refused it · **exit 3** nothing under those pathspecs |
 | `obsidian.py` | vault query, and the link-preserving route for renames and moves |
-| `frontier_slice.py`, `verify_pr_markers.py`, `assert_isolated.py` | as above and §7 |
+| `frontier_slice.py`, `verify_pr_markers.py`, `closure_check.py` | as above and §7 |
 
 **Invocations, and the one-off project scripts no role runs, live in the workstream's own tool inventory** —
 not here, because an inventory goes stale the way a count does and this document carries neither.
 **Vault machinery is defined by membership in the template**, which is what makes the boundary checkable:
-durable role machinery is shared upstream, one-off analysis is not.
+durable role machinery lives here, one-off analysis lives in the vault.
 
 ### `curator` — reach, and the surfaces no scope owns
 
@@ -503,7 +532,7 @@ workstreams that are one effort, syncs the shared surfaces, runs the invariants 
 | `scope_manifest_validate.py <manifest> <branch>` | does a scope's structured return match the branch it wrote? **exit 0** holds, **UNVERIFIED reported rather than hidden** · **exit 1** an assertion failed · **exit 5** bad invocation. Unknown keys preserved and reported, never rejected |
 | `pass_invariants.py <ref>` | every end-of-pass check in one call, run **once, after the merge** |
 | `pass_log.py start --parent`, `stop` | one record per scope plus its own run; `--parent` keeps its lineage from reading as a conflict with itself |
-| `scope_recon.py`, `verify_pr_markers.py`, `assert_isolated.py`, `vault_commit.py` | as above and §7 |
+| `scope_recon.py`, `verify_pr_markers.py`, `vault_commit.py` | as above and §7 |
 
 ### `scout` — read-only reconnaissance, in a context that is discarded
 
@@ -549,25 +578,33 @@ in-line duty reproduces it.
 | `scope_recon.py <scope> …` | every mechanical fact about a set of scopes in one call, replacing a long tail of forensic invocations. Does not emit refs the verifier aborts on |
 | `budget_check.py <ws>` | the `sizing` brief. **exit 2** over the signal → extract or split, never trim. Prints the largest sections, so *what to extract* comes from the same call |
 | `pass_log.py start\|stop\|active` | announce itself, close it on return, and read who else is on this ground |
-| `frontier_slice.py`, `assert_isolated.py` | as above and §7 |
+| `frontier_slice.py`, `closure_check.py` | as above and §7 |
 
 ## 7. Cross-role machinery
 
-### `assert_isolated.py <base>` — every sub-agent's **first** command
+### Isolation, retired — what replaced it
 
-**exit 0** isolated and `HEAD == base` and the tree clean · **exit 2** not in a worktree · **exit 3** HEAD
-is not the base it was given · **exit 4** working tree dirty · **exit 5** bad invocation or not a git
-repository.
+✅ **Worktree isolation is retired (2026-08-20).** It was standing in for two failures, and both now have
+cheaper guards that already existed:
 
-**Why it exists.** Harness worktree isolation cuts from `origin/main`, and a vault that is deliberately
-never pushed has an `origin/main` many commits stale — so **every harness-isolated sub-agent lands in a
-tree where recent work does not exist.** Deterministic, and the gap grows with every commit. Two
-sub-agents caught this as their first command in one round and reset before writing; one reported a
-folder-note 22 KB smaller than the one it was sent to edit. Uncaught, an agent curates a tree in which
-most of its material does not yet exist, and reports clean.
+| the failure | what guards it now |
+|---|---|
+| two agents writing one file | a **disjoint path-prefix partition**, plus `pass-log start` exiting 1 on overlap |
+| a commit capturing another session's work | `vault_commit.py` refusing staged paths outside the pathspecs |
 
-**Requirement:** provision with `git worktree add … <base-sha>` when it halts. Do not repair by reading
-the shared checkout — refusing to do that is correct behaviour.
+**What it cost, measured:** five defects of its own, every one a tool answering about the wrong tree —
+a stale `origin/main` base, `frozen_tier_check.py` with no `--vault` returning a false green, the Obsidian
+index unusable from a worktree, `vault_commit.py` resolving the configured vault rather than the cwd,
+`pass_invariants.py` anchors red on an untracked log. Against that: the three recorded clobbering
+incidents (2026-08-18) were each a scoped `git add` followed by a **bare** commit, which a worktree does
+not prevent and a pathspec does.
+
+**Two things survive it.** First, **a tree at an unexpected commit reports clean** — the delta still
+computes, so the failure looks like success; two sub-agents once caught this and reset before writing, one
+having been handed a folder-note 22 KB smaller than the one it was sent to edit. Any agent given a base ref
+checks `HEAD` against it before reading. Second, **nobody changes HEAD in a shared checkout**: creating a
+branch moves it for every session in the tree, so the next agent's commits land on someone else's branch.
+That is the one hazard retiring isolation adds.
 
 ### The pass log — one file, and every role announces itself in it
 
@@ -712,18 +749,19 @@ definitions; on any conflict those win and this table is the stale copy.**
 | invariant | why | falsified by |
 |---|---|---|
 | An agent is pushed what bears on its work | A surface full of another task's warnings fails as a long one does | Recall flat in the irrelevant fraction |
-| Any operation finishes inside two minutes | The system is used interactively; a seven-minute wait on a routine action is not | An operation nobody minds waiting many times longer for |
+| A background pass's cost is its slowest child | Width was not the driver: 6 scopes cost 1,407 s, 2 scopes cost 2,155 s | A run whose span tracked scope count rather than its largest scope |
 | One frontier per live task | Two live copies of status must be hand-synced and diverge; tried and reversed in a day | A second live frontier held in sync for a month |
 | A push surface must stay short | A dead end fires unprompted or not at all | Agents reliably reading a register they were not required to open |
 | Every metric carries the date it was taken | Undated figures invite every later agent to correct them, which costs more than staleness | Agents agreeing on an undated figure across a month |
 | Over budget means extract or split, never trim | The task summaries are among the most useful things here | A workstream held under budget only by deleting history, with nothing lost |
 | A live document points at what was archived out of it | Otherwise archiving is how a warning goes dark | An archived warning found reliably with nothing pointing at it |
 | Unread material is never marked consolidated | Applies to a skipped scope and to `historical/` alike | — definitional |
-| Markers are the only authority to act | Every overreach found so far was an unlicensed upgrade | An agent inferring completion correctly and repeatably |
+| Markers are the only authority to call an ITEM done | Every overreach found so far was an unlicensed upgrade | An agent inferring an item's completion correctly and repeatably |
+| A task closes on judgement, not on a marker | A task always carries a `▢`; requiring a marker made closure impossible — 0 closed tasks in the vault's history | Tasks closing reliably while closure needs an explicit owner marker |
+| Residue carries sideways on close, never up | The parent grows monotonically otherwise, reproducing the problem one level up | A parent absorbing every closed task's residue and staying readable |
 | One marker per separately-statused fact | Measured overreaches trace to composite markers | Composite markers reconciled correctly across passes |
 | An edit keeps every fact; wording and redundancy are fungible | Semantic loss is the harm; rewording is not | A reworded document that lost a fact nobody noticed for a month |
 | `done/`, `sources/`, `external/` are append-only — for three different reasons | Fidelity, delivery, and read cost. §5 | mostly definitional; the `done/` one is a cost claim and could be wrong |
-| Shared surfaces are authored upstream first | A local edit guarantees a second divergence | — definitional |
 | Prose in a definition does not fire; a tool with an exit code does | Every measured instance of a rule silently not firing was fixed by moving it into a tool | A rule holding across several passes on prose alone |
 
 ## 10. Three tool-design rules the set was built on
@@ -748,14 +786,15 @@ definitions; on any conflict those win and this table is the stale copy.**
 
 Only what is unresolved. An answered question becomes the design above and leaves here.
 
-- `[OPEN Q]` **Can a full pass meet any ceiling?** Provisionally: aim under 5 minutes, 8 minutes hard.
-  One data point, and it predates every cut.
+- `[OPEN Q]` **What a full pass can actually cost.** The 480 s / 300 s ceilings are falsified on four data
+  and are now observed baselines instead (§3). Open: whether the floor is reducible at all, or whether a
+  first pass over an untended scope is simply developer work and exempt.
 - `[OPEN Q]` **How to make the semantic-loss check cheap.** §5.
 - `[OPEN Q]` **Coordination granularity and teeth.** §7.
 - `[OPEN Q]` **What is the count-based trigger, if any**, and does it or the state-change gate govern? §6.
-- `[OPEN Q]` **The budget numbers are guesses.** The eval runs against a converted workstream and measures
-  what an agent actually loads to open a task. A second converted workstream is the second data point for
-  every threshold here.
+- `[OPEN Q]` **The BYTE budget numbers are still guesses** — 8 KB / 12 KB against non-register bytes,
+  calibrated against this corpus and nothing else. A second converted workstream is the second data point.
+  Note that closure, not extraction, is the first answer when a frontier is over budget carrying closed work.
 - `[OPEN Q]` **Which required steps earn their round trip.** A budget question now, not a curiosity.
 - `[OPEN Q]` **Should a `scout` write a report for later auditing?** Leaning no — writing nothing is the
   property that makes the role safe, and `sources/evals/` may already cover the need.
@@ -765,8 +804,9 @@ Only what is unresolved. An answered question becomes the design above and leave
 - `[OPEN Q]` **Does the qualitative read need a second reader?** One profiler's judgement about another
   agent's run is exactly the kind of claim this system normally makes someone verify, and nothing verifies
   this one.
-- `[OPEN Q]` **Whether workstream-local `design/` documents cut the cost of proving nothing was dropped.**
-  Smaller reference documents may make an adversarial check cheap enough to run at the point of a split.
+- `[OPEN Q]` **Whether workstream-local `design/` and `reference/` documents cut the cost of proving nothing
+  was dropped.** Smaller reference documents may make an adversarial check cheap enough to run at the point
+  of a split. Extraction into one is now step 3 of a rollover, so this gets exercised on every close.
 - `[OPEN Q]` **`historical/` has no orientation check behind it.** Nothing forces a new task to review
   closed ones beyond the shape check. `historical/` staying live is the only current mitigation.
 - `[OPEN Q]` **Where role tooling should live.** Durable machinery and one-off scripts share one `tools/`,
@@ -819,8 +859,8 @@ failed, however well it encodes a real measurement — rewrite it rather than re
 | `sources/evals/` | the **verbatim measurements**, frozen and dated |
 | this document | the **design** — the shape, the forces, the falsifiers |
 
-**Developed through the loop in `agent-eval-method.md`** — author upstream, port down, prove no rule was
-dropped in either direction, try it on real work, profile it, summarise the round where the next agent will
+**Developed through the loop in `agent-eval-method.md`** — author here (there is one copy of every file),
+prove no rule was dropped, try it on real work, profile it, summarise the round where the next agent will
 read it, feed the findings back. That return edge is the difference between a design that stays true and one
 that becomes aspirational.
 

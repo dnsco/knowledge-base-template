@@ -45,21 +45,26 @@ The discipline, worth stating in the invocation whenever a session will touch th
   restructures, and not a frontier edit either.
 - **The frontier — `status` flips, striking a completed item: `frontier-clerk` only.** The dump dispatches it in
   the background; it is not something to do by hand on the way past.
-- **Delete / merge / archive / re-link: librarian only**, as its own deliberate pass, on a clean tree, and it
-  has full autonomy inside the scope you give it. Several workstreams overdue at once, or anything crossing a
-  scope boundary, is the `curator`'s.
-- **Never touch `done/`.** It is frozen.
+- **Delete / merge / archive / close / re-link: librarian only**, as its own deliberate pass, on a clean scope,
+  and it has full autonomy inside the scope you give it — including closing a finished task and rolling its
+  live residue into a successor. Several workstreams overdue at once, or anything crossing a scope boundary, is
+  the `curator`'s.
+- **`done/` is append-only, not untouchable.** Never alter what is already written there. A clerk may drain a
+  closed item into a dated ledger, and a librarian may archive a whole closed task folder into it and append to
+  an existing doc — frozen means the existing record, not the directory.
 - Spotted overdue cleanup? **Recommend a librarian pass**; don't do it inline.
 
-## 3. It is a different git repo, and a dirty tree blocks the librarian
+## 3. It is a different git repo, and a dirty scope blocks the librarian
 
 Via the symlink, `cd <project>/<vault> && git …` operates on **this** repo, not the project's. Convenient, and
 a trap: a turn that touches code and docs leaves commits owed in two repos, and the knowledge-base ones are the
 easy ones to forget.
 
-That matters more than tidiness. The librarian **halts on a dirty tree** (its hard rule H) — it cannot `git show`
-an uncommitted original, so its carry-forward guarantee does not hold. One forgotten uncommitted doc is enough to
-block the next pass. Commit here in the same turn you write.
+That matters more than tidiness. The librarian **halts on a dirty scope** (its hard rule H) — it cannot
+`git show` an uncommitted original, so its carry-forward guarantee does not hold. One forgotten uncommitted doc
+in the workstream it is sent to is enough to block the pass. (Dirt *elsewhere* it reports and works around;
+a whole-tree halt would hand any session's work-in-progress a veto over every pass.) Commit here in the same
+turn you write.
 
 ## 4. Search tools do not find it by default
 
@@ -106,17 +111,24 @@ dropped.
 
 What follows from that:
 
-- **Never automate it.** Not a hook, not `/loop`, not a reflexive "tidy the vault" at the end of every session.
-- **Never point it at the whole vault**, and never run it on a small model when it will delete docs.
-- **Small and often beats big and rarely.** One workstream, at a phase boundary. Cost scales with the **delta
-  since the last pass** — each pass records its sha in the pass log, and the next reads only what changed — so frequent
-  passes get cheap while a neglected workstream gets expensive. Nine docs and four same-day journals is a big
-  pass; two or three docs is a quick one.
-- **A delta pass is not a full one.** It scopes what gets *read*, never what may be written into, and it skips
-  the `done/` sweep. Ask for a full pass at phase boundaries; that is also the only thing that renews the
-  licence to skip untouched docs.
-- **Front-load the decisions.** It is required to stop and ask on structural moves (merging or splitting whole
-  workstreams, relocating a doc across them, fusing two workstreams' folder-notes). Every question handed back costs
-  another pass, so pre-answer the ones you already know and name what is authoritative where docs disagree.
-- **Commit first.** A dirty tree halts the pass outright (§3) — the most common way to spend an invocation and
-  get nothing.
+- **Never fire it from a hook.** Not a reflexive "tidy the vault" at the end of every session, and never on a
+  small model when it will delete docs. Asking for one deliberately, including on a loop you are watching, is
+  fine — what is not fine is a pass nobody reads the report of.
+- **Never point one librarian at the whole vault.** Several scopes at once is a `curator`, which partitions.
+- **Cost scales with scopes, not with documents.** Measured: the marginal work of reading three overlapping
+  documents and writing the survivor was ~10% of a single-scope pass; the other 90% is a floor every scope pays
+  again — its own system prompt, the conventions, the spine, recon, self-checks, report. So batch documents into
+  one scope, and be reluctant about adding scopes. *Small and often* is right about drift and wrong about cost.
+- **Judge a scope on shape, not delta.** A zero-file delta is not a proxy for nothing-to-do: the two largest
+  restructures of one run had empty deltas, because folder-note size, what sits at the top level and a live
+  `status:` inside `design/` are precisely what a delta cannot see. A delta scopes what gets *read*, never what
+  may be written into, and it skips the `done/` sweep — so ask for a full pass at phase boundaries. **A full
+  pass is also the only thing that renews the licence to skip untouched docs**, since only a full run records a
+  `consolidated` baseline and every later delta leans on that.
+- **Do not front-load the decisions.** *Detect, propose, execute on approval* produced **zero structural
+  proposals across every pass it was assigned to**, in two separate homes; a pass now acts on its own judgement
+  inside its scope and hands back a change list with a reversal per entry. Name what is authoritative where the
+  docs disagree, and correct the change list afterwards — that is cheaper than a question round trip, and it is
+  the only version of this that has ever produced a structural change.
+- **Commit first.** A dirty scope halts the pass (§3) — the most common way to spend an invocation and get
+  nothing.
