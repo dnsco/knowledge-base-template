@@ -1,252 +1,123 @@
-<!--
-  TEMPLATE. Lipika (github.com/dnsco/lipika) seeds a vault's root CLAUDE.md from this file.
+# <vault> — how to use this knowledge base
 
-  It carries the corpus half: how documents are placed, named, written and maintained. The
-  roles, the capture skill and the tools are Lipika's, so this file names them and points at
-  them. It names a tool as `lipika <command>` and a threshold as `lipika vault-config show`,
-  because a threshold restated in prose goes stale while a tool enforces something else.
+**Personal LLM knowledge base for engineering work** — the durable memory sessions read from and write
+back to, so context outlives the session that produced it. **One knowledge base across every repo**, not
+one per project. It is an Obsidian vault plus a git repo, and it is usually symlinked into each project
+root so a session rooted in a project can read it as in-tree paths.
 
-  Edit this template in Lipika. A vault's copy diverges on purpose — it should name that
-  vault's real repos, dated evidence and concrete shas — so it is never ported back.
--->
+**This file does not auto-load through that symlink** (measured), so a session rooted in a code project
+has never read it. That is why `~/.claude/CLAUDE.md` carries a pointer here, and why `pickup` exists.
 
-# How to use this knowledge base
+The machinery that maintains this — the two skills, the roles, the tools — is **Lipika**, a separate repo,
+invoked as `lipika <command>`. Nothing here is authored there and nothing there is copied here.
 
-**LLM knowledge base for engineering work** — the durable memory Claude Code sessions read from and write back
-to, so context outlives the session that produced it. **One knowledge base across every repo I work in**, not
-one per project: dated, long-form handoff/working docs. It's an Obsidian vault plus a git repo (hence "vault"
-below, and "the graph" for its `[[link]]` structure). It is symlinked into each project root under its own name (local-only, via `.git/info/exclude`), so a session rooted in
-a project can read and grep vault docs as in-tree paths. The map of what's here is **[[README]]**; this file is
-how to use and maintain it. What bites after setup is `lipika: design/GOTCHAS.md` — starting with the fact
-that a session rooted in a code project may never have loaded this file.
+## The one rule
+
+**Every document is a record or a view. Nothing is both.**
+
+- **A record is never edited.** Dumps, `reference/` traces, `sources/`, `external/`, and every orientation
+  already written. Correct one by writing a **newer document**, never by changing it — the newer one
+  supersedes, and the old one stays true about the moment it describes.
+- **A view is regenerated wholesale, never patched.** Each thread's current orientation, and `README.md`.
+  Rewriting one from scratch is safe precisely because the records behind it are intact.
+- **`architecture/` is the owner's** — the one long-lived edited view. Agents write the dated traces
+  behind it and contradict it with them. They do not write it.
+
+Everything below follows from that.
 
 ## Using it — start here
-1. Open **[[README]]** — a thin map of what exists and where. Find the workstream you're touching.
-2. Open that workstream's folder-note and **read the top**: the frontier gives the goal, the
-   current state, and the next concrete move in a couple of minutes.
-3. **Follow companion links only when a task needs the depth** — docs can be large; don't read them all by
-   default. Open anything under `done/` only to re-examine completed work, not for current state.
-4. **Read docs as a strong prior, not ground truth.** They're point-in-time: file paths, line numbers, and
-   "current state" drift. Verify against the actual code before treating a claim as fact. **That caveat is about
-   drift, so weigh the age** — a weeks-old line number earns a check; a dump written today has not had time to
-   go stale.
 
-## Maintaining it
+1. **Run `pickup`.** It resolves which thread you are on, reads its current orientation, audits it, and
+   opens with what needs a decision. One document, not a tour of the vault.
+2. **Work.**
+3. **Run `context-dump`** when you learn something, and again at the end — where it also writes the next
+   orientation for whoever picks this up.
 
-**This is not an exhaustive record, and absence is not a gap.** The goal is not to track everything —
-it is to keep what a future session actually needs. Do not propose sweeps to capture every artifact,
-channel or shipped document for completeness' sake; a thing earns a place here because someone will
-need it, not because it exists.
+Read docs as a **strong prior, not ground truth**, and **weigh the age**: a weeks-old line number earns a
+check, a dump written today has not had time to drift.
 
-**Append is free; editing is what needs a check.** Adding a dump, appending to `done/`, appending a dated note
-to `sources/` or `external/` — nothing can be lost by adding, so nothing gates it. **Editing a live document
-needs a check, and the bar is semantic: keep every fact, and reword or merge redundant ones freely so long as
-meaning is preserved.** What must never happen is a fact becoming unfindable. `lipika recall-check` is the gate and
-every flag is judged **in writing** — "reworded, fact intact" is an acceptable answer, a missing fact is not, and
-you never reword a file to satisfy a flag.
+## Shape
 
-**Who may write here — the boundary, not the playbooks.** The roles that maintain this vault are **Lipika's**,
-and **each role's playbook lives in its own definition**, not here: `lipika: agents/*.md` and
-`lipika: skills/context-dump/`. What this file states is the boundary a session working *in* the vault must
-respect.
-
-**A working agent — any session doing engineering — only appends.** Capture findings with the
-**`context-dump` skill**: a dated **dump** inside the live task, plus the marker that flips a doc's `status` the
-moment work lands or a question settles. **Never** delete, merge, archive, restructure, or re-link. Everything
-else runs in the background, and only the dump is synchronous:
-
-- **The frontier is the `frontier-clerk`'s**, not yours — not even a `status` you just earned. It runs when a
-  dump carries a state-changing marker, or when the frontier already lags — not on every dump. A purely
-  additive dump says *no clerk pass owed* **and names the check it ran**; judging a pass unnecessary is not a
-  licence to make its edits yourself. The dump **dispatches** it and does not block on it, and says so rather
-  than claiming a reconciled frontier.
-- **Deleting, merging, archiving, splitting and re-linking are a `librarian`'s** — the only role that destroys —
-  one scope at a time, with full autonomy inside it **bounded by losslessness rather than permission**. It does
-  not ask; it reports a change list. Spot overdue cleanup? **Flag it and recommend a pass**; don't do it inline.
-- **Anything crossing a scope boundary is the `curator`'s**, which also owns which scopes exist, plus
-  `README.md`, this file and the memory pointer — **nothing else writes those** — and never rewrites a
-  document's substance. **One or two scopes overdue is a `librarian`, not a curator:** adding a scope costs a
-  whole pass floor.
-- **A `scout`** goes ahead read-only and returns findings and a recommendation with the inputs behind them,
-  carrying named briefs — `orientation`, `sizing`, `closure`, `recon`. Its context is discarded on return, so its
-  reads cost the caller only the answer. Send one rather than doing its reading in the context you need to keep.
-
-**Act, then report for correction** — not ask, then act. Structural changes are made on the agent's best
-judgement and returned as a **change list**: every move, merge, reword and split, one line each, with how to
-reverse it. *Detect, propose, execute on approval* produced zero proposals in two separate homes. What still goes
-to the owner rather than into the diff is the small set that is not cheaply reversible — inventing or renaming a
-top-level folder, relocating a grand plan, an engineering decision.
-
-**Why the roles are split is time management, not judgement.** Dumping agents that also tidied the vault got
-sidetracked onto vault corrections and ate the working task's context. Keeping housekeeping off the working
-session's clock is the point — so when the housekeeping *is* the task, the split is not a reason to delegate it.
-What keeps parallel background passes off each other's files is the shared pass log below, not a partition of who
-may write what.
-
-The risky case is a session rooted in a **code project**, which sees this vault as just another directory in its
-tree and will happily hand-edit it — see `lipika: design/GOTCHAS.md` §1–2.
-
-**Conventions (per doc).**
-- **Placement & filenames** — `grand-plans/` (long-horizon direction), `workstreams/` (active efforts; a named
-  one gets a subfolder + a `<folder>/<folder>.md` folder-note as its mini-MOC), `reference/` (subsystem maps
-  traced from source, cross-workstream — no status, no next-moves), `values/` (evergreen principles), `done/`
-  (finished work), `sources/` (raw verbatim inputs, subdivided by kind — `sources/transcriptions/`),
-  `external/` (artifacts written for an outside audience), `tools/` (runnable scripts, not notes). Files are
-  `YYYY-MM-DD-topic.md`; evergreen concepts and folder-notes skip the date. **`topic` names the work, not its
-  state** — this bites hardest in `done/`, where every document is by definition landed and closed, so a name
-  saying so distinguishes nothing and a reader hunting one closure has to open all of them. Take the theme at a
-  glance and spend no thought on it: **a rough name beats a generic one**, and a generically-named `done/` doc
-  is a `librarian`'s to rename on the next pass.
-- **`sources/` and `external/` are read-only — correct them by appending, never by editing.** `sources/` holds
-  raw verbatim inputs (meeting and session transcripts, clipped articles); a transcript that has been edited is
-  no longer a transcript, and every doc citing it now quotes something that was never said. `external/` holds
-  artifacts already delivered to an audience; editing one retroactively makes the record disagree with what
-  people actually received. When either carries a claim that has since gone stale, **append a dated note** saying
-  so and leave the original text intact — the same move `done/` already allows.
-- **A workstream's sub-unit is a task**, because work evolves and context has to be partitioned as pieces of it
-  emerge and finish. A task is a dated folder that closes:
-
-  ```
-  workstreams/<ws>/
-    <ws>.md                    parent — task index + a thin restated subset + cross-task invariants. No date
-    YYYY-MM-DD-<task>/         a live task
-      <task>.md                its frontier — its own gates and PR numbers while live. Not dated
-      YYYY-MM-DD-<topic>.md    dumps written during it
-    historical/                LIVE, not done — unsorted pre-conversion context
-    done/YYYY-MM-DD-<task>/    closed tasks, per workstream. The retrieval surface
-    design/                    stable reference, no live status
-  ```
-
-  *Terminology the vault spends: a **task** is that sub-unit, a line in a register is an **item**, a dated
-  document written during a task is a **dump**.* **One frontier per live task** — a second live copy of any
-  mutable state has to be hand-synced and diverges. The parent points by default: it restates only the coarsest
-  state and the warnings that bear on *every* task, and **the register stays in it** rather than moving to a
-  document agents must be told to open, which is how a warning stops firing. `historical/` is live because
-  marking it done claims consolidation over material nobody has read. *Stable* — a `design/` subfolder of
-  still-consulted reference that **carries no live status**; *inert* — `done/`, frozen history you open only to
-  re-examine completed work.
-- **Conversion is lazy, and there is no migration project.** A workstream converts when it is next touched, by
-  the `librarian` pass that is already operating it: its last few tasks split out as dated folders, everything
-  else folded into `historical/`. A workstream created after this design needs no conversion and no `historical/`.
-- **A parent and a task each carry a byte budget, checked by a tool** — because "thin" in prose does not fire and
-  a size in an exit code does:
-  ```bash
-  lipika budget-check workstreams/<ws>     # exit 1 over target, exit 2 over the signal
-  ```
-  Parent 12 KB / 16 KB, task 8 KB / 12 KB — **hypotheses, calibrated against one corpus and nothing else.** Over
-  budget means **extract** reference-not-warning material to `reference/` or `design/`, or **split** a parent
-  that is two efforts wearing one name. It **never** means trimming the task index or deleting history; a unit
-  held under budget that way has failed the check it appears to pass. **Nor may the budget restrict what a task
-  pulls forward** — a check that makes an agent carry less context has done harm. **Splitting a workstream is
-  the `librarian`'s to execute and report**, like any other structural change; a **grand plan**, and inventing
-  or renaming a top-level folder, are the owner's.
-- **A task pulls forward what bears on it when it opens** — the still-live GATEs, LANDMINEs, DEAD ENDs and
-  settled decisions from the workstream's closed tasks and `historical/`, into a `## Carried across` section of
-  its frontier, each cited by source. Selection is paid once, by whoever knows what the task is about.
-  ```bash
-  lipika orientation-check workstreams/<ws>/YYYY-MM-DD-<task>/   # exit 2 = no pull
-  ```
-  Nothing carries *up* on close, and the pull is what makes that safe: without it, promotion to `done/` is how a
-  live warning goes dark quietly.
-- **Parked (`workstreams/parked/`)** — shared shelf for on-hold efforts (`status: parked`/`deferred`) that may
-  revive; distinct from `design/` (settled reference) and `done/` (frozen). A parked doc keeps its `up:`.
-- **Long-horizon work gets a stub, not a paragraph.** Work that is real but far off earns its own
-  `status: stub` doc plus a frontier line carrying its gates — never prose buried in a dump or a
-  handoff section. Handoffs get consumed and superseded; a stub with a name survives and accumulates detail.
-  Record a baseline measurement in the stub where one exists, so the premise stays checkable later.
-- **The README is a thin map** — one line per doc: what it is and which effort it serves. It carries **no
-  mutable state**; status, PR numbers, dates and next-moves live only in the workstream's folder-note. Do not
-  expand it into an annotated table of contents — one that did became a second frontier and silently drifted
-  out of date.
-- **One shared pass log, and every role announces itself in it.** `pass-log.jsonl` at the vault root — untracked,
-  append-only, one file for the whole vault so an agent can see what the others are doing right now:
-  ```bash
-  lipika pass-log active --scope workstreams/<ws>    # who is in here
-  lipika pass-log start <role> "<one line>" --scope <s> --kind <k>
-  lipika pass-log stop <role> "<what you did>" --result <r>
-  ```
-  Emit a `start` before you write and a `stop` when you finish — the pair is what keeps parallel agents off each
-  other's files. It replaced git-tag anchors, which are **dead**: nothing reads or writes one, and none were
-  imported (2026-08-19, owner). A record carries the HEAD sha, so the next pass still has something to diff from. **Only a full run's
-  `--result consolidated` establishes a baseline**; deltas stack, and a scope you skipped is recorded `skipped`,
-  never consolidated — "not looked at" must not be spelled the same way as "already handled".
-- **Frontmatter** — keep `type` / `status` / `date` / `tags` current (plus `up` / `links` for tier relationships).
-- **Links** — `[[wikilinks]]` for intra-vault references; leave code-repo paths as literal text. Docs span
-  repos, so **name the repo** when a path is ambiguous — `acme-server: docs/…`, not a bare `docs/…`.
-- **Voice** — terse and factual, written for a first-time reader: cut chat-context and rationale-noise, keep
-  the reasoning future-you will need, and use **no agent-local codenames** ("Option C", "Track B", workflow
-  IDs) — say what a thing *is*, not the label you gave it mid-session.
-- **The same voice, harder, for anything that leaves the conversation** — PR bodies, review replies, commit
-  messages, issue comments. Laconic, terse, salient, and carrying **no leaked frames**: no "correcting my
-  last comment", no "as discussed", no account of which files you did and did not open. A fresh observer was
-  not in the room, and the artifact outlives the exchange. See [[laconic-terse-salient]].
-- **An owner's account of what happened outranks your inference about it.** They were there; you have
-  artifacts. When a measurement contradicts what they told you — especially a flat statement, or anything
-  recorded today — **surface the conflict and stop**: say what you saw, ask which to record, and leave the
-  record alone until they answer. Never rewrite a frontier or a memory note on your own inference about events
-  you did not witness. The usual cause is measuring a **different quantity** than the claim: an image existing
-  in a registry is not a deployed tag, and a merge time is not a rollout time. Read hedges as instructions —
-  "I think" invites a check, a flat statement is the answer — and verification costs a turn, so it needs a
-  reason: would the answer change your next action? This is **not deference**: silently swallowing a real
-  contradiction is the same failure as silently overturning one. Say it once, plainly, either way.
-- **Commit** — this is its own git repo; commit doc changes in this vault (don't conflate with the git of
-  whatever repo you're working in). Via the symlink, `cd <project>/<vault> && git …` resolves to the *vault's*
-  repo, not the project's — convenient, and a trap if you forget which one you're in.
-
-## Changing the machinery — it does not live here
-
-The agent definitions, the capture skill and the tools are **not in this vault**. They live in Lipika
-(`github.com/dnsco/lipika`), installed as a Claude Code plugin, and there is exactly one copy of each.
-Nothing is shared-by-copy with this vault and nothing is ported into it.
-
-**So: never hand-edit a definition, a skill or a tool from a session rooted here.** Author it in Lipika,
-where the loop is: author → try it on real work → `lipika recall-check <pre-change-ref> <path>` to prove
-no rule was dropped, every flag judged in writing → profile it, qualitative read before any figure →
-write the round's summary where the next agent will read it → feed the findings back. That last edge is
-what makes it a loop rather than a pipeline.
-
-What this vault holds is the **corpus** — the documents. What Lipika holds is the machinery that maintains
-them, plus its own design docs.
-
-**Where the two meet.** Tools are called by name (`lipika <command>`) because a plugin's `bin/` is on
-`PATH`; the vault's location comes from `~/.config/lipika/config.json`, which also carries the size and
-span budgets the tools enforce. **A number lives in the config, not in this document** — restating a
-threshold here is how it goes stale while a tool quietly enforces something else. That happened: this
-file advertised a parent budget of 12 KB / 16 KB long after the tool had superseded it with 8 KB / 12 KB
-against non-register bytes. Run `lipika vault-config show` for what is actually in force.
-
-**The lesson behind all of it.** Instructions added to a definition repeatedly fail to fire, while a
-script with an exit code holds. Measured across one session: a scope-screening condition shipped
-unsatisfiable and nobody noticed until it was used; "dispatch a scout if recon runs past a handful of
-commands" did not fire across fourteen recon commands; and an agent told to prefer the Obsidian CLI never
-checked whether it was answering about the right tree. Each was fixed by moving the rule into a tool,
-where it fails loudly instead of being read past. **Prefer a tool that refuses to prose that asks.** It
-is also the cheaper end: a definition is a system prompt paid for on every invocation.
-
-## Values — `values/`
-Evergreen principles that outlive any one effort, and that the docs here lean on by name. Two are seeded:
-
-- **[[parse-dont-validate]]** — push constraint-checking into types at the boundary: return a refined type that
-  carries the proof, not a `bool` that throws the knowledge away. Make illegal states unrepresentable.
-- **[[laconic-terse-salient]]** — anything read by someone who was not in the room (PR body, review reply,
-  commit message, code comment) carries the salient facts and none of the conversational frame.
-
-Add to this folder when a principle starts getting restated across docs — that's the signal it's evergreen and
-belongs in one place under a name others can link to.
-
-## Obsidian skills — installed alongside, not vendored here
-`kepano/obsidian-skills` is its own Claude Code marketplace, so install it as one rather than vendoring it in
-a vault:
-
-```bash
-/plugin marketplace add kepano/obsidian-skills
+```
+<vault>/
+  README.md                        VIEW — the index of threads, regenerated
+  architecture/<system>.md         VIEW — the owner's portrait. Stable name, no date, as-of <sha>
+  reference/YYYY-MM-DD-<topic>.md  RECORD — a trace from source, cross-thread
+  workstreams/
+    YYYY-MM-DD-<thread>/
+      YYYY-MM-DD-<thread>.md       routing note, dated to match the folder
+      orientation/YYYY-MM-DD-HHMM.md   newest wins
+      dumps/YYYY-MM-DD-<topic>.md      immutable
+      reference/YYYY-MM-DD-<topic>.md  dated traces, thread-local
+  sources/  external/  values/  grand-plans/
 ```
 
-Its skills are then invocable as slash-commands (`/obsidian-cli`, …) from **any** session — including one
-rooted in a code project, which is where you usually are.
+**One workstream is one thread of work** — one path prefix, one agent at a time. A workstream is heavy
+when it carries *two concurrent threads*, never when it is merely large: two hundred dumps on one thread
+cost nothing, because orientation is one document and dumps are read on demand.
 
-- **obsidian-cli** — vault ops from the CLI. **Use it for renames/moves** — it keeps inbound `[[links]]`
-  intact — and for vault-wide search.
-- **defuddle** — web page → clean markdown. Use instead of WebFetch for non-`.md` URLs.
-- **obsidian-markdown** — Obsidian-flavored markdown when writing notes here.
-- **obsidian-bases** (`.base` views over notes) and **json-canvas** (`.canvas` visual maps).
+**A second concurrent thread is a new dated workstream**, and its first orientation **copies** what still
+bears on it from the parent, naming the parent in `from:`. Not a pointer — an agent reading one document
+does not follow a link it was not told it needed.
+
+**A thread ends by not being listed as live.** Nothing is archived, nothing is moved, so every inbound
+link stays true forever. A dated folder and its last dump's date already record the whole lifecycle.
+
+**The date is *opened*, not *current*.** Last-touched is derivable from git and is never written down.
+Folders and notes both carry it, because wikilinks resolve by basename and a second effort on the same
+subject would otherwise silently resolve to the first.
+
+## The live set
+
+An orientation carries typed items — **GATE**, **LANDMINE**, **DEAD END**, **OPEN Q**, **ESCALATED** — in
+one shape:
+
+`[TYPE] statement — trigger → consequence → dies when <condition> · as-of YYYY-MM-DD`
+
+- **ESCALATED is not a flavour of OPEN Q.** It means only the owner can decide it, and it is what a fresh
+  session opens with.
+- **Every item carries a death condition.** Writing it costs the author nothing and saves the next agent
+  re-reading everything. A DEAD END is exempt: it fires forever.
+- **`as-of` is when the item was last *confirmed*, not last copied.**
+- **An item states itself.** "See `[[some-dump]]`" is a pointer, and a pointer is pull; link the detail
+  after the statement, never instead of it.
+
+**Four dispositions at a handoff: carried, resolved with evidence, dropped with a reason, escalated.**
+Every item live in the previous orientation takes exactly one, and **every disposition states its basis** —
+evidence, or judgement, said out loud. Dropping on judgement is expected; requiring evidence to drop
+anything is how a live set grows forever. `lipika orientation-audit` catches what vanished in silence.
+
+**Recency is a prior, not a rule.** More recent supersedes older and is trusted more, but the newest
+document can be thin or wrong and you may reach back. What you may not do is read an older orientation as
+a rival account of the present.
+
+## Conventions
+
+- **Filenames** `YYYY-MM-DD-topic.md`; `architecture/` and `values/` skip the date.
+- **Frontmatter** — `type` / `status` / `date` / `tags`, plus `up:` and `from:` where they apply.
+- **Links** — `[[wikilinks]]` inside the vault; code paths as literal text, with the repo named when
+  ambiguous.
+- **Voice** — terse and factual, for a first-time reader. **No agent-local codenames** — say what a thing
+  *is*, not the label it got mid-session. Harder still for anything that leaves the conversation: a PR
+  body, a commit message or a review reply carries the salient facts and no conversational frame.
+- **Timestamp every metric** — "9 KB at YYYY-MM-DD", never "9 KB". Better, cite the reference and let a
+  tool answer the number.
+- **Commit here.** This is its own git repo, separate from any project's. **Never change HEAD** — the
+  checkout is shared, and creating a branch moves it for every session in the tree.
+- **Announce yourself** — `lipika pass-log start … --scope workstreams/<ws>` before you write, `stop` when
+  you finish. One shared log, so every agent can see who else is in here.
+
+## Who writes what
+
+- **Any session**: reads freely; writes only through `pickup` and `context-dump`.
+- **`curator`**: the index, the links that cross threads, this file, and the memory pointer. Nothing else
+  writes those.
+- **`scout`**: nothing. Read-only recon in a context that is discarded.
+- **The owner**: `architecture/`, grand plans, and inventing or renaming a top-level folder.
+
+**An owner's account of what happened outranks an agent's inference about it.** They were there; you have
+artifacts. When a measurement contradicts what they told you, **say so and stop** — say what you saw, ask
+which to record, and leave the record alone until they answer. The usual cause is measuring a *different
+quantity* than the claim: an image in a registry is not a deployed tag, a merge time is not a rollout
+time. This is not deference — silently swallowing a real contradiction is the same failure as silently
+overturning one.
