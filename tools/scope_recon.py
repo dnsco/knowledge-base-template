@@ -59,7 +59,8 @@ REF = re.compile(
     r"(?P<repo>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)#(?P<num>\d{1,6})"
     r"|(?:(?P<bare>[A-Za-z0-9_.-]+))?#(?P<num2>\d{2,6})"
 )
-FM_KEYS = ("type", "status", "date", "up", "tier")
+FM_KEYS = ("type", "status", "date", "up", "tier")   # `up` is still parsed and reported
+# per-document; only the vault-wide "who is missing it" nag was retired.
 
 
 def git(vault, *args):
@@ -218,7 +219,10 @@ def recon_scope(vault, scope, want_markers):
         r["path"] for r in fm
         if "/design/" in r["path"] and r.get("status") in ("active", "in-progress", "wip")
     ]
-    info["missing_up"] = [r["path"] for r in fm if not r.get("up") and r["path"] != info["folder_note"]]
+    # `missing_up` was retired 2026-08-21. It nagged for a field with no reader: `up:` had exactly
+    # one consumer in the system, this report, and nothing anywhere read the VALUE. Contrast `from:`,
+    # which orientation-audit follows to find a parent thread's items. A check defending a field
+    # nobody consumes manufactures work at every scope it runs on.
 
     if want_markers:
         info["refs"] = harvest_refs(root, scope)
@@ -288,9 +292,6 @@ def main():
             print(f"  OPEN PASS {o.get('role')} since {o.get('ts')} — someone may be in here now")
         if r["live_status_in_design"]:
             print(f"  live status inside design/: {', '.join(r['live_status_in_design'])}")
-        if r["missing_up"]:
-            print(f"  no up: ({len(r['missing_up'])}): {', '.join(r['missing_up'][:3])}"
-                  + (" …" if len(r["missing_up"]) > 3 else ""))
         si = r["screen_inputs"]
         print(f"  screen inputs: no_delta_since_BASELINE={si['no_delta_since_BASELINE']}  "
               f"note={si['folder_note_bytes']:,}B  "

@@ -21,6 +21,25 @@ Two modes.
   each handoff, newest wins.
 - **`architecture/` is the owner's.** Contradict it with a dated trace; never edit it.
 
+**Your dump is the store; the orientation is a projection over it.** So the dump carries the **delta** —
+what this session discovered and what it killed — and the orientation is regenerated from the previous one
+plus the deltas since. Write the delta even when you are not handing off: it is what survives a session
+that ends without one.
+
+## The three tiers
+
+```
+grand-plans/<name>.md   a standing want. No liveness — not started is not dead. The owner's.
+epics/<name>.md         a large effort actually happening. live · parked · finished. The owner's.
+                        It CITES its threads; it does not contain them.
+workstreams/YYYY-MM-DD-<thread>/    one question being answered. No status field — the date it
+                        last accrued is the whole answer. Agents write these.
+```
+
+**Only the epic tier carries state.** An epic is parked deliberately; a workstream simply falls off by
+date. There is no shelf list at the workstream tier — a second liveness concept only disagrees with the
+first. Membership lives in the epic's prose; there is no frontmatter field for it.
+
 ## Shape
 
 ```
@@ -57,15 +76,28 @@ project does **not** load automatically — read it if you have not.
    lipika pass-log start context-dump "<what you are dumping>" --scope workstreams/<ws> --kind dump
    ```
 
-2. **Write the dump** — `workstreams/<ws>/dumps/YYYY-MM-DD-HHMM-<topic>.md`, stamp from `date`. Several
-   dumps a day is normal and same-date names do not sort, so the time is in the name.
+2. **Write the dump** — `workstreams/<ws>/dumps/<stamp>-<topic>.md`. Several dumps a day is normal and
+   same-date names do not sort, so the time is in the name.
+
+   ```bash
+   lipika stamp --for workstreams/<ws>/dumps        # exits 1 if it would not sort last
+   ```
+
+   **Never stamp from `date`.** Measured 2026-08-21: these names are sequence keys that run ahead of the
+   clock, and `date` is local time besides. A name that does not sort last is invisible to `pickup`, and
+   nothing about that failure is loud — the file writes, the commit succeeds, the handoff reports done.
+   If it refuses, re-run with `--after`; do not hand-pick a stamp.
+
    Frontmatter: `type` / `status` / `date` / `tags` / `up:`.
 
    - **What you did and what came of it** — PR numbers, commit shas, branch names, what is green and what
      is red.
    - **Answer the questions you inherited.** For each open question or warning you touched: resolved (with
      the evidence), still open, or now understood differently.
-   - **A scannable `## Live items` block** — collected, not scattered through prose, one per line:
+   - **A scannable `## Live items` block — YOUR DELTA, not the inherited set restated.** What this
+     session *discovered*, plus what it *killed* with the evidence that killed it. An item you neither
+     found nor changed belongs to the orientation, not here; repeating it several times a day is how two
+     documents start disagreeing. Collected, not scattered through prose, one per line:
 
      `[TYPE] statement — trigger → consequence → dies when <condition> · as-of YYYY-MM-DD`
 
@@ -93,11 +125,17 @@ project does **not** load automatically — read it if you have not.
    environment traps, and concrete current state. Route anything new into `## Live items` in the typed
    shape rather than into loose prose.
 
-4. **If this is a handoff, write the next orientation.** `workstreams/<ws>/orientation/YYYY-MM-DD-HHMM.md`
-   — more than one handoff a day is normal and the newest must sort last.
+4. **If this is a handoff, write the next orientation.** More than one handoff a day is normal, and **the
+   newest must sort last or `pickup` will never read it** — so the name comes from the tool, not the clock:
 
-   Read the previous orientation and your dumps since it, then write a **new** document; do not
-   diff-and-patch the old one in your head.
+   ```bash
+   lipika stamp --for workstreams/<ws>/orientation   # -> workstreams/<ws>/orientation/<stamp>.md
+   ```
+
+   **The orientation is a projection over the records: previous orientation + every dump delta since.**
+   That is a mechanical operation, so do it mechanically — read them, then write a **new** document. Do
+   not diff-and-patch the old one in your head, and do not write from memory of the session: the dumps
+   are what the next agent's evidence trail actually is.
 
    ```markdown
    ---

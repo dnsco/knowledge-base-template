@@ -43,14 +43,27 @@ check, a dump written today has not had time to drift.
   README.md                        VIEW — the index of threads, regenerated
   architecture/<system>.md         VIEW — the owner's. Stable name, no date, as-of <sha>
   reference/YYYY-MM-DD-<topic>.md  RECORD — a trace from source, cross-thread
+  grand-plans/<name>.md            a standing want. No liveness. The owner's
+  epics/<name>.md                  VIEW — a large effort happening. live · parked · finished.
+                                   The owner's. CITES its threads; does not contain them
   workstreams/
     YYYY-MM-DD-<thread>/
       YYYY-MM-DD-<thread>.md       routing note, dated to match the folder
       orientation/YYYY-MM-DD-HHMM.md   newest wins
       dumps/YYYY-MM-DD-HHMM-<topic>.md immutable
       reference/YYYY-MM-DD-<topic>.md  dated traces, thread-local
-  sources/  external/  values/  grand-plans/
+  sources/  external/  values/
 ```
+
+**Three tiers, and only the middle one carries state.** A grand plan is a standing want — *not started* is
+not *dead*, so it has no liveness. An **epic** is a large effort actually happening, and it is the only
+tier with a status: an epic is **parked** by a decision someone made. A **workstream** is one question
+being answered and has **no status field** — the date it last accrued is the whole answer, so a thread
+that stopped is simply not listed as live. A second shelf concept at that tier would only disagree with
+the date.
+
+Membership is prose in the epic. There is no frontmatter field for it, deliberately: `up:` was checked and
+had no reader.
 
 **One workstream is one thread of work** — one path prefix, one agent at a time. A workstream is heavy
 when it carries *two concurrent threads*, never when it is merely large: two hundred dumps on one thread
@@ -114,7 +127,7 @@ a rival account of the present.
 - **`curator`**: the index, the links that cross threads, this file, and the memory pointer. Nothing else
   writes those.
 - **`scout`**: nothing. Read-only recon in a context that is discarded.
-- **The owner**: `architecture/`, grand plans, and inventing or renaming a top-level folder.
+- **The owner**: `architecture/`, `epics/`, grand plans, and inventing or renaming a top-level folder.
 
 **An owner's account of what happened outranks an agent's inference about it.** They were there; you have
 artifacts. When a measurement contradicts what they told you, **say so and stop** — say what you saw, ask
