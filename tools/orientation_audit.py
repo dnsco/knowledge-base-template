@@ -53,7 +53,8 @@ LIVE_SECTIONS = ("live items", "needs the owner")
 # "- none" under a heading is an author saying the section is empty, not an item.
 EMPTY_ITEM = re.compile(r"^\s*\*{0,2}(none|nothing|n/a|—|-)\.?\*{0,2}\s*$", re.I)
 # The successor accounts for an item by carrying it OR by recording where it went.
-ACCOUNTED_SECTIONS = LIVE_SECTIONS + ("settled since", "settled", "resolved", "dropped")
+DISPOSITION_SECTIONS = ("settled since", "settled", "resolved", "dropped")
+ACCOUNTED_SECTIONS = LIVE_SECTIONS + DISPOSITION_SECTIONS
 
 AS_OF = re.compile(r"as[- ]of\s+(\d{4}-\d{2}-\d{2})", re.I)
 # "dies when X", but also "dies never" and "dies with the landmine above" -- the clause is
@@ -125,14 +126,15 @@ def accounted_items(text):
     wrote down.
     """
     out = []
-    for _, _, t in markers.list_items(text, ACCOUNTED_SECTIONS):
-        sub = substance(t)
-        out.append((t, markers.significant(sub),
-                    markers.idents(sub, hard=True), markers.idents(sub)))
+    for sections, is_disposition in ((LIVE_SECTIONS, False), (DISPOSITION_SECTIONS, True)):
+        for _, _, t in markers.list_items(text, sections):
+            sub = substance(t)
+            out.append((t, markers.significant(sub), markers.idents(sub, hard=True),
+                        markers.idents(sub), is_disposition))
     return out
 
 
-def verdict(sub, sig, hard, soft):
+def verdict(sub, sig, hard, soft, is_disposition=False):
     """('ident'|'strong'|'weak'|'missing', detail) for one item against ONE successor item.
 
     Deliberately not `closure_check.match_one`. That one compares an item against a whole
@@ -149,6 +151,18 @@ def verdict(sub, sig, hard, soft):
     if hit_hard or hit_soft:
         shared = sorted(hit_hard or hit_soft)[:3]
         detail = f"{', '.join(shared)} + {detail}"
+    # A DISPOSITION only has to NAME the departing item; a live successor has to BE it. Scoring
+    # both at one bar made terseness look like loss: measured 2026-08-21, three resolutions
+    # correctly recorded with evidence in `## Settled` all scored "no successor item resembles it",
+    # because a one-line disposition shares few content words with the sixty-word item it retires.
+    # The vault's own voice convention rewards exactly that terseness, so the bar, not the writing,
+    # was wrong.
+    if is_disposition:
+        if hit_hard or (hit_soft and score >= 0.15) or score >= 0.30:
+            return "ident", detail
+        if score >= 0.15:
+            return "weak", detail
+        return "missing", detail
     if hit_hard and score >= 0.25:
         return "ident", detail
     if hit_soft and score >= 0.35:
@@ -165,8 +179,8 @@ def best_match(item, cands):
     rank = {"ident": 3, "strong": 2, "weak": 1, "missing": 0}
     best, detail = "missing", "no successor item resembles it"
     sub = substance(item)
-    for _, sig, hard, soft in cands:
-        v, d = verdict(sub, sig, hard, soft)
+    for _, sig, hard, soft, is_disp in cands:
+        v, d = verdict(sub, sig, hard, soft, is_disp)
         if rank[v] > rank[best]:
             best, detail = v, d
     return best, detail
@@ -185,9 +199,85 @@ def age_days(item, today):
     return (b - a).days
 
 
+# --- fixtures -------------------------------------------------------------------------------
+# The matcher's defects have all been found by cases, never by reading it. Every one below is a
+# real failure this tool shipped with; keeping them runnable is cheaper than rediscovering them.
+# `lipika orientation-audit --self-test`.
+
+FIXTURES = [
+    # (name, departing item, successor document, expect_found)
+    ("carried, reworded",
+     "- **[OPEN Q]** The 14-day liveness window is a reasoned guess, not a measurement, and it "
+     "fails quietly · as-of 2026-08-20",
+     "## Live items\n- **[OPEN Q]** The 14-day liveness window is a reasoned guess. No longer "
+     "silent for `parked/` · as-of 2026-08-21\n", True),
+
+    ("resolved tersely in Settled — the terse-disposition case",
+     "- **[ESCALATED]** **PR #8's body contradicts itself and needs rewriting.** It reports the "
+     "audit as accounted for on a real pair, then closes in bold saying the audit has never run "
+     "against a real pair of orientations. The body also carries the frame class today's pass "
+     "removed everywhere else → dies when the body is rewritten · as-of 2026-08-21",
+     "## Settled since the last orientation\n- resolved — **[ESCALATED] PR #8's body contradicts "
+     "itself.** Rewritten. The mechanism was accretion: the body grew round by round.\n", True),
+
+
+    ("genuinely deleted — must NOT be found",
+     "- **[LANDMINE]** A stale git worktree lives inside the vault, duplicating the whole "
+     "workstream tree and inflating any count that walks it · as-of 2026-08-21",
+     "## Live items\n- **[OPEN Q]** Does the routing note earn its place beside orientation?\n"
+     "- **[GATE]** A new orientation must sort last by name · as-of 2026-08-21\n", False),
+
+    ("shared scaffolding must NOT vouch for a deleted item",
+     "- **[OPEN Q]** Whether the conformance suite should gate every increment · as-of 2026-08-21",
+     "## Live items\n- **[OPEN Q]** Whether the index should carry the routing line · as-of "
+     "2026-08-21\n- **[LANDMINE]** Whether a definition change is served stale · as-of "
+     "2026-08-21\n", False),
+]
+
+
+# Tokenizer cases, asserted directly. Routing these through the matcher was tried and did not
+# work: end-to-end, a period at the end of BOTH halves cancels out and the case stays green with
+# the bug present. A unit assertion cannot cancel.
+TOKEN_CASES = [
+    ("sentence-final period does not hide a word", "rewritten.", "rewritten", True),
+    ("trailing hyphen does not hide a word", "carry-everything-", "carry-everything", True),
+    ("a filename keeps its extension", "vault_config.py", "vault_config", False),
+    ("an internal hyphen survives", "pass-log", "passlog", False),
+]
+
+
+def token_test():
+    bad = 0
+    for name, a, b, same in TOKEN_CASES:
+        got = markers.significant(f"the {a} thing") == markers.significant(f"the {b} thing")
+        ok = got == same
+        bad += not ok
+        print(f"  {'ok  ' if ok else 'FAIL'}  {name}"
+              f"{'' if ok else f'  (expected same={same})'}")
+    return bad
+
+
+def self_test():
+    """Red and green cases for the matcher. Exit 0 all pass, 2 any fail."""
+    bad = token_test()
+    for name, departing, successor, expect in FIXTURES:
+        found = best_match(departing, accounted_items(successor))[0] != "missing"
+        ok = found == expect
+        bad += not ok
+        print(f"  {'ok  ' if ok else 'FAIL'}  {name}"
+              f"{'' if ok else f'  (expected found={expect}, got {found})'}")
+    total = len(FIXTURES) + len(TOKEN_CASES)
+    print(f"\n{total - bad}/{total} fixture(s) pass")
+    return 2 if bad else 0
+
+
 def main(argv):
     ap = argparse.ArgumentParser(prog="lipika orientation-audit", add_help=True)
+    if "--self-test" in argv:
+        return self_test()
     ap.add_argument("scope", help="workstream directory, vault-relative or absolute")
+    ap.add_argument("--self-test", action="store_true",
+                    help="run the matcher's red and green fixtures instead of a real audit")
     ap.add_argument("--vault", default=None)
     ap.add_argument("--today", default=None, help="YYYY-MM-DD, for tests")
     ap.add_argument("--stale-days", type=int, default=14,

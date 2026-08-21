@@ -28,7 +28,6 @@ check. Grand plans and epics are the owner's; agents write workstreams.
    ```bash
    cd "$(lipika vault-config path)"
    git log -12 --name-only --pretty=format:'%h %ad %s' --date=short -- workstreams/
-   lipika pass-log active                     # is another agent in here right now?
    ```
 
    Name the thread and let the owner redirect you. If the task described matches no live workstream, say
@@ -54,12 +53,17 @@ check. Grand plans and epics are the owner's; agents write workstreams.
    a clean audit, and treat its "Settled since the last orientation" section as the author's self-report,
    which is what it is.
 
-4. **Judge how fresh each item is.** More recent supersedes older and is trusted more — **a prior, not a
-   rule**: reach back into dumps when the newest document is thin or wrong.
+4. **Find the items worth one command, and run those commands.** Not "read every `as-of`" — on a thread
+   that moved today every item is stamped today, and scanning forty dates returns nothing. Two cold runs
+   both skipped the scan and did this instead.
 
-   **Weigh each item's own `as-of`, not the document's date.** An item carried unchanged through six
-   handoffs inherits today's filename and reads as fresh. A stale GATE with a checkable death condition is
-   worth one command before you trust it.
+   Ask of each item: **is its death condition checkable right now, in one call?** `is PR #N merged`,
+   `does that file still exist`, `is the branch gone`. Run those; a confirmed item is worth more than a
+   fresh-looking date, and a fired one you catch here is a drop the next handoff will not have to make.
+
+   Then weigh `as-of` for the rest — **each item's own, not the document's date**. An item carried
+   unchanged through six handoffs inherits today's filename and reads as fresh. More recent supersedes
+   older, as **a prior, not a rule**: reach back into dumps when the newest document is thin or wrong.
 
 5. **Ask whether the question has changed.** You have just read the whole live set, which no other agent
    does — a handoff is nearly out of budget and a `scout` is barred from the call. A workstream is one

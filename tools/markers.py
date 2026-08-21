@@ -115,7 +115,14 @@ def significant(text):
     text = re.sub(r"[✅▢⏳]", " ", text)
     text = re.sub(r"\[\[|\]\]|[`*_#\[\]()|]", " ", text)
     words = re.findall(r"[a-z][a-z0-9./-]{2,}", text.lower())
-    return {w for w in words if w not in _STOP}
+    # Trailing punctuation is INSIDE the token: the class carries `.` and `-` so `foo.py` and
+    # `vault-config` survive as one word, which also swallows the period ending a sentence. So
+    # `rewritten` and `rewritten.` were different words and never matched. Measured 2026-08-21 on
+    # a correctly-recorded disposition: 3 shared words instead of 5, 11% instead of 19%, reported
+    # as "no successor item resembles it". This affects every comparison in the system, not just
+    # that one -- any word ending a sentence failed to match itself used mid-sentence.
+    words = [w.rstrip("./-") for w in words]
+    return {w for w in words if len(w) > 2 and w not in _STOP}
 
 
 def overlap(a, b):
@@ -162,7 +169,15 @@ def list_items(text, sections=None):
     return [tuple(i) for i in items]
 
 
-def one_line(text, width=96):
-    """A list item collapsed to one printable line, for a report."""
+def one_line(text, width=132):
+    """A list item collapsed to one printable line, for a report.
+
+    Emphasis markers are stripped, not rendered: `**[LANDMINE]** **the thing**` spends ~25 characters
+    of a truncated line on syntax. Measured 2026-08-21 -- a cold pickup reported several audit entries
+    unidentifiable from the head alone and judged them by match percentage instead of content, which
+    is weaker than the step asks for.
+    """
     t = re.sub(r"\s+", " ", text).strip()
+    t = re.sub(r"\*\*(.+?)\*\*", r"\1", t)
+    t = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"\1", t)
     return t if len(t) <= width else t[:width - 1] + "\u2026"
