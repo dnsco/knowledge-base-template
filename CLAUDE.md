@@ -25,10 +25,17 @@ One rule, and everything else follows from it: **every document in the vault is 
 
 - **A record is never edited.** Dumps, `reference/` traces, `sources/`, `external/`, and every
   orientation already written. A record is corrected by a newer document, never by a change to it.
+  **A wikilink is an address, not a claim** — repointing one when its target is renamed preserves
+  everything the document says, so a record's links may be repaired. Do it with
+  `lipika obsidian rename`, which moves the links as part of the operation; the rule is "use the tool
+  that cannot leave them stale", not "rename and then go check".
 - **A view is regenerated wholesale, never patched.** Each thread's current orientation, and the vault
   index. Safe to rewrite from scratch precisely because the records behind it are intact.
 - **`architecture/` is the owner's** — the one long-lived edited view. Agents produce the traces behind
   it and contradict it with them; they do not write it.
+- **`epics/` and `grand-plans/` are the owner's prose, not the owner's files.** An epic *cites* its
+  threads, and which threads exist is mechanical — an agent may maintain the citation list, and should.
+  The framing, the judgement and whether an effort is parked stay the owner's.
 
 The design, with the forces and the falsifiers: `design/vault-and-agent-ontology.md`. Its §8 is the list
 of what this system used to do and why each piece is gone — **read it before re-proposing anything**,
@@ -75,16 +82,39 @@ directory in this tree, and it is how a record stops being evidence of a moment.
 and every change ran a four-step port loop. That loop is gone. If you find yourself substituting a
 placeholder or diffing two copies of a definition, something has regressed.
 
+**The one-copy rule is about identity, not directories.** A vault must not hold a *copy of this
+repo's* machinery — that is the whole of it. A vault may hold **its own** `tools/` and **its own**
+`skills/`, written by its agents in the course of the work, and they are corpus rather than
+machinery. The test when deciding whether something in a vault should be deleted is *"is this a copy
+of something in Lipika?"*, never *"is it in a directory called `skills/`?"* Ruled 2026-08-21, after
+the directory-shaped version of the rule nearly deleted a vault's own `pr-description` skill.
+
+**Every change here lands through a pull request.** Nothing commits to `main` directly. A definition
+is a system prompt paid on every invocation and re-read by nobody, so the PR body is the only durable
+record of *why* it changed — and a change whose reasoning lives only in a session transcript is a
+change the next author will undo. **A PR here is a record, not a gate**: `~/.claude/` symlinks into
+the working tree, so an open PR's branch is already in force on this machine the moment it is
+checked out. Land it or close it; never leave one open and checked out.
+
 **The loop, and it is a loop:**
 
-1. **Author here**, once.
-2. **Probe behaviourally.** Never ask a role to quote its own definition — one did exactly that and
+1. **Seal the key first.** Write what the new version must do, as statements that can be *wrong*,
+   and **commit them before the change**. This is the TDD edge: the key is the test. A key written
+   afterwards silently agrees with whatever happened — measured, twice.
+2. **Author here**, once.
+3. **Dump, then curator, then eval — in that order, and the eval runs in a FRESH SESSION.** An
+   `agents/*.md` change is served stale for up to 15 minutes, so a round that edits and immediately
+   profiles measures the old definition and reports clean. `SKILL.md` is exempt, read from disk at
+   invocation. The dump comes first because it is what a cold agent will read; measuring against a
+   tree the handoff has not been written into measures the wrong thing.
+4. **Probe behaviourally.** Never ask a role to quote its own definition — one did exactly that and
    returned a rule that has never existed in any version of the file, in any repo. Ask a question the two
    versions *answer differently*.
-3. **Try it on real work**, then profile it: `lipika agent-transcript`, qualitative read before any
-   figure. A size is not a finding.
-4. **Summarise the round where the next agent will read it**, and feed the findings back. That return
+5. **Summarise the round where the next agent will read it**, and feed the findings back. That return
    edge is the difference between a design that stays true and one that becomes aspirational.
+
+**Never eval the version you are replacing.** It measures a system being deleted — retired as an idea
+2026-08-21, and it is the shape a "let us get a baseline first" instinct takes.
 
 `design/agent-eval-method.md` is the procedure in full. Read it before you touch a definition.
 
