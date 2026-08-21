@@ -45,6 +45,11 @@ def stem(path):
     return os.path.splitext(os.path.basename(path))[0]
 
 
+# Directories under workstreams/ that GROUP threads rather than being one. A thread here is the
+# child inside them. Kept as data because the set is a vault convention, not a rule of the model.
+CONTAINERS = {"parked"}
+
+
 def thread_of(rel):
     """The workstream a vault-relative path belongs to, or None.
 
@@ -52,9 +57,18 @@ def thread_of(rel):
     clears the bar for everything and the check answers yes to every question -- measured on the
     first run, 8 of 11 traces reported as candidates on the strength of a README line. A routing
     surface citing something is not a thread depending on it.
+
+    CONTAINERS are not threads. `workstreams/parked/` holds five separate efforts and counted as one
+    voting thread, which understates the corpus and lets one stale date silence five. Creating the
+    epic tier did NOT fix this on its own -- an epic cites its threads rather than containing them,
+    so the folders correctly stayed where they were and this function kept seeing one child.
     """
     parts = rel.split(os.sep)
-    return parts[1] if len(parts) > 2 and parts[0] == "workstreams" else None
+    if len(parts) <= 2 or parts[0] != "workstreams":
+        return None
+    if parts[1] in CONTAINERS and len(parts) > 3:
+        return os.path.join(parts[1], parts[2])
+    return parts[1]
 
 
 DATED = re.compile(r"(\d{4}-\d{2}-\d{2})")
@@ -93,10 +107,28 @@ def live_threads(vault, today, within_days):
     live, excluded = set(), {}
     if not os.path.isdir(ws_root):
         return live, excluded
+
+    # Must enumerate the same threads `thread_of` names, or a thread votes under a key nothing
+    # here ever marked live. Expand containers one level; anything else is a thread.
+    names = []
     for name in sorted(os.listdir(ws_root)):
-        d = os.path.join(ws_root, name)
-        if not os.path.isdir(d) or name.startswith("."):
+        if name.startswith(".") or not os.path.isdir(os.path.join(ws_root, name)):
             continue
+        if name in CONTAINERS:
+            children = sorted(os.listdir(os.path.join(ws_root, name)))
+            names += [os.path.join(name, c) for c in children
+                      if os.path.isdir(os.path.join(ws_root, name, c)) and not c.startswith(".")]
+            # Loose .md files sitting in a container belong to no thread, so they can never vote.
+            # Say so: an unannounced gap reads as "everything was counted".
+            loose = [c for c in children if c.endswith(".md")]
+            if loose:
+                excluded[f"{name}/ (loose)"] = (
+                    f"{len(loose)} document(s) directly in the container, in no thread — cannot vote")
+        else:
+            names.append(name)
+
+    for name in names:
+        d = os.path.join(ws_root, name)
         newest = newest_dated_doc(d)
         if newest is None:
             excluded[name] = "no dated document"
