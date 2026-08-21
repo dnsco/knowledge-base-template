@@ -25,7 +25,7 @@ import re
 # Both spellings are live in the corpus: bracketed in some notes, bold-prefix in others.
 # Enforcing one everywhere was considered and declined -- the convention emerged rather
 # than being designed. So anything counting markers reads both.
-TYPED = re.compile(r"\[(LANDMINE|GATE|DEAD END|OPEN Q)\]|\*\*\[?(LANDMINE|GATE|DEAD END|OPEN Q)\b")
+TYPED = re.compile(r"\[(LANDMINE|GATE|DEAD END|OPEN Q|ESCALATED)\]|\*\*\[?(LANDMINE|GATE|DEAD END|OPEN Q|ESCALATED)\b")
 
 DONE = re.compile(r"✅|\bdone\b|\bMitigated\b|\bFixed\b|\bsettled\b|\bdischarged\b|\bresolved\b",
                   re.I)
