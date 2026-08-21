@@ -53,32 +53,30 @@ Judge every change against these, in order.
 
 ### Goal 4 is a north star, and twice it has been mistaken for a limit
 
-**Span** is the quantity: wall clock from a pass's `start` record to its `stop`, computed by `pass_log.py`
-as `span_s`. It is neither token cost nor the agent's reasoning time — **it is what a human waits.** The
-term is defined here because the 2026-08-20 record notes it was used bare and its owner did not know it.
+**Span** is the quantity: wall clock from a pass's `start` to its `stop`, computed by `pass_log.py` as
+`span_s`. Neither token cost nor reasoning time — **what a human waits.**
 
-**Two minutes is aspirational, for any operation, and it is not a ceiling on any role** (Dennis,
-2026-08-20). Both times it hardened into a limit, the limit did damage:
+**Two minutes is aspirational, for any operation, and is a ceiling on no role.** Both times it hardened
+into a limit it did damage: scoped as the `frontier-clerk`'s ceiling, which a fan-out pass at
+`max(child) + overhead` can never meet, and which produced two sub-librarians' "confessions"; and as
+*every required step is wall clock spent against the budget*, withdrawn for discouraging the tools §10
+argues are the cheap end. **Eval, profiling and developer-facing work are exempt.**
 
-- 2026-08-19 re-scoped it as the `frontier-clerk`'s ceiling. A fan-out pass is `max(child) + overhead` and
-  can never be two minutes; the vault's own correction calls judging one against it *a category error*,
-  and names it as what produced the two sub-librarians' "confessions".
-- A derived rule — *every required step is wall clock spent against the budget* — was withdrawn for
-  discouraging exactly the tools that make rules fire, which §10 argues are the cheap end.
+`lipika span-report` prints the series and **always exits 0**. A check that fails is how this hardens a
+third time. **An operation over the star is a fact, not a backlog item** — this document is not a frontier
+(§12), and a table of misses is the most inviting way for it to become one.
 
-**Eval, profiling and developer-facing work are exempt.** The budgets below are for operations a person is
-blocked on.
+Measured 2026-08-21, over 57 passes:
 
-| operation | budget | 2026-08-20 | 2026-08-21 |
-|---|---|---|---|
-| north star, any operation | 2 min, aspirational | — | — |
-| `context-dump` — the only synchronous one | 2 min | 264, 368, 420 s | — |
-| `pickup` | 2 min | — | 97 s |
-| eval / profiling / developer | **exempt** | 739 s | — |
+| operation | median | inside |
+|---|---|---|
+| `context-dump` — the only synchronous one | 114 s | 11/18 |
+| `pickup` | 97 s | not in the log — read-only, opens no pass |
+| `curator` | 1407 s | 1/4 |
 
-**Nothing but `pickup` has ever come inside it.** That is a standing fact about the target or the
-operations, not a backlog item — `lipika span-report` prints the series and **always exits 0**, because
-the third time this becomes a check that fails is the time it produces ceremony aimed at the check.
+The 264 / 368 / 420 s figures quoted for `context-dump` are pre-redesign; the recent series is 117, 181,
+39, 97 s. **A figure repeated from memory outlives the thing it measured** — which is the argument for the
+tool, not for the target.
 
 ## 3. Records and views — the rule everything else follows from
 
@@ -178,12 +176,10 @@ will supersede it.
 workstream tier because there was nowhere else to put them, which is also why `architecture-candidates`
 counted them as one voting thread. Moved to `epics/` 2026-08-21.
 
-**Membership is written in the epic and nowhere else, and no frontmatter relation was added for it.**
-Checked before adding one: `up:` has exactly one consumer in the whole system — `scope_recon.py` reports
-which documents are *missing* it, and nothing reads the value. Contrast `from:`, which `orientation-audit`
-genuinely follows to find a parent thread's items. A second mostly-empty field would have been a third
-thing to keep true, defended by a nag. So an epic cites its threads in prose and that is the record; the
-`missing_up` report was retired in the same pass.
+**Membership is the epic's prose, and no frontmatter relation was added for it.** `up:` had exactly one
+consumer — `scope_recon` reporting which documents *lacked* it — and nothing read the value; contrast
+`from:`, which `orientation-audit` follows to find a parent thread's items. A second mostly-empty field
+would have been a third thing to keep true, defended by a nag. The nag is retired.
 
 ✅ **A split COPIES what still bears on the new thread; it does not point at it.** The new thread's first
 orientation carries the parent's still-live items across, reworded freely and each citing its source, and
@@ -366,23 +362,21 @@ history rather than rebuild it.
 
 ## 11. Standing tensions — open, deliberately
 
-- ✅ **Settled 2026-08-21 (Dennis) — a dump carries its DELTA, and neither of the two options it was posed
-  as.** Carrying the whole live set in every dump duplicates it several times a day and creates two
-  documents that can disagree; reporting only loses the reconciliation when a session dies without a
-  handoff. The delta is what each dump *discovered* or *killed*, typed with death conditions — so records
-  are the store and the orientation is the projection over them, which is what §9 already claims and what
-  report-only quietly violated by making a *view* the sole holder of authoritative state.
-- `[OPEN Q]` **May a pickup write a dump?** The handoff writes the orientation and a pickup writes nothing,
-  which is the strongest property that skill has. But a pickup confirms things nobody records until the
-  next handoff: the pickup on 2026-08-21 re-checked four death conditions by hand, corrected a figure, and
-  found two items nobody had written down — all of which would have died with the session. **Appending to
-  the orientation is ruled out** and not the question: it is a view, and a view is regenerated, never
-  patched. The open shape is a pickup emitting a *record*, which a dump already is, leaving the next
-  handoff to regenerate the view over it. It would also close a hole the skill already names — step 4
-  tells a pickup a stale GATE is worth one command before trusting it, then gives it nowhere to put the
-  answer. Against: pickup is the only operation ever measured inside the two-minute north star (97 s), and
-  a write plus a commit is real span on the one thing that passes. **Dies when** a pickup's findings are
-  measurably lost to a session ending without a handoff, or when read-only is judged worth the loss.
+- ✅ **Settled 2026-08-21 (Dennis) — a dump carries its DELTA**, neither of the two options the question
+  was posed as. Carrying the whole live set duplicates it several times a day into documents that can
+  disagree; reporting only loses the reconciliation when a session dies without a handoff. The delta is
+  what a dump *discovered* or *killed*. Records become the store and the orientation the projection over
+  them — which §9 already claims, and which report-only violated by making a *view* the sole holder of
+  authoritative state.
+- `[OPEN Q]` **May a pickup write a dump?** A pickup confirms things nobody records until the next
+  handoff — the one on 2026-08-21 re-checked four death conditions, corrected a figure and found two
+  unrecorded items, all of which would have died with the session. **Appending to the orientation is not
+  the question and is ruled out**: it is a view. The open shape is a pickup emitting a *record*, leaving
+  the next handoff to regenerate the view over it. It would also close a hole §6 already has — a pickup is
+  told a stale GATE is worth one command before trusting it, then given nowhere to put the answer.
+  Against: writing costs span on the one operation inside the north star, and read-only is the strongest
+  property that skill has. **Dies when** a pickup's findings are measurably lost to a session ending
+  without a handoff, or when read-only is judged worth the loss.
 - `[OPEN Q]` **Does the routing note earn its place beside orientation**, or does the index carry its one
   line?
 - `[OPEN Q]` **What is the relevant fraction of a pickup** — of what it loads, how much bore on the work.

@@ -21,34 +21,26 @@ Two modes.
   each handoff, newest wins.
 - **`architecture/` is the owner's.** Contradict it with a dated trace; never edit it.
 
-**Your dump is the store; the orientation is a projection over it.** So the dump carries the **delta** —
-what this session discovered and what it killed — and the orientation is regenerated from the previous one
-plus the deltas since. Write the delta even when you are not handing off: it is what survives a session
-that ends without one.
-
-## The three tiers
-
-```
-grand-plans/<name>.md   a standing want. No liveness — not started is not dead. The owner's.
-epics/<name>.md         a large effort actually happening. live · parked · finished. The owner's.
-                        It CITES its threads; it does not contain them.
-workstreams/YYYY-MM-DD-<thread>/    one question being answered. No status field — the date it
-                        last accrued is the whole answer. Agents write these.
-```
-
-**Only the epic tier carries state.** An epic is parked deliberately; a workstream simply falls off by
-date. There is no shelf list at the workstream tier — a second liveness concept only disagrees with the
-first. Membership lives in the epic's prose; there is no frontmatter field for it.
+**Your dump is the store; the orientation is a projection over it.** The dump carries the **delta** — what
+this session discovered and what it killed — and an orientation is the previous one plus the deltas since.
+Write the delta even when not handing off: it is what survives a session that ends without one.
 
 ## Shape
 
 ```
-workstreams/YYYY-MM-DD-<thread>/
-  YYYY-MM-DD-<thread>.md       routing note — what this thread is. Dated to match the folder.
-  orientation/YYYY-MM-DD-HHMM.md   newest wins. Written at handoff.
-  dumps/YYYY-MM-DD-HHMM-<topic>.md <- YOUR DUMP GOES HERE
+grand-plans/<name>.md            a standing want. No liveness. The owner's
+epics/<name>.md                  a large effort happening. live · parked · finished. The owner's.
+                                 CITES its threads; does not contain them
+workstreams/YYYY-MM-DD-<thread>/ one question being answered. NO status field
+  YYYY-MM-DD-<thread>.md         routing note — what this thread is. Dated to match the folder
+  orientation/<stamp>.md         newest wins. Written at handoff
+  dumps/<stamp>-<topic>.md       <- YOUR DUMP GOES HERE
   reference/YYYY-MM-DD-<topic>.md  dated traces from source
 ```
+
+**Only the epic tier carries state.** An epic is parked by a decision; a workstream falls off by date, so
+a second shelf concept there would only disagree with the date. Membership is the epic's prose — no
+frontmatter field.
 
 One workstream is **one thread of work** — one path prefix, one agent at a time. A second concurrent thread
 is a **new dated workstream**, not a subfolder; see step 4a. Resolve the vault with
@@ -76,17 +68,16 @@ project does **not** load automatically — read it if you have not.
    lipika pass-log start context-dump "<what you are dumping>" --scope workstreams/<ws> --kind dump
    ```
 
-2. **Write the dump** — `workstreams/<ws>/dumps/<stamp>-<topic>.md`. Several dumps a day is normal and
-   same-date names do not sort, so the time is in the name.
+2. **Write the dump** — `workstreams/<ws>/dumps/<stamp>-<topic>.md`. Several a day is normal, so the
+   time is in the name, and **the name comes from the tool, never from `date`**:
 
    ```bash
-   lipika stamp --for workstreams/<ws>/dumps        # exits 1 if it would not sort last
+   lipika stamp --for workstreams/<ws>/dumps     # exits 1 if it would not sort last; --after steps past
    ```
 
-   **Never stamp from `date`.** Measured 2026-08-21: these names are sequence keys that run ahead of the
-   clock, and `date` is local time besides. A name that does not sort last is invisible to `pickup`, and
-   nothing about that failure is loud — the file writes, the commit succeeds, the handoff reports done.
-   If it refuses, re-run with `--after`; do not hand-pick a stamp.
+   These names are sequence keys that run ahead of the clock, and `date` is local time besides. A name
+   that does not sort last is invisible to `pickup`, and nothing about that failure is loud — the file
+   writes, the commit succeeds, the handoff reports done. Do not hand-pick a stamp.
 
    Frontmatter: `type` / `status` / `date` / `tags` / `up:`.
 
@@ -125,17 +116,12 @@ project does **not** load automatically — read it if you have not.
    environment traps, and concrete current state. Route anything new into `## Live items` in the typed
    shape rather than into loose prose.
 
-4. **If this is a handoff, write the next orientation.** More than one handoff a day is normal, and **the
-   newest must sort last or `pickup` will never read it** — so the name comes from the tool, not the clock:
+4. **If this is a handoff, write the next orientation** — `lipika stamp --for
+   workstreams/<ws>/orientation`. This is the name `pickup` reads, so sorting last is the whole document.
 
-   ```bash
-   lipika stamp --for workstreams/<ws>/orientation   # -> workstreams/<ws>/orientation/<stamp>.md
-   ```
-
-   **The orientation is a projection over the records: previous orientation + every dump delta since.**
-   That is a mechanical operation, so do it mechanically — read them, then write a **new** document. Do
-   not diff-and-patch the old one in your head, and do not write from memory of the session: the dumps
-   are what the next agent's evidence trail actually is.
+   **An orientation is a projection over the records: previous orientation + every dump delta since.**
+   Read them and write a **new** document. Do not diff-and-patch the old one in your head, and do not
+   write from session memory — the dumps are the evidence trail the next agent gets.
 
    ```markdown
    ---

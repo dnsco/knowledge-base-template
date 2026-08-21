@@ -2,34 +2,24 @@
 """span-report — how long each operation actually takes, against the two-minute north star.
 
 WHY THIS EXISTS
-  Goal 4 is that any operation somebody waits on finishes inside two minutes. It is a NORTH STAR,
-  and twice it has been mistaken for a limit, both times doing damage: re-scoped as the
-  frontier-clerk's ceiling in 2026-08-19 -- a category error, since a fan-out pass is
-  `max(child) + overhead` and can never be two minutes -- and again as "every required step is wall
-  clock spent against the budget", withdrawn for discouraging exactly the tools that make rules fire.
+  Goal 4 -- any operation somebody waits on finishes inside two minutes -- had no measurement.
+  `pass_log.py` computes `span_s` per pass and `agent_transcript.py` computes tokens; nothing joined
+  them, so every claim about efficiency was whichever run someone remembered. Quoting one is how
+  `context-dump` kept its pre-redesign 264/368/420 s reputation while actually running 117, 39, 97 s.
 
-  So the target needed a measurement and did not have one. `pass_log.py` already computes `span_s`
-  per pass and `agent_transcript.py` already computes tokens; nothing put them in one series, so
-  every claim about system efficiency was anecdote drawn from whichever run someone remembered.
+  ** It always exits 0, including when everything misses. ** Twice this target hardened into a limit
+  and did damage: scoped as the frontier-clerk's ceiling, which a fan-out pass at
+  `max(child) + overhead` can never meet, and as "every required step is wall clock spent against the
+  budget", withdrawn for discouraging the tools that make rules fire. A check that fails is how it
+  happens a third time. An operation over the star is a fact to look at, not a build to break.
 
-  This is the series. It is a REPORT.
-
-  ** It always exits 0, including when everything misses. ** That is deliberate and it is the whole
-  design. The third time this becomes a check that fails is the time it produces ceremony aimed at
-  the check rather than at the span, which is the failure mode already recorded twice. An operation
-  over the star is a fact to look at, not a build to break.
-
-  Measured on first run, 2026-08-21: the figure everyone was quoting for `context-dump` -- 264, 368,
-  420 s -- is PRE-REDESIGN. The same operation now runs 117, 181, 39, 97 s. Nobody knew, because
-  nobody had the series.
-
-WHAT IT CANNOT SEE, and says so
-  A read-only operation opens no pass, so it has no span here. `pickup` is the obvious one: it is
-  the operation most likely to be inside the star and it is structurally invisible to this tool.
-  An unannounced gap reads as a clean result, so the gaps are printed.
+WHAT IT CANNOT SEE, and prints
+  A read-only operation opens no pass. `pickup` -- likeliest to be inside the star -- is therefore
+  invisible here, and its figures come from a transcript profile instead. An unannounced gap reads
+  as a clean result.
 
 CONTRACT
-  exit 0  always, when invocation was valid -- including when every operation misses the star
+  exit 0  always, on a valid invocation -- including when every operation misses the star
   exit 5  bad invocation
 """
 

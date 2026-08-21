@@ -2,42 +2,22 @@
 """stamp — the UTC filename stamp for a new orientation or dump, checked against what is already there.
 
 WHY THIS EXISTS
-  A handoff's filename decides whether the handoff is ever read. `pickup` opens the LAST orientation
-  by name, so a new one must sort last by name, and nothing else about the document matters if it
-  does not.
+  `pickup` opens the LAST orientation by name, so a handoff that does not sort last is never read --
+  and the failure is silent at every step: the file writes, the commit succeeds, the handoff reports
+  done, and the next session reads a stale document.
 
-  The skill used to say "stamp from `date`". Measured 2026-08-21: every existing filename in the
-  vault is stamped UTC -- the pass log agrees, `20260821T193147Z` -- while `date` returns local
-  time, four hours behind here. A handoff that followed the instruction literally would have
-  produced a name sorting BEFORE all three existing orientations, and pickup would never have seen
-  it. The failure is silent at every step: the file is written, the commit succeeds, the handoff
-  reports done, and the next session reads a stale document.
+  A name is therefore a SEQUENCE KEY, not a timestamp, and this checks SORTING: string comparison
+  against the existing names, no date parsing.
 
-  Prose cannot fix this, because prose is what said `date`. So the stamp comes from a tool, and the
-  tool refuses when the name it produced would not sort last -- which is the only property anyone
-  actually wants from it.
+  Measured 2026-08-21, of four orientations on one thread, only the first is a UTC timestamp --
+  1930 was written at 18:10Z, 2015 at 18:13Z, 2100 at 19:32Z. The names run ahead of the clock and
+  the drift compounds; the newest was 88 minutes out. The skill said "stamp from `date`", which is
+  local time besides, and would have produced a name sorting before all three.
 
-  Sorting is what pickup does, so sorting is what this checks: plain string comparison against the
-  existing names, not date parsing. A directory holding a name from a machine with a skewed clock,
-  or a stamp someone wrote by hand from local time, is exactly the case that must fail loudly.
-
-WHAT THE NAMES ACTUALLY ARE, measured 2026-08-21
-  Checking this tool against the real vault found that the recorded convention is wrong. Of the four
-  orientations on `2026-08-21-records-and-views`, only the first is a UTC timestamp:
-
-      2026-08-21-1800   written 17:56 UTC     the one the "UTC" story was drawn from
-      2026-08-21-1930   written 18:10 UTC
-      2026-08-21-2015   written 18:13 UTC     three minutes after the one before it
-      2026-08-21-2100   written 19:32 UTC
-
-  So a name is a SEQUENCE KEY, not a timestamp. Each handoff picked a number that would sort after
-  the last one, and the drift compounds -- the newest name ran 88 minutes ahead of the clock. The
-  document's real time is its `date:` frontmatter and its git commit; the filename's only job is to
-  order.
-
-  That is why --after exists, and why it is not the default. Emitting a monotonic name silently
-  would entrench the drift and hide it forever; refusing by default puts the drift in front of
-  whoever is writing, once per handoff, which is the only moment anyone can decide to reset it.
+  --after exists for that drift and is not the default: emitting a monotonic name silently would
+  entrench it invisibly, where refusing puts it in front of the writer once per handoff, the only
+  moment anyone can decide to reset. A document's real time is its `date:` frontmatter and its
+  commit.
 
 CONTRACT
   exit 0  the stamp is printed on stdout, and (with --for) it sorts last in that directory
