@@ -216,7 +216,17 @@ def main(argv):
             print(f"  not voting · {name} — {excluded[name]}")
 
     if not cands:
-        print("\nnothing to recommend: every cross-thread trace is already reachable from an architecture document.")
+        # With no architecture documents at all, "already reachable from one" is vacuously true and
+        # reads as coverage. Found by a cold pickup 2026-08-21 -- the same defect class as
+        # orientation-audit's exit 0 answering both "checked and clean" and "nothing was checked",
+        # in the sibling tool, unfixed because the fix was applied where it was found.
+        if not nodes:
+            print("\nnothing to recommend — and there are NO architecture documents, so this is not "
+                  "coverage.\nNo trace was cited by "
+                  f"{args.min_threads}+ live threads. That is the whole finding.")
+        else:
+            print("\nnothing to recommend: every cross-thread trace is already reachable from an "
+                  "architecture document.")
         return 0
 
     print("\nCANDIDATES — cited across threads, with no architecture node linking them:")
