@@ -81,7 +81,9 @@ LOG_NAME = "pass-log.jsonl"
 
 # Kinds that may establish a consolidated baseline. Everything else stacks.
 BASELINE_KINDS = {"full"}
-KINDS = ["full", "delta", "scout", "dump", "clerk", "convert"]
+# `eval` is developer work — profiling or measuring another agent's run. It is exempt from
+# the span budgets (its subject is a transcript, not the corpus) and it never consolidates.
+KINDS = ["full", "delta", "scout", "dump", "clerk", "convert", "eval", "rollover"]
 RESULTS = ["consolidated", "incremental", "skipped", "aborted"]
 
 

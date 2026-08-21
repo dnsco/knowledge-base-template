@@ -42,11 +42,20 @@ frontier.
 Step 5's return edge is what makes this a loop rather than a checklist. Every durable improvement to these roles
 so far came from a profile, not from re-reading a definition.
 
-**One condition on step 4 that is easy to miss: a definition change is served stale for a few minutes.** After
-`agents/*.md` changes, spawns can still receive the previous text, and nothing in a transcript says which version
-produced the behaviour — so a round that ports and immediately profiles can measure the old definition and report
-clean. Probe with a question the two versions answer differently before trusting any figure. Skills are exempt:
-`SKILL.md` is read from disk at invocation.
+**One condition on step 4 that is easy to miss: a definition change is served stale, and possibly for the whole
+session.** After `agents/*.md` changes, spawns still receive the previous text, and nothing in a transcript says
+which version produced the behaviour — so a round that edits and immediately profiles measures the old
+definition and reports clean. Measured 2026-08-20: an in-place edit at a symlink's target had still not loaded
+**15 minutes** later, which refines the earlier "a few minutes" figure (taken on a file owned directly in
+`~/.claude/agents/`). Treat an in-session change as **not in force**; the exercise run wants a fresh session.
+Skills are exempt: `SKILL.md` is read from disk at invocation.
+
+**Probe behaviourally. Never ask a role to quote its own definition.** Measured the same day: a `scout` asked to
+quote the command it had been told to use returned a rule that has **never existed in any version of that
+file, in any repo** — verified by `grep -rl` and `git log --all -S`, both empty. It produced a fluent paraphrase
+of the rule it was operating under and presented it as a quotation, which reads as confirmation and is worthless
+as evidence. So: give the new text **a command or a write path the old text does not have**, dispatch real work,
+and read the transcript for the call. What an agent did is not confabulable; what it says about itself is.
 
 ## Where the artifacts live
 

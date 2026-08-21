@@ -33,7 +33,12 @@ CONFIG SHAPE
     "default": "ai_docs",
     "vaults":  {"ai_docs": "/Users/you/workspace/ai_docs"},
     "budgets": {"parent_kb": [8, 12], "task_kb": [8, 12], "register_soft_kb": 20},
-    "spans_s": {"context-dump": 120, "frontier-clerk": 120, "librarian": 300, "curator": 480},
+    # Only the roles somebody WAITS on carry a ceiling. The background roles had 300 s and 480 s
+    # and never met either, on any pass ever measured -- and a ceiling nothing meets makes an
+    # honest report read as a failure, so one was overridden twice in a single run by an agent
+    # that had priced the overrun correctly. They carry observed baselines instead (see
+    # `span_baselines_s` in the config), which say "beat this" rather than "you have failed".
+    "spans_s": {"context-dump": 120, "frontier-clerk": 120},
     "frozen_tiers": ["done", "sources", "external"]
   }
 
@@ -376,8 +381,18 @@ def repo_for(path):
     Wiring those to the configured vault would make them useless for the machinery's own files, now
     that the machinery is its own repo. So: follow the file, and fall back to the vault.
     """
-    p = Path(path)
+    p = Path(path).expanduser()
     start = p if p.is_dir() else p.parent
+    # Walk up to the nearest EXISTING ancestor. A path that no longer exists is the normal case
+    # for the one question this is asked: `recall_check <ref> <old-path> --into <new-path>` names
+    # a file that MOVED, so `<old-path>` is gone from the working tree. Returning None there sent
+    # the caller to the configured vault instead of to the file's own repo, which then reported
+    # the source absent at a ref where `git cat-file -e` confirms it present -- the third recorded
+    # `--into` defect, and it disabled the losslessness gate on exactly the change most likely to
+    # drop a fact.
+    start = start.absolute()
+    while not start.exists() and start != start.parent:
+        start = start.parent
     if not start.exists():
         return None
     try:

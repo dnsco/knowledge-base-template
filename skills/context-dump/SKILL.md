@@ -56,8 +56,19 @@ that converts a workstream is the one that operates it, and that is a `librarian
 
    Say it in one breath, not as an interview: *"Dumping into `workstreams/x/2026-08-19-y/` — and is that task
    done?"* The destination is how work belonging to **no** task — a debugging session, a spike — stops being
-   appended wherever the session happened to be rooted. **Ask the closure question** because a marker only exists
-   if someone raised it, and a dump is the moment: you ask, the owner answers, the clerk acts on the marker.
+   appended wherever the session happened to be rooted.
+
+   **Ask the closure question, and bring evidence to it:**
+
+   ```bash
+   lipika closure-check --scan workstreams/<ws>     # exit 1 = this task looks finished, and what it holds
+   ```
+
+   Measured 2026-08-20: **nothing had ever closed in this vault** — zero closed tasks, every workstream
+   `status: active` — because no role was looking and the question depended on someone remembering to ask. If
+   the check names your task, say so in the same breath and put the answer in your dump as its own marker. The
+   close itself is a `librarian`'s rollover, not yours and not the clerk's: **recommend a pass** and say what
+   the successor would have to carry.
 
    **If `lipika pass-log active` shows an open pass on this workstream, say so before you write.** Another agent is
    editing these files right now — a `librarian` mid-restructure is the case that loses work. A STALE record (no
@@ -210,8 +221,9 @@ that converts a workstream is the one that operates it, and that is a `librarian
 - **Don't edit the frontier yourself** — no `status` flip, no striking a next-move, no demoting a superseded
   line, not even one you just finished. Emit the marker; the clerk moves it, when one is owed. A clerk pass you
   judged unnecessary is not a licence to make its edits yourself.
-- **Don't move existing docs into a task folder**, and don't convert a workstream to the task shape — that is a
-  `librarian`'s.
+- **Don't move existing docs into a task folder**, don't convert a workstream to the task shape, and **don't
+  close a task** — opening its successor, carrying the residue across and archiving the closed folder is a
+  `librarian`'s rollover. Flag it; recommend the pass.
 - Don't delete, merge, or restructure existing docs.
 - Don't move anything to `done/`, and don't edit `done/` docs.
 - Don't edit `sources/` or `external/` — raw inputs and already-delivered artifacts are read-only. Add a new

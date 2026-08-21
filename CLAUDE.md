@@ -70,10 +70,11 @@ as an operating one.
 - **A definition change is served stale for a few minutes.** Rewrite `agents/*.md` and spawn that role
   immediately and the *old* text runs, with nothing in the transcript saying which version it was. Probe
   with a question the two versions answer differently before profiling anything. `SKILL.md` is exempt.
-- **Harness worktree isolation cuts from `origin/main`.** A vault that is never pushed has a stale
-  `origin/main`, so a harness-isolated sub-agent lands in a tree where recent work does not exist and
-  reports clean. Provision with `git worktree add … <base-sha>`; every sub-agent's first command is
-  `lipika assert-isolated <base>`.
+- **A sub-agent in an unexpected tree reports clean.** Worktree isolation is retired (2026-08-20) — the
+  partition and the pass log do that job — but the failure it was catching outlives it: a tree at a
+  different commit still computes a delta that still looks clean. Harness isolation is the sharpest case,
+  cutting from an `origin/main` this vault never pushes. So **every sub-agent given a base ref checks
+  `git rev-parse HEAD` against it first**, and no agent in a shared checkout ever changes HEAD.
 - **The `Edit` tool needs its own `Read`.** A slice read through Bash does not satisfy the guard, so the
   first `Edit` fails. Read the ten lines around your anchor rather than re-reading the file — and do not
   route around the guard with in-place scripts, which trades auditability for a call.
