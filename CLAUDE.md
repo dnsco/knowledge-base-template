@@ -10,6 +10,15 @@ this is the scribe.
 **You are almost certainly here to change the machinery, not to use it.** Using it is two skills —
 `pickup` and `context-dump` — and they explain themselves. What follows is how to develop them.
 
+**Start with `pickup` anyway.** The record of how this machinery got here lives in the vault, not in this
+repo, and a session rooted here does not load the vault's conventions. `pickup` reads the one document
+that says where the work is and what needs deciding, and it costs a single read.
+
+**Which branch is checked out here decides what every session on this machine runs.** `~/.claude/agents/`
+and `~/.claude/skills/` symlink into this working tree, not into a commit — so a `git checkout` changes
+the definitions in force everywhere, including for sessions already open, and an unmerged branch is fully
+live. Know which branch you are on before you conclude anything about a role's behaviour.
+
 ## What the machinery believes
 
 One rule, and everything else follows from it: **every document in the vault is a record or a view.**
