@@ -102,7 +102,11 @@ def main():
         die(2, f"REFUSED: subject is {len(subject)} chars, over --subject-max {args.subject_max}.",
                f"  {subject}")
 
-    code, status = git(vault, "status", "--porcelain")
+    # -uall, because plain --porcelain collapses a wholly-new directory to ONE entry naming the
+    # directory. A pathspec for a file inside it then matches nothing and this tool reports
+    # "nothing to commit under those pathspecs" -- a silent no-op on a real write. Measured
+    # 2026-08-21 writing the first document into a workstream's new reference/.
+    code, status = git(vault, "status", "--porcelain", "-uall")
     if code != 0:
         die(5, f"not a git repository: {vault}")
 

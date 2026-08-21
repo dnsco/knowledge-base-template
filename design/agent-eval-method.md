@@ -7,8 +7,8 @@ tags: [vault, meta, agents, evals, forensics, method]
 
 # How the vault's agents get developed, measured and changed
 
-The method behind the five operating roles (`context-dump` skill, `frontier-clerk`, `librarian`, `curator`,
-`scout`) and the
+The method behind the operating machinery (the `pickup` and `context-dump` skills, and the `curator` and
+`scout` roles) and the
 development role that measures them (the profiler, which runs as an ad-hoc brief against this document rather than
 as a definition): where a change to one is authored, how its cost is measured, where the measurement is kept, and
 what may be concluded from it. Cross-workstream reference — the *record* of what each round found lives
@@ -129,10 +129,10 @@ worktree's own project slug), lists a session's subagents, and prints one row pe
 call returned into context, a per-tool aggregate, and the cost figures with every trap below already applied:
 
 ```bash
-python3 tools/agent_transcript.py --list                      # sessions and subagents, newest first
-python3 tools/agent_transcript.py <agent-id>                  # calls, per-tool totals, cost
-python3 tools/agent_transcript.py <agent-id> --calls --min-bytes 2000   # just the expensive reads
-python3 tools/agent_transcript.py <agent-id> --grep frontier_slice      # did the mandate fire
+lipika agent-transcript --list                      # sessions and subagents, newest first
+lipika agent-transcript <agent-id>                  # calls, per-tool totals, cost
+lipika agent-transcript <agent-id> --calls --min-bytes 2000   # just the expensive reads
+lipika agent-transcript <agent-id> --grep orientation-audit   # did the check actually run
 ```
 
 Bytes-returned is the denominator of a relevant-fraction measurement; classifying each row as load-bearing,

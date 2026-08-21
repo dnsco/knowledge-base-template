@@ -70,29 +70,39 @@ state rather than corpus. And agent worktrees get provisioned inside the vault, 
 in itself and a recursive grep from the root double-counts every hit. All three are `.gitignore` rather than
 `.git/info/exclude` precisely because exclude does not survive a clone.
 
-## The roles
+## Records and views
 
-Five, and only the first is synchronous — the rest run in the background so housekeeping stays off the
-working session's clock.
+One rule shapes everything: **every document is a record or a view.** A record — a dump, a dated trace, a
+source, an orientation already written — is **never edited**; it is corrected by a newer document. A view —
+the current orientation, the vault index — is **regenerated wholesale, never patched**, which is safe
+precisely because the records behind it are intact. `architecture/` is the third case: a long-lived edited
+view, and the owner's alone, because one written by an agent becomes the most-linked document in the
+vault with nothing positioned to contradict it.
 
-| role | what it may do |
-|---|---|
-| **`context-dump`** (skill) | appends a dated entry. Cannot touch the plan of record |
-| **`frontier-clerk`** | owns one plan of record's state: flips a status, strikes a finished item, drains a closed one |
-| **`librarian`** | structure inside **one** scope, with full autonomy there — merge, split, archive, re-link — bounded by losslessness rather than by permission |
-| **`curator`** | anything crossing a scope boundary, plus the shared surfaces no scope owns |
-| **`scout`** | reads and reports. Writes nothing, and its context is discarded on return |
+Removing the class of document that was mutable *and* authoritative is what retired seven tools, two roles
+and the whole task tier. `design/vault-and-agent-ontology.md` §8 records each one and why.
 
-Each acts and then reports a change list with a reversal per entry, rather than asking first —
-detect-propose-execute-on-approval produced zero proposals in two separate homes.
+## The two skills, and the two roles
+
+| | when | what it does |
+|---|---|---|
+| **`pickup`** (skill) | session start | reads the current orientation, audits it against the last one, opens with what needs the owner, enters plan mode |
+| **`context-dump`** (skill) | learned something, or ending | one dated dump — and at a handoff, a new dated orientation |
+| **`curator`** | the index has drifted | regenerates the index, repairs links crossing threads, owns the shared surfaces |
+| **`scout`** | before an expensive read | reads and reports. Writes nothing, and its context is discarded on return |
+
+The skills run in the main loop, where the context already is. Both roles act and then report a change
+list with a reversal per entry, rather than asking first — detect-propose-execute-on-approval produced
+zero proposals in two separate homes.
 
 ## The tools
 
 ```bash
-lipika                 # every command, with what it does
-lipika budget-check <path>
-lipika recall-check <ref> <path>     # did a rewrite silently drop a fact?
-lipika pass-log active               # who else is working in this vault right now
+lipika                                  # every command, with what it does
+lipika orientation-audit <workstream>   # did the newest orientation account for the last one?
+lipika architecture-candidates          # traces cited across threads with no architecture document
+lipika pass-log active                  # who else is working in this vault right now
+lipika recall-check <ref> <path>        # did a rewrite of a DEFINITION drop a rule?
 ```
 
 They are reached by name because a plugin's `bin/` is on `PATH`. `${CLAUDE_PLUGIN_ROOT}` is **not**
@@ -102,9 +112,14 @@ populated in a subagent's shell — measured — so no definition here interpola
 
 One copy of every definition, skill and tool exists, so authoring is the whole of it. The loop:
 
-**author here → try it on real work → `lipika recall-check <pre-change-ref> <path>` → profile it → summarise the
-round where the next agent will read it → feed the findings back.** Every recall-check flag is judged in writing,
-and you never reword a file to satisfy one. That last edge is what makes it a loop.
+**author here → probe behaviourally → try it on real work → profile it → summarise the round where the next
+agent will read it → feed the findings back.** That last edge is what makes it a loop.
+
+Probe by asking a question the old and new text answer *differently* — never by asking a role to quote its
+own definition, which one did, returning a rule that has never existed in any version of the file.
+`lipika recall-check` proves a rewrite dropped no rule, and its subject is a definition here rather than a
+vault document. It is **not** the way to check a deliberate deletion: a pass whose purpose is removing
+rules flags every one, and the deletions are the deliverable.
 
 Two things bite immediately. **A definition change is served stale for minutes** and the agent registry caches at
 session start, so probe with a question the old and new text answer differently before trusting any measurement —

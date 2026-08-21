@@ -1,244 +1,201 @@
 ---
 name: context-dump
-description: Append-only capture of working context, findings, and handoffs into the knowledge-base vault — the durable cross-session memory for engineering work (a separate git repo / Obsidian vault spanning every project I work on; usually reachable as a symlink in the current project root). Use at the end of a work session, before a handoff, or whenever you've learned something worth persisting for the next session — to write a dated dump carrying evidence-bearing markers into the live task, then dispatch the `frontier-clerk` to reconcile the task's frontier against it when the dump actually changes frontier state. This skill only ADDS: it does not touch the frontier itself, and it never deletes, merges, restructures, archives, or re-links docs (the frontier is the `frontier-clerk`'s; that destructive cleanup is the separate "librarian" pass). Invoke when asked to "dump context", "write a handoff", "save findings to the vault", "checkpoint the workstream", or before ending a long session.
+description: Append-only capture of working context into the knowledge-base vault — the durable cross-session memory for engineering work (a separate git repo / Obsidian vault spanning every project I work on). Use whenever you have learned something worth persisting, and at the end of a session or before a handoff, when it also writes the next orientation document a fresh agent will read. Invoke when asked to "dump context", "write a handoff", "save findings to the vault", "checkpoint the workstream", or before ending a long session.
 ---
 
-# context-dump — append-only capture into the LLM knowledge base
+# context-dump — write a record, and on the way out write the next orientation
 
-Persist what you did and learned into the vault — the durable cross-session memory for engineering work —
-so the next session can pick up where you left off.
+Two modes.
 
-**This skill is append-only, and that includes the frontier.** You ADD a dated **dump** — the vault's word for
-a dated document written during a task. You do NOT edit the frontier — the `frontier-clerk` does that, when one
-is owed — and you do NOT consolidate, merge, delete, archive or re-link, which are the **librarian's**, run as a
-separate deliberate pass. Concentrating all destruction in the librarian is what prevents parallel agents
-silently clobbering each other's notes.
+- **A dump**, any time you have learned something worth keeping. One dated document.
+- **A handoff**, when the session is ending. The dump, **plus** a new orientation document for whoever
+  picks this up next.
 
-**Why the frontier is the clerk's and not yours: time management.** Dumping agents that also tidied the vault
-got sidetracked onto vault corrections, eating the working task's context and time. Keeping housekeeping off the
-working session's clock is the whole reason for the split — **not** a claim that your judgement is worse than a
-clerk's.
+## The rule underneath everything here
 
-The vault is its **own git repo** (separate from whatever repo you're working in) and an Obsidian graph. **One
-vault covers every project** — it is usually symlinked into the current project root under its own name, so you can
-read and grep it as in-tree paths. Full conventions: the vault's `CLAUDE.md` — **resolve the vault with `lipika vault-config path`**, since no path to it is written here. The shape your dump has to fit:
+**Every document in the vault is a record or a view.**
+
+- **A record is never edited.** Dumps, `reference/` traces, `sources/`, `external/`, and every orientation
+  already written. Correct one by writing a newer one.
+- **A view is regenerated wholesale, never patched.** An orientation is a view written *as* a record: fresh
+  each handoff, newest wins.
+- **`architecture/` is the owner's.** Contradict it with a dated trace; never edit it.
+
+**Your dump is the store; the orientation is a projection over it.** The dump carries the **delta** — what
+this session discovered and what it killed — and an orientation is the previous one plus the deltas since.
+Write the delta even when not handing off: it is what survives a session that ends without one.
+
+## Shape
 
 ```
-workstreams/<ws>/
-  <ws>.md                      the parent — task index, a thin restated subset, cross-task invariants
-  YYYY-MM-DD-<task>/           a live task: the unit of work that closes
-    <task>.md                  its frontier — its own gates and PR numbers while live. Not dated
-    YYYY-MM-DD-<topic>.md      dumps written during it  <- YOUR DUMP GOES HERE
-  historical/                  LIVE, not done — unsorted pre-conversion context
-  done/YYYY-MM-DD-<task>/      closed tasks
+grand-plans/<name>.md            a standing want. No liveness. The owner's
+epics/<name>.md                  a large effort happening. live · parked · finished. The owner's.
+                                 CITES its threads; does not contain them
+workstreams/YYYY-MM-DD-<thread>/ one question being answered. NO status field
+  YYYY-MM-DD-<thread>.md         routing note — what this thread is. Dated to match the folder
+  orientation/<stamp>.md         newest wins. Written at handoff
+  dumps/<stamp>-<topic>.md       <- YOUR DUMP GOES HERE
+  reference/YYYY-MM-DD-<topic>.md  dated traces from source
 ```
 
-**A workstream not yet converted has no task folders.** Write into the workstream root as before, and say in
-your report that it wants a task folder next time it is opened. Conversion is lazy and deliberate: the mechanism
-that converts a workstream is the one that operates it, and that is a `librarian` pass.
+**Only the epic tier carries state.** An epic is parked by a decision; a workstream falls off by date, so
+a second shelf concept there would only disagree with the date. Membership is the epic's prose — no
+frontmatter field.
+
+One workstream is **one thread of work** — one path prefix, one agent at a time. A second concurrent thread
+is a **new dated workstream**, not a subfolder; see step 4a. Resolve the vault with
+`lipika vault-config path`. Full conventions: the vault's `CLAUDE.md`, which a session rooted in a code
+project does **not** load automatically — read it if you have not.
+
+**A workstream with no `dumps/`**: create it and write there; leave every existing document where it is.
 
 ## Do
 
-1. **Read the conventions, then find the best home for the dump.** If you have not already read
-   the vault's `CLAUDE.md` this session, read it now — a session rooted in a code project does **not** load it
-   automatically, so assume you haven't. Then skim `README.md` at the vault root (the map) + the relevant
-   `workstreams/<name>/<name>.md` folder-note.
-
-   **Find the home the dump belongs in, name your choice, and let the owner redirect it.** Never infer silently,
-   and never interrogate. Most often it is the **most recently edited task in the most recently edited
-   workstream**; it is a **new task** when the work is appreciably different from what that task is about, and
-   sometimes a **new workstream** entirely. Look before you choose:
+1. **Find the home, name your choice, let the owner redirect.** Usually the most recently touched workstream.
+   **A workstream is one question being answered.** When the question has changed, the answer is a new
+   dated workstream — that is the normal path, not the exception, and threads are meant to be short. More
+   of the same one only when it is the same question.
 
    ```bash
    cd "$(lipika vault-config path)" && git log -12 --name-only --pretty=format:'%h %ad %s' --date=short -- workstreams/
-   lipika pass-log active --scope workstreams/<ws>   # is anyone else in here?
+   lipika pass-log active --scope workstreams/<ws>     # is anyone else in here?
    ```
 
-   Say it in one breath, not as an interview: *"Dumping into `workstreams/x/2026-08-19-y/` — and is that task
-   done?"* The destination is how work belonging to **no** task — a debugging session, a spike — stops being
-   appended wherever the session happened to be rooted.
-
-   **Ask the closure question, and bring evidence to it:**
-
-   ```bash
-   lipika closure-check --scan workstreams/<ws>     # exit 1 = this task looks finished, and what it holds
-   ```
-
-   Measured 2026-08-20: **nothing had ever closed in this vault** — zero closed tasks, every workstream
-   `status: active` — because no role was looking and the question depended on someone remembering to ask. If
-   the check names your task, say so in the same breath and put the answer in your dump as its own marker. The
-   close itself is a `librarian`'s rollover, not yours and not the clerk's: **recommend a pass** and say what
-   the successor would have to carry.
-
-   **If `lipika pass-log active` shows an open pass on this workstream, say so before you write.** Another agent is
-   editing these files right now — a `librarian` mid-restructure is the case that loses work. A STALE record (no
-   stop record, older than a few hours) is an agent that died, not one still working; say which you saw.
-
-   If the work is genuinely new, you may create `workstreams/<name>/` + a `<name>.md` folder-note. **Opening a
-   new task also means pulling forward what bears on it** — the still-live GATEs, LANDMINEs and DEAD ENDs from
-   the workstream's closed tasks and `historical/` — into a `## Carried across` section of the task's frontier,
-   each cited by source. Dispatch a `scout` with the `orientation` brief to find them rather than reading `done/`
-   yourself, then:
-
-   ```bash
-   lipika orientation-check workstreams/<ws>/YYYY-MM-DD-<task>/
-   ```
-
-   Exit 2 means the pull did not happen, and a warning that does not fire is indistinguishable from one nobody
-   recorded.
-
-   **Then announce yourself in the shared pass log, before you write anything.**
+   Say it in one breath: *"Dumping into `workstreams/2026-08-21-x/`."* If an open pass overlaps, say so
+   before you write — a STALE record is an agent that died, not one still working.
 
    ```bash
    lipika pass-log start context-dump "<what you are dumping>" --scope workstreams/<ws> --kind dump
    ```
 
-   You close it in step 7 by role, so there is no id to carry. One log covers the whole vault so every role sees what
-   the others are doing — a `start` with no matching `stop` is how the next agent learns someone is in here now.
-   Exit 1 means a concurrent pass overlaps your scope: read it and judge before writing.
-2. **Write the dump** — `workstreams/<ws>/YYYY-MM-DD-<task>/YYYY-MM-DD-topic.md` (today's date from `date`),
-   or `workstreams/<ws>/YYYY-MM-DD-topic.md` in a workstream with no task folders yet.
-   Frontmatter: `type` / `status` / `date` / `tags` (+ `up:` linking the task frontier, or the folder-note where
-   there is no task). In the vault's
-   terse, factual voice, capture:
-   - what you did + the outcome (PR/commit numbers, branch names),
-   - **a dedicated, scannable `## Risks, gates & landmines` block** — the thing an evaluation/review most needs
-     and that prose most often buries. Don't scatter risks inline; collect them here, one item per line in a
-     consistent shape — **`[TYPE] statement — trigger → consequence → mitigation/status`** — tagged by TYPE so
-     severity is obvious at a glance, GATEs first:
-     - **GATE** — a blocking precondition/ordering (must-happen-before / must-not-do); the outage-class risk
-       (e.g. a deploy-order dependency, a STOP-gated dep/module change). These are what an evaluator must catch.
-     - **LANDMINE** — a trap that breaks silently or burns time if you don't know it, but has a known avoidance.
-     - **OPEN Q** — an unresolved unknown/decision that could bite.
-     - **DEAD END** — a ruled-out approach + the reason (so nobody re-treads it).
-     Write every item even if it feels minor; each one single-sourced here, not restated across the doc.
-   - what's next / open questions,
-   - **reusable commands or scripts** you built or worked out — the exact `rg`/`git`/build incantation, a
-     probe/analyzer script, a useful tool-call sequence — so the next agent re-runs instead of re-deriving.
-     Inline a short recipe copy-pasteably; persist a real script to Lipika's own `tools/`, not to the vault (runnable by
-     any agent) and `[[link]]` it.
-   - `[[wikilinks]]` to related vault docs; leave code-repo paths as literal text.
-3. **State progress as explicit, evidence-bearing markers — in your dump, not in the frontier.** Record it as
-   **discrete line items a clerk can act on without guessing**, each with a state and its *evidence*:
-   - `✅ done — merged #NNNN` / `commit <sha>` / `gate green` — a real landing, **NOT** "PR opened",
-   - `⏳ in-flight — #MMMM (draft)` / `mid-rebase` / `blocked on …`,
-   - `▢ not started — designed only`.
-   Be precise about **done vs in-flight**: a draft or open PR is *not* done. Everything downstream acts
-   **strictly off these markers** — leave done-ness implicit in prose and it gets inferred, sometimes wrongly,
-   archiving something that never merged. Your contract is to emit them; moving them is the clerk's.
+2. **Write the dump** — `workstreams/<ws>/dumps/<stamp>-<topic>.md`. Several a day is normal, so the
+   time is in the name, and **the name comes from the tool, never from `date`**:
 
-   Name the task whose frontier is affected (and the workstream, if a marker is genuinely cross-task), and
-   anything your dump **falsifies** — a line the frontier still asserts that your work has made untrue. That is
-   the clerk's input, and in step 4 it is also how you decide whether a clerk pass is owed at all.
+   ```bash
+   lipika stamp --for workstreams/<ws>/dumps     # UTC to the second, checked against what is there
+   ```
 
-   **Emit every marker the clerk will need, including for decisions the owner took in conversation.** The clerk
-   may act only on markers in your dump, so an owner decision you were told but did not write down leaves the
-   frontier stale and costs a second round trip — measured: two of three clerk invocations in one session existed
-   only because a marker was missing. Write the decision, dated and attributed, as its own `✅ settled` line.
+   `date` is local time, and a name that does not sort last is invisible to `pickup` — the file writes,
+   the commit succeeds, the handoff reports done, and nothing is loud. **If it exits 1, an existing name
+   is ahead of the clock; it tells you when that heals. Wait — never invent a later name.** Inventing is
+   what put those names ahead in the first place.
 
-   **One marker per separately-statused fact. Never a composite.** A marker covering several facts that do not
-   share a state is the single largest measured cause of a clerk overreaching: one dump's
-   *"✅ all four inherited defects hold"* covered four separately-statused facts, and the clerk collapsed two
-   distinctions off it — while the same clerk, on the same workstream a day earlier, **preserved** the identical
-   distinction when the marker was per-item. Same role, same context, opposite outcome; the marker was the
-   variable. So if you are tempted to write "all of X is done", write one line per member of X.
+   Frontmatter: `type` / `status` / `date` / `tags` / `up:`.
 
-   **Distinguish *settled* from *settled-and-executed*, and say which.** A decision the owner made is not work
-   that happened. `✅ settled … execution deferred` and `✅ done` licence completely different actions, and
-   collapsing them is how a deferred plan gets carried out.
-4. **Decide whether a clerk pass is owed. If it is, dispatch it in the background. If it is not, say so and
-   name the check.**
+   - **What you did and what came of it** — PR numbers, commit shas, branch names, what is green and what
+     is red.
+   - **Answer the questions you inherited.** For each open question or warning you touched: resolved (with
+     the evidence), still open, or now understood differently.
+   - **A scannable `## Live items` block — YOUR DELTA, not the inherited set restated.** What this
+     session *discovered*, plus what it *killed* with the evidence that killed it. An item you neither
+     found nor changed belongs to the orientation, not here; repeating it several times a day is how two
+     documents start disagreeing. Collected, not scattered through prose, one per line:
 
-   **The clerk does not run on every dump** — it runs when a dump actually changes frontier state.
+     `[TYPE] statement — trigger → consequence → dies when <condition> · as-of YYYY-MM-DD`
 
-   A pass is owed when **either** holds:
-   - your dump carries a marker that moves the frontier — a `✅ done`, a `✅ settled` owner decision, a completed
-     next-move, a `status` that should flip, or a line the frontier asserts that your work **falsifies**;
-   - the frontier has already fallen behind its own dumps:
-     ```bash
-     lipika frontier-lag-check workstreams/<ws>    # exit 1 = signals, read them
-     ```
+     - **GATE** — a blocking precondition or ordering. The outage-class risk.
+     - **LANDMINE** — breaks silently or burns time, with a known avoidance.
+     - **OPEN Q** — unresolved, and agents can work on it.
+     - **ESCALATED** — unresolved, and **only the owner can decide it**. An item routed here reaches a
+       human; an OPEN Q does not.
+     - **DEAD END** — ruled out, with the reason. It has no death condition; it fires forever.
 
-   It is **not** owed when the dump is purely additive — findings, a recipe, a measurement, a question raised and
-   left open — and nothing the frontier currently asserts became untrue. Then write in your report: *no clerk
-   pass owed*, with the lag-check exit code and the reason. **Naming the check is the point:** "I judged it
-   unnecessary" and "the check said clean" are different claims, and only one of them is verifiable later.
+     **Every item carries a death condition** — what would make it stop being true. An item you cannot
+     write one for is usually two.
 
-   When it **is** owed: hand the clerk your dump, the **task** frontier (the parent only if a marker is genuinely
-   cross-task), and the lag-check output so it does not re-derive what you already have. It flips the `status`,
-   strikes next-moves your markers show completed, demotes superseded in-flight lines, and files landed items —
-   the frontier work you may not do.
+     **`as-of` is when the item was last *confirmed*, not last copied.** Carrying an item forward does not
+     refresh its date.
+   - **State, with its basis.** What landed and how you know: `merged #4131`, `commit a1b2c3d`, `gate
+     green`. A draft or open PR has not landed. Asserting judgement instead is fine — say so:
+     *judgement: the remaining work no longer describes this thread*. **An unstated basis is the only
+     unacceptable one.**
+   - **Reusable commands** — the exact incantation. A real script goes in Lipika's `tools/`, not the vault.
+   - `[[wikilinks]]` to vault docs; literal text for code-repo paths, with the repo named.
 
-   **Dispatch it and let it run; you are the only synchronous step and you do not block on a second agent.**
-   Writing and then waiting on a clerk in series is most of what makes this the slowest frequent operation in the
-   vault. So **say in your report that a clerk was dispatched and has not returned** — never that the frontier is
-   reconciled. A dump that claims a current frontier over a stale one is the silent failure this split exists to
-   prevent, and the fix for it is honest reporting, not a blocking wait.
+3. **Second pass — what did not make it in?** Before you commit: what would a cold-start you need in a
+   month? Sweep for implicit decisions made without the *why*, dead ends ruled out without the reason,
+   environment traps, and concrete current state. Route anything new into `## Live items` in the typed
+   shape rather than into loose prose.
 
-   **A frontier line says what state something is in and where to read about it, not a summary of it** —
-   `- ⏳ in-flight — retention sweep, #4730 (draft). Detail: [[2026-01-02-retention-sweep]].` A line that explains
-   rather than states is a summary: it duplicates your dump and then drifts from it, so it belongs in the dump.
-   Don't hand the clerk one.
+4. **If this is a handoff, write the next orientation** — `lipika stamp --for
+   workstreams/<ws>/orientation`. This is the name `pickup` reads, so sorting last is the whole document.
 
-   **Timestamp every metric you write** — "9 KB at 2026-08-19", never "9 KB" — so the next agent reads it as
-   point-in-time instead of correcting it. Better still for a commit count, a review tally or a queue depth: cite
-   the reference and let a tool answer the number. Measured — the one restated figure of this kind in one vault
-   was simultaneously wrong in two documents and went stale three times in two days, while nothing that carried
-   only a pointer did.
+   **An orientation is a projection over the records: previous orientation + every dump delta since.**
+   Read them and write a **new** document. Do not diff-and-patch the old one in your head, and do not
+   write from session memory — the dumps are the evidence trail the next agent gets.
 
-5. **Second pass — what didn't make it in?** Before you commit, interrogate the dump: *what did I NOT write
-   down that the next agent (or a cold-start you, weeks later) would need?* Sweep specifically for:
-   - **Implicit decisions** — choices made without recording the *why*; the "obvious to me right now"
-     assumptions that won't survive the month.
-   - **Dead ends already ruled out** — approaches you tried or rejected, *with the reason*, so nobody
-     re-explores them.
-   - **Gotchas / landmines** — "don't-do-X", non-obvious ordering, environment traps.
-   - **Concrete current state** — branch name(s), committed vs WIP, which PR (#), what's green/red, anything
-     mid-rebase or mid-flight.
-   Fold the answers back in — route any newly-surfaced GATE / LANDMINE / OPEN-Q / DEAD-END into the
-   `## Risks, gates & landmines` block in the typed shape above, not into loose prose. This is the write-time
-   version of the adversarial review — far cheaper than re-deriving the loss later.
-6. **Commit in the vault** (its own repo): `cd "$(lipika vault-config path)" && git add <your specific files> && git commit -m
-   "…" -- <your specific paths>`. Stage and commit **specific paths** — never `git add -A` and never a bare
-   `commit`, because other sessions write here and a bare commit takes their staged work with yours. Don't push
-   unless asked.
-7. **Close the pass, and sync the pointer.**
+   ```markdown
+   ---
+   type: orientation
+   status: current
+   date: YYYY-MM-DD
+   up: "[[YYYY-MM-DD-<thread>]]"
+   from: "[[YYYY-MM-DD-<parent-thread>]]"   # only on a thread's FIRST orientation
+   ---
+
+   ## Where this is
+   Two or three sentences. What this thread is for and what state it is in.
+
+   ## Needs the owner
+   Every ESCALATED item. If there are none, say so.
+
+   ## Live items
+   Every carried GATE / LANDMINE / DEAD END / OPEN Q, in the typed shape, each with its own `as-of`.
+
+   ## Settled since the last orientation
+   One line per item whose death condition fired, with the evidence.
+
+   ## Recent narrative
+   The last handful of dumps, newest first, one or two sentences each, linked.
+   ```
+
+   **Carry every live item forward.** An item leaves the live set only when its death condition has
+   fired — name which, with the evidence. Do not select: a long set about this thread is not the failure
+   mode, and choosing for the next agent is a call you are the worst placed to make.
+
+   **A live item states itself.** "See [[2026-08-19-the-thing]]" is a pointer, and a warning has to fire
+   at an agent who does not know to look. Link the detail *after* the statement, never instead of it.
+   `## Recent narrative` is the one place a pointer is the content.
+
+4a. **If you are opening a new thread, its first orientation COPIES what still bears on it.**
+
+   A split is not a link. Read the parent thread's current orientation and copy across every live item
+   that bears on the new thread — reworded freely, each citing the source it came from — then name the
+   parent in `from:`. Items that do not bear on it stay behind; that is the whole point of splitting.
+
+   ```bash
+   lipika orientation-audit workstreams/<new-ws>    # follows `from:` and checks what you carried
+   ```
+
+5. **Commit** in the vault, which is its own repo. Stage **specific paths** — never `git add -A`, never a
+   bare `commit`, because other sessions write here.
+
+   ```bash
+   cd "$(lipika vault-config path)" && lipika vault-commit -m "…" -- <your paths>
+   ```
+
+   **Never change HEAD.** No `git checkout -b` — the checkout is shared, so a branch moves HEAD for every
+   session in it. Don't push unless asked.
+
+6. **Close the pass.**
 
    ```bash
    lipika pass-log stop context-dump "<the dump you wrote>" --result incremental
    ```
 
-   A dump is incremental by definition — it never consolidates anything, and the tool refuses if you claim it
-   did. Use `--result aborted` if you did not end up writing. An open `start` you never close reads to the next
-   agent as an agent still working in here, which is how a stale record becomes a reason someone else backed off
-   for no reason.
+   `--result aborted` if you did not write. An unclosed `start` reads as someone still working in here.
 
-   Then, if you created a doc future sessions must discover, add its one-line pointer to the project memory index
-   (`~/.claude/projects/<project>/memory/MEMORY.md`).
+## Don't
 
-## Don't (these belong to the clerk or the librarian)
+- **Don't move documents.** Nothing is archived.
+- **Don't write a second live orientation for one thread.** If the work has become two threads, that is a
+  second dated workstream, and say so.
 
-- **Don't edit the frontier yourself** — no `status` flip, no striking a next-move, no demoting a superseded
-  line, not even one you just finished. Emit the marker; the clerk moves it, when one is owed. A clerk pass you
-  judged unnecessary is not a licence to make its edits yourself.
-- **Don't move existing docs into a task folder**, don't convert a workstream to the task shape, and **don't
-  close a task** — opening its successor, carrying the residue across and archiving the closed folder is a
-  `librarian`'s rollover. Flag it; recommend the pass.
-- Don't delete, merge, or restructure existing docs.
-- Don't move anything to `done/`, and don't edit `done/` docs.
-- Don't edit `sources/` or `external/` — raw inputs and already-delivered artifacts are read-only. Add a new
-  source file freely; correct a stale one by appending a dated note.
-- Don't repoint or remove other docs' `[[links]]`.
-- Don't write a *competing* frontier — a live task's `<task>.md` is the plan of record for that task, and the
-  parent folder-note is the plan of record for the workstream. Append a dump and let the clerk update the
-  frontier. (Rival "plan" docs from many agents are what create the overlapping-telephone mess.)
+## Voice
 
-If consolidation, archiving, or graph cleanup is overdue, **say so and recommend a librarian pass** — don't do
-it from here.
-
-## Conventions (quick reference; full rules in the vault CLAUDE.md)
-
-Terse and factual, written for a first-time reader. **No agent-local codenames** ("Option C", "Track B",
-"Phase 2", workflow IDs) — say what a thing *is*. Filenames `YYYY-MM-DD-topic.md`. `[[wikilinks]]` for
-intra-vault refs; literal text for code-repo paths. If you rename/move a note, use the `obsidian-cli` skill (it
-keeps inbound links intact) — but renames are usually librarian work anyway.
+Terse and factual, written for a first-time reader who was not in the room. **No agent-local codenames** —
+"Option C", "Track B", "Phase 2", workflow IDs — say what a thing *is*. Filenames carry their stamp:
+`YYYY-MM-DD-HHMMSS-topic.md` for dumps and orientations, from `lipika stamp`; `YYYY-MM-DD-topic.md`
+elsewhere.
+**Timestamp every metric**: "9 KB at 2026-08-21", never "9 KB". Better still, cite the reference and let a
+tool answer the number.
