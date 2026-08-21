@@ -76,7 +76,7 @@ One rule shapes everything: **every document is a record or a view.** A record �
 source, an orientation already written — is **never edited**; it is corrected by a newer document. A view —
 the current orientation, the vault index — is **regenerated wholesale, never patched**, which is safe
 precisely because the records behind it are intact. `architecture/` is the third case: a long-lived edited
-view, and the owner's alone, because an agent-authored portrait becomes the most-linked document in the
+view, and the owner's alone, because one written by an agent becomes the most-linked document in the
 vault with nothing positioned to contradict it.
 
 Removing the class of document that was mutable *and* authoritative is what retired seven tools, two roles
@@ -100,7 +100,7 @@ zero proposals in two separate homes.
 ```bash
 lipika                                  # every command, with what it does
 lipika orientation-audit <workstream>   # did the newest orientation account for the last one?
-lipika architecture-candidates          # traces cited across threads with no portrait
+lipika architecture-candidates          # traces cited across threads with no architecture document
 lipika pass-log active                  # who else is working in this vault right now
 lipika recall-check <ref> <path>        # did a rewrite of a DEFINITION drop a rule?
 ```

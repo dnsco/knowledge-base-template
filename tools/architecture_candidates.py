@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""architecture-candidates — which reference traces are load-bearing across threads and have no portrait.
+"""architecture-candidates — which reference traces are load-bearing across threads and have no architecture document.
 
 WHY THIS EXISTS
-  `architecture/` holds the owner's portrait of a system: present tense, stable names, no dates. It
-  is the only tier an agent may not write, because an agent-authored portrait becomes the
+  `architecture/` holds the owner's description of a system: present tense, stable names, no dates. It
+  is the only tier an agent may not write, because one written by an agent becomes the
   most-linked document in the vault with no dated evidence positioned to contradict it.
 
   So the question an agent CAN answer is when one is missing, and "useful across more than one
@@ -21,6 +21,7 @@ CONTRACT
 """
 
 import argparse
+import datetime
 import os
 import re
 import sys
@@ -56,11 +57,69 @@ def thread_of(rel):
     return parts[1] if len(parts) > 2 and parts[0] == "workstreams" else None
 
 
+DATED = re.compile(r"(\d{4}-\d{2}-\d{2})")
+
+
+def newest_dated_doc(root):
+    """The newest YYYY-MM-DD found in a filename under root, or None.
+
+    FILENAME dates, not git dates. A vault-wide restructure rewrites every file's commit
+    date and makes every thread look equally fresh: measured 2026-08-21, all seven
+    workstreams reported the same last-commit date while their filename dates spanned
+    eighteen days. The filename is written by the author at the moment of writing and
+    nothing later touches it.
+    """
+    best = None
+    for dirpath, dirnames, names in os.walk(root):
+        dirnames[:] = [d for d in dirnames if not d.startswith(".")]
+        for n in names:
+            m = DATED.match(n)
+            if m and (best is None or m.group(1) > best):
+                best = m.group(1)
+    return best
+
+
+def live_threads(vault, today, within_days):
+    """Which workstreams still count as live, and why each one does not.
+
+    A dead thread's citations are not evidence that anything is load-bearing NOW. Threads
+    are short-lived by design, so most are dead most of the time and counting them counts
+    mostly noise.
+
+    There is no shelf list. A thread set aside stops accruing documents, so the date rule
+    already covers it and a second concept would only disagree with the first.
+    """
+    ws_root = os.path.join(vault, "workstreams")
+    live, excluded = set(), {}
+    if not os.path.isdir(ws_root):
+        return live, excluded
+    for name in sorted(os.listdir(ws_root)):
+        d = os.path.join(ws_root, name)
+        if not os.path.isdir(d) or name.startswith("."):
+            continue
+        newest = newest_dated_doc(d)
+        if newest is None:
+            excluded[name] = "no dated document"
+            continue
+        age = (today - datetime.date(*(int(x) for x in newest.split("-")))).days
+        if age > within_days:
+            excluded[name] = f"last accrued {newest} ({age}d)"
+        else:
+            live.add(name)
+    return live, excluded
+
+
 def main(argv):
     ap = argparse.ArgumentParser(prog="lipika architecture-candidates", add_help=True)
     ap.add_argument("--vault", default=None)
     ap.add_argument("--min-threads", type=int, default=2,
                     help="how many distinct workstreams must cite a trace before it is a candidate")
+    ap.add_argument("--live-within-days", type=int, default=14,
+                    help="a thread votes only if it accrued a dated document this recently "
+                         "(a chosen threshold, revisable; see design/vault-and-agent-ontology.md)")
+    ap.add_argument("--all-threads", action="store_true",
+                    help="let threads that have stopped accruing vote too")
+    ap.add_argument("--today", default=None, help="YYYY-MM-DD, for tests")
     args = ap.parse_args(argv)
 
     try:
@@ -71,7 +130,7 @@ def main(argv):
         return 5
 
     arch_dir = os.path.join(vault, "architecture")
-    portrayed = set()      # everything the portrait already links to
+    portrayed = set()      # everything the architecture documents already link to
     nodes = []
     if os.path.isdir(arch_dir):
         for p in md_files(arch_dir):
@@ -87,10 +146,15 @@ def main(argv):
             traces[stem(p)] = rel
 
     if not traces:
-        print("no reference/ traces in the vault — nothing to recommend a portrait for.")
+        print("no reference/ traces in the vault — nothing to recommend an architecture document for.")
         return 0
 
-    # Who cites each trace, by thread.
+    today = (datetime.date(*(int(x) for x in args.today.split("-")))
+             if args.today else datetime.date.today())
+    live, excluded = ((None, {}) if args.all_threads
+                      else live_threads(vault, today, args.live_within_days))
+
+    # Who cites each trace, by thread. A thread that has stopped accruing does not vote.
     cited = defaultdict(set)
     for p in md_files(vault):
         rel = os.path.relpath(p, vault)
@@ -100,6 +164,8 @@ def main(argv):
         here = thread_of(rel)
         if not here:
             continue                       # routing surfaces and raw inputs do not vote
+        if live is not None and here not in live:
+            continue                       # a thread that has stopped accruing does not vote
         for target in markers.WIKILINK.findall(body):
             t = target.strip()
             if t in traces and stem(p) != t:
@@ -111,9 +177,14 @@ def main(argv):
 
     print(f"{len(traces)} trace(s) · {len(nodes)} architecture node(s) · "
           f"threshold {args.min_threads} thread(s)")
+    if live is not None:
+        print(f"live thread(s) voting: {', '.join(sorted(live)) or 'none'}")
+        # Announce every exclusion. A silent one reads as "everything was counted".
+        for name in sorted(excluded):
+            print(f"  not voting · {name} — {excluded[name]}")
 
     if not cands:
-        print("\nnothing to recommend: every cross-thread trace is already reachable from a portrait.")
+        print("\nnothing to recommend: every cross-thread trace is already reachable from an architecture document.")
         return 0
 
     print("\nCANDIDATES — cited across threads, with no architecture node linking them:")

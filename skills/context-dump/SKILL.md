@@ -1,13 +1,13 @@
 ---
 name: context-dump
-description: Append-only capture of working context into the knowledge-base vault — the durable cross-session memory for engineering work (a separate git repo / Obsidian vault spanning every project I work on). Use whenever you have learned something worth persisting, and at the end of a session or before a handoff, when it also writes the next orientation document a fresh agent will read. It only ever ADDS documents: a dump is never edited and never retrofitted, and an orientation is superseded by writing a newer one rather than by changing it. Invoke when asked to "dump context", "write a handoff", "save findings to the vault", "checkpoint the workstream", or before ending a long session.
+description: Append-only capture of working context into the knowledge-base vault — the durable cross-session memory for engineering work (a separate git repo / Obsidian vault spanning every project I work on). Use whenever you have learned something worth persisting, and at the end of a session or before a handoff, when it also writes the next orientation document a fresh agent will read. Invoke when asked to "dump context", "write a handoff", "save findings to the vault", "checkpoint the workstream", or before ending a long session.
 ---
 
 # context-dump — write a record, and on the way out write the next orientation
 
-Two modes, and you are usually in the first.
+Two modes.
 
-- **A dump**, any time you have learned something worth keeping. One dated document. That is all.
+- **A dump**, any time you have learned something worth keeping. One dated document.
 - **A handoff**, when the session is ending. The dump, **plus** a new orientation document for whoever
   picks this up next.
 
@@ -27,43 +27,44 @@ Two modes, and you are usually in the first.
 workstreams/YYYY-MM-DD-<thread>/
   YYYY-MM-DD-<thread>.md       routing note — what this thread is. Dated to match the folder.
   orientation/YYYY-MM-DD-HHMM.md   newest wins. Written at handoff.
-  dumps/YYYY-MM-DD-<topic>.md      <- YOUR DUMP GOES HERE
+  dumps/YYYY-MM-DD-HHMM-<topic>.md <- YOUR DUMP GOES HERE
   reference/YYYY-MM-DD-<topic>.md  dated traces from source
 ```
 
 One workstream is **one thread of work** — one path prefix, one agent at a time. A second concurrent thread
-is a **new dated workstream**, not a subfolder — and see step 4a, because opening one is not just a link. Resolve the vault with `lipika vault-config path`;
-no path to it is written here. Full conventions: the vault's `CLAUDE.md`, which a session rooted in a code
+is a **new dated workstream**, not a subfolder; see step 4a. Resolve the vault with
+`lipika vault-config path`. Full conventions: the vault's `CLAUDE.md`, which a session rooted in a code
 project does **not** load automatically — read it if you have not.
 
-**A workstream still in the old task shape** has no `dumps/`. Create `dumps/` and write there; leave every
-existing document exactly where it is. Conversion is lazy and it never moves records.
+**A workstream with no `dumps/`**: create it and write there; leave every existing document where it is.
 
 ## Do
 
 1. **Find the home, name your choice, let the owner redirect.** Usually the most recently touched workstream.
-   A **new dated workstream** when this is a second concurrent thread rather than more of the same one.
+   **A workstream is one question being answered.** When the question has changed, the answer is a new
+   dated workstream — that is the normal path, not the exception, and threads are meant to be short. More
+   of the same one only when it is the same question.
 
    ```bash
    cd "$(lipika vault-config path)" && git log -12 --name-only --pretty=format:'%h %ad %s' --date=short -- workstreams/
    lipika pass-log active --scope workstreams/<ws>     # is anyone else in here?
    ```
 
-   Say it in one breath: *"Dumping into `workstreams/2026-08-21-x/`."* Never interrogate. If an open pass
-   overlaps, say so before you write — a STALE record is an agent that died, not one still working.
+   Say it in one breath: *"Dumping into `workstreams/2026-08-21-x/`."* If an open pass overlaps, say so
+   before you write — a STALE record is an agent that died, not one still working.
 
    ```bash
    lipika pass-log start context-dump "<what you are dumping>" --scope workstreams/<ws> --kind dump
    ```
 
-2. **Write the dump** — `workstreams/<ws>/dumps/YYYY-MM-DD-<topic>.md`, today's date from `date`.
-   Frontmatter: `type` / `status` / `date` / `tags` / `up:`. Terse and factual, for a first-time reader.
+2. **Write the dump** — `workstreams/<ws>/dumps/YYYY-MM-DD-HHMM-<topic>.md`, stamp from `date`. Several
+   dumps a day is normal and same-date names do not sort, so the time is in the name.
+   Frontmatter: `type` / `status` / `date` / `tags` / `up:`.
 
    - **What you did and what came of it** — PR numbers, commit shas, branch names, what is green and what
      is red.
    - **Answer the questions you inherited.** For each open question or warning you touched: resolved (with
-     the evidence), still open, or now understood differently. This is the highest-value thing in a dump —
-     it is what makes the newest document the useful one.
+     the evidence), still open, or now understood differently.
    - **A scannable `## Live items` block** — collected, not scattered through prose, one per line:
 
      `[TYPE] statement — trigger → consequence → dies when <condition> · as-of YYYY-MM-DD`
@@ -71,22 +72,20 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
      - **GATE** — a blocking precondition or ordering. The outage-class risk.
      - **LANDMINE** — breaks silently or burns time, with a known avoidance.
      - **OPEN Q** — unresolved, and agents can work on it.
-     - **ESCALATED** — unresolved, and **only the owner can decide it**. Distinct from OPEN Q on purpose:
-       this is the list a fresh session opens with, so an item routed here reaches a human and an OPEN Q
-       does not.
+     - **ESCALATED** — unresolved, and **only the owner can decide it**. An item routed here reaches a
+       human; an OPEN Q does not.
      - **DEAD END** — ruled out, with the reason. It has no death condition; it fires forever.
 
-     **Every item carries a death condition** — what would make it stop being true. It costs you nothing
-     now and saves the next agent re-reading everything. An item you cannot write one for is usually two.
+     **Every item carries a death condition** — what would make it stop being true. An item you cannot
+     write one for is usually two.
 
      **`as-of` is when the item was last *confirmed*, not last copied.** Carrying an item forward does not
      refresh its date.
    - **State, with its basis.** What landed and how you know: `merged #4131`, `commit a1b2c3d`, `gate
      green`. A draft or open PR has not landed. Asserting judgement instead is fine — say so:
      *judgement: the remaining work no longer describes this thread*. **An unstated basis is the only
-     unacceptable one**, being the one nobody can check later.
-   - **Reusable commands** — the exact incantation, so the next agent re-runs instead of re-deriving. A real
-     script goes in Lipika's `tools/`, not the vault.
+     unacceptable one.**
+   - **Reusable commands** — the exact incantation. A real script goes in Lipika's `tools/`, not the vault.
    - `[[wikilinks]]` to vault docs; literal text for code-repo paths, with the repo named.
 
 3. **Second pass — what did not make it in?** Before you commit: what would a cold-start you need in a
@@ -95,10 +94,10 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
    shape rather than into loose prose.
 
 4. **If this is a handoff, write the next orientation.** `workstreams/<ws>/orientation/YYYY-MM-DD-HHMM.md`
-   — the time is in the name because more than one handoff a day is normal and the newest must sort last.
+   — more than one handoff a day is normal and the newest must sort last.
 
-   Read the previous orientation and your dumps since it, then write a **new** document. Do not edit the
-   old one and do not diff-and-patch it in your head; regeneration is the cheap operation here.
+   Read the previous orientation and your dumps since it, then write a **new** document; do not
+   diff-and-patch the old one in your head.
 
    ```markdown
    ---
@@ -119,28 +118,19 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
    Every carried GATE / LANDMINE / DEAD END / OPEN Q, in the typed shape, each with its own `as-of`.
 
    ## Settled since the last orientation
-   One line per item that left the live set, with its disposition and basis:
-   resolved — <evidence> · dropped — <reason>
+   One line per item whose death condition fired, with the evidence.
 
    ## Recent narrative
    The last handful of dumps, newest first, one or two sentences each, linked.
    ```
 
-   **Every item live in the previous orientation appears in exactly one of those sections.** A silent
-   vanishing is the one failure this document has, and the next session's `pickup` audits for it.
+   **Carry every live item forward.** An item leaves the live set only when its death condition has
+   fired — name which, with the evidence. Do not select: a long set about this thread is not the failure
+   mode, and choosing for the next agent is a call you are the worst placed to make.
 
-   Dropping on judgement is expected — say it is judgement and say why. Requiring evidence to drop
-   anything is how a live set grows forever.
-
-   **You do not have to account for everything.** The dumps are immutable and complete, so an item you
-   leave out is still there for the next agent to find — and `pickup` is handed the list of what you did
-   not carry. Dropping is how the live set stays short enough to fire. Where a disposition is worth
-   writing, reuse the departing item's own words rather than describing what happened to it, so the list
-   the next agent sees is short.
-
-   **A live item states itself.** "See [[2026-08-19-the-thing]]" is a pointer, and a pointer is pull — a
-   warning has to fire at an agent who does not know to look. Link the detail *after* the statement, never
-   instead of it. `## Recent narrative` is the one place a pointer is the content.
+   **A live item states itself.** "See [[2026-08-19-the-thing]]" is a pointer, and a warning has to fire
+   at an agent who does not know to look. Link the detail *after* the statement, never instead of it.
+   `## Recent narrative` is the one place a pointer is the content.
 
 4a. **If you are opening a new thread, its first orientation COPIES what still bears on it.**
 
@@ -151,9 +141,6 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
    ```bash
    lipika orientation-audit workstreams/<new-ws>    # follows `from:` and checks what you carried
    ```
-
-   **A pointer to the parent does not do this job.** An agent picking up the new thread reads one
-   orientation; anything not in it does not fire.
 
 5. **Commit** in the vault, which is its own repo. Stage **specific paths** — never `git add -A`, never a
    bare `commit`, because other sessions write here.
@@ -175,17 +162,14 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
 
 ## Don't
 
-- **Don't edit any record** — not a dump, not a previous orientation, not a `reference/` trace, not
-  `sources/` or `external/`. Correct one by writing a newer document that says so.
-- **Don't edit `architecture/`.** Contradict it in your dump, with the trace behind the contradiction.
-- **Don't move documents.** Nothing is archived and nothing needs to be; a dated folder that stops
-  accruing dumps has already recorded that it finished.
+- **Don't move documents.** Nothing is archived.
 - **Don't write a second live orientation for one thread.** If the work has become two threads, that is a
   second dated workstream, and say so.
 
 ## Voice
 
 Terse and factual, written for a first-time reader who was not in the room. **No agent-local codenames** —
-"Option C", "Track B", "Phase 2", workflow IDs — say what a thing *is*. Filenames `YYYY-MM-DD-topic.md`.
-**Timestamp every metric**: "9 KB at 2026-08-21", never "9 KB", so the next agent reads it as point-in-time
-instead of correcting it. Better still, cite the reference and let a tool answer the number.
+"Option C", "Track B", "Phase 2", workflow IDs — say what a thing *is*. Filenames carry their stamp:
+`YYYY-MM-DD-HHMM-topic.md` for dumps and orientations, `YYYY-MM-DD-topic.md` elsewhere.
+**Timestamp every metric**: "9 KB at 2026-08-21", never "9 KB". Better still, cite the reference and let a
+tool answer the number.

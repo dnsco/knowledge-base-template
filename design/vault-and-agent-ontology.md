@@ -78,8 +78,8 @@ file. It cannot go over budget because you regenerate under a target rather than
 something that was never said; `external/` because rewriting a delivered artifact makes the record
 disagree with what people received; a dump because it is evidence of a moment.
 
-✅ **`architecture/` is the one long-lived edited view, and only the owner writes it.** An agent-authored
-portrait fails worse than a stale one: it becomes the most-linked document in the vault with no dated
+✅ **`architecture/` is the one long-lived edited view, and only the owner writes it.** One written by an agent
+fails worse than a stale one: it becomes the most-linked document in the vault with no dated
 evidence positioned to contradict it, and nothing in the system is placed to disagree with it. Agents
 produce the dated `reference/` traces behind it and **contradict it with them** — which is an ESCALATED
 item, and the loop that keeps it honest.
@@ -89,13 +89,13 @@ item, and the loop that keeps it honest.
 ```
 vault/
   README.md                        VIEW — the index of threads. Regenerated.
-  architecture/<system>.md         VIEW — the owner's portrait. Stable name, no date, as-of <sha>.
+  architecture/<system>.md         VIEW — the owner's. Stable name, no date, as-of <sha>.
   reference/YYYY-MM-DD-<topic>.md  RECORD — a trace from source, cross-thread
   workstreams/
     YYYY-MM-DD-<thread>/
       YYYY-MM-DD-<thread>.md       the routing note. Dated to match the folder.
       orientation/YYYY-MM-DD-HHMM.md   VIEW-as-record. Newest wins.
-      dumps/YYYY-MM-DD-<topic>.md      RECORD
+      dumps/YYYY-MM-DD-HHMM-<topic>.md RECORD — several a day is normal, so it carries the time
       reference/YYYY-MM-DD-<topic>.md  RECORD — a trace, thread-local
   sources/  external/  values/  grand-plans/     RECORD
 ```
@@ -107,6 +107,46 @@ log's prefix partition exactly right rather than approximate.
 is still one document and dumps are read on demand. Forty dumps across three concurrent efforts is already
 too heavy at a fifth the size. **A second concurrent thread is a new dated workstream** — which is why
 there is no task tier, no closure ceremony and no `done/`.
+
+⏳ **A thread is short-lived, and splitting is the metabolism rather than a release valve.** A workstream
+is one question being answered; when the question changes, the answer is a new dated workstream, not more
+of the old one. Carrying every item forward (§5) is safe only because of this — a thread that lives for
+months accumulates a live set nothing bounds, and the retired byte budgets were the wrong fix for the
+right problem. **Selection did not die with per-handoff dropping; it moved to the split**, which is the
+moment with enough information to make the call.
+
+Three things follow, and they are the cost of the bet:
+- **A finished thread's last orientation is its citable summary**, and it is sound as one precisely because
+  nothing will supersede it. This is what other threads reference.
+- **The index carries the navigation**, because there will be many folders. It stops being housekeeping.
+- **Liveness is "accrued a dump recently"** — so most threads are dead most of the time, and any tool that
+  counts threads must exclude the dead ones or it counts mostly noise.
+
+Falsified by threads that keep needing to be merged back, or by a corpus where finding the live thread
+costs more than reading a long orientation would have.
+
+▢ **Three tiers, and only the middle one carries state.**
+
+| tier | what it is | liveness | state | written by |
+|---|---|---|---|---|
+| grand plan | a standing want | none — not started is not dead | none | the owner |
+| **epic** | a large effort actually happening | live · parked · finished | **parked is explicit** | the owner |
+| workstream | one question being answered | accrues, or falls off by date | none | agents |
+
+**An epic can be parked; a workstream simply falls off.** Parking is a decision about a commitment, so it
+belongs where commitments live — a handful of documents a person owns, never the twenty-plus dated folders
+a short-thread regime produces. This is why liveness at the workstream tier needs no status field: the date
+a thread last accrued is the whole answer, and any shelf list at that tier is a second concept that will
+disagree with the first.
+
+**An epic is a document that cites its threads, not a folder containing them** — `epics/<name>.md`, a view,
+regenerated. Threads stay where they are, so no link breaks. A **finished** epic is the citable summary of
+a completed body of work, sound as one for the same reason a dead thread's last orientation is: nothing
+will supersede it.
+
+`workstreams/parked/` is this rule violated — five separate efforts under one prefix, shelved at the
+workstream tier because there was nowhere else to put them, which is also why `architecture-candidates`
+counted them as one voting thread.
 
 ✅ **A split COPIES what still bears on the new thread; it does not point at it.** The new thread's first
 orientation carries the parent's still-live items across, reworded freely and each citing its source, and
@@ -151,9 +191,11 @@ the only thing that says otherwise.
 more. The newest orientation can be thin or wrong and an agent may reach back into dumps; what it may not
 do is treat an older orientation as a rival account of the present.
 
-✅ **Four dispositions at a handoff: carried, resolved with evidence, dropped with a reason, escalated.**
-Every item live in the previous orientation takes exactly one. **Dropping on judgement is expected** —
-requiring evidence to drop anything is how a live set grows forever.
+✅ **Three dispositions at a handoff: carried, resolved with evidence, escalated.** Every item live in
+the previous orientation takes exactly one, and **carried is the default** — an item leaves only when its
+death condition has fired. Selection asks the least-budgeted and least independent agent in the system to
+predict what the next one needs, and a regenerated view costs the same to write at forty items as at ten.
+On trial from 2026-08-21: if orientations stop being readable, selection comes back.
 
 ✅ **Every disposition states its basis: evidence or judgement.** This replaces *never infer completion; a
 marker is the only authority*, which is retired — see §8.
@@ -183,14 +225,13 @@ handoff path.
 agent the items the last orientation carried that this one does not, so it can decide per item whether to
 dig. Matching is deliberately fuzzy, because a carried item is *meant* to be reworded.
 
-**Dropping items is correct, not a defect** (Dennis, 2026-08-21). The dumps behind an orientation are
-immutable and complete, so anything left out is recoverable by an agent that goes and looks — and a live
-set that may only shrink on evidence grows forever, which defeats goal 2. Requiring every item to be
-accounted for reintroduced a losslessness constraint at the orientation layer that this whole design
-removes everywhere else, and it pushed ceremony onto the writing agent to satisfy a check guarding a
-recoverable loss. Archaeology is cheap here; an unreadable push surface is not.
+**Length is not the failure mode** (Dennis, 2026-08-21). Goal 1 fails on a surface full of *another
+thread's* warnings, not on a long one about this thread — which is why the byte budgets are retired (§8)
+and heaviness is thread count. So an uncarried item whose death condition has not fired is a loss, and
+the audit reports it as one. It still does not fail: only the reader can tell a fired death condition
+from a lost item.
 
-✅ **The architecture recommendation is pickup's, not handoff's.** A handoff *infers* a portrait would
+✅ **The architecture recommendation is pickup's, not handoff's.** A handoff *infers* an architecture document would
 help; pickup *feels it* — it is the agent reading cold and discovering the system it must work on is
 described nowhere. `architecture-candidates` is the mechanical half of the same signal.
 
@@ -261,7 +302,7 @@ history rather than rebuild it.
 | A disposition states its basis | Silent inference is the failure; inference itself is not | An unstated basis nobody later needed |
 | One thread per workstream | Two threads under one prefix put two agents on one path with an advisory warning between them | Two concurrent threads sharing an orientation without either being pushed the other's warnings |
 | Every metric carries the date it was taken | Undated figures invite every later agent to correct them | Agents agreeing on an undated figure across a month |
-| The owner writes `architecture/` | An agent-authored portrait is confident, most-linked, and uncontradicted | An agent-written portrait surviving a trace that disagreed with it |
+| The owner writes `architecture/` | One written by an agent is confident, most-linked, and uncontradicted | An agent-written architecture document surviving a trace that disagreed with it |
 | Prose in a definition does not fire; a tool with an exit code does | Every measured instance of a rule silently not firing was fixed by moving it into a tool | A rule holding across several passes on prose alone |
 
 ## 10. Three tool-design rules the set was built on

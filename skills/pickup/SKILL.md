@@ -1,14 +1,12 @@
 ---
 name: pickup
-description: Orient at the start of a session that will touch the knowledge-base vault — the durable cross-session memory for engineering work (a separate git repo / Obsidian vault spanning every project I work on). Reads the current orientation document for the thread being picked up, audits it against the one before it to catch anything that vanished without a disposition, judges how fresh each live item actually is, and opens with what needs the owner's decision. Read-only; it ends in plan mode. Invoke at the start of a session, when resuming work someone else handed off, or when asked to "pick up where we left off", "get oriented", "what's the state of X", or "read the handoff".
+description: Orient at the start of a session that will touch the knowledge-base vault — the durable cross-session memory for engineering work (a separate git repo / Obsidian vault spanning every project I work on). Reads the current orientation document for the thread being picked up, audits it against the one before it to catch anything that vanished without a disposition, judges how fresh each live item actually is, and opens with what needs the owner's decision. Read-only; it asks what the owner wants explored first, then ends in plan mode. Invoke at the start of a session, when resuming work someone else handed off, or when asked to "pick up where we left off", "get oriented", "what's the state of X", or "read the handoff".
 ---
 
 # pickup — orient before you write
 
 The counterpart to `context-dump`. A handoff wrote an orientation; you read it, check it, and say what the
 owner needs to decide. **You write nothing.**
-
-The audit lives here because you have the budget the handing-off agent did not, and no stake in the answer.
 
 **The vocabulary an orientation assumes.** Every vault document is a **record** — dated and never edited,
 corrected only by a newer document: dumps, `reference/` traces, `sources/`, `external/`, and every
@@ -29,8 +27,7 @@ orientation and the index. `architecture/` is a long-lived edited view and the o
    so — that is usually a new thread rather than a wrong guess.
 
 2. **Read the newest orientation, and only that one.**
-   `workstreams/<ws>/orientation/` sorts by name; the last is current. Older ones are records of past
-   moments, not rival accounts of the present. Read one.
+   `workstreams/<ws>/orientation/` sorts by name; the last is current. Read one.
 
 3. **Audit it against its predecessor.**
 
@@ -40,10 +37,9 @@ orientation and the index. `architecture/` is a long-lived edited view and the o
    ```
 
    **This is a recall aid, not a gate, and there is no failure exit.** It hands you the items the last
-   orientation carried that this one does not. The dumps behind them are immutable and complete, so
-   nothing is lost — dropping items is how a live set stays short enough to fire at all. Your job is to
-   decide, per item, whether it bears on the work in front of you and is worth digging into the dumps
-   for. Usually the answer is no. Report what you found either way; do not fix anything by hand.
+   orientation carried that this one does not. Every live item should have been carried, so anything
+   listed here either had its death condition fire — check `## Settled since the last orientation` — or
+   the last handoff lost it. Report which.
 
    **Exit 3 is not a pass.** A thread's first orientation has no predecessor, so nothing was verified —
    including whatever it claims to have carried across from a parent. Say so plainly rather than reporting
@@ -57,35 +53,46 @@ orientation and the index. `architecture/` is a long-lived edited view and the o
    handoffs inherits today's filename and reads as fresh. A stale GATE with a checkable death condition is
    worth one command before you trust it.
 
-5. **Ask whether a portrait is missing.** You are the agent reading cold, so you are the one who feels it:
-   is there a system here you must work on that nothing describes?
+5. **Ask whether the question has changed.** You have just read the whole live set, which no other agent
+   does — a handoff is nearly out of budget and a `scout` is barred from the call. A workstream is one
+   question being answered; if the items are now answering a different one, say so. That is a new dated
+   workstream, and a split is where items stop being carried. Threads are meant to be short, so expect
+   this to be yes more often than it feels like it should be.
+
+6. **Ask whether an architecture document is missing.** You read cold, so you are the one who feels it: is there a
+   system here you must work on that nothing describes?
 
    ```bash
    lipika architecture-candidates    # 0 nothing to recommend · 1 CANDIDATES FOUND, not an error
    ```
 
-   Exit 1 here means it found something. Do not wrap this in `set -e`.
+   Do not wrap this in `set -e`.
 
    The check is mechanical and your own experience is not; report both. **Recommend, never write** —
-   `architecture/` is the owner's, because an agent-authored portrait becomes the most-linked document in
-   the vault with no dated evidence positioned to contradict it. Carry pointers: which system, which
-   traces back it, which dumps disagree, and the question a portrait would answer.
+   `architecture/` is the owner's. Carry pointers: which system, which traces back it, which dumps
+   disagree, and the question an architecture document would answer.
 
-6. **Open with what the owner needs, then enter plan mode.** Your first message is, in this order:
+7. **Open with what the owner needs.** Your first message is, in this order:
 
    - **Needs a decision** — every ESCALATED item. This is the most useful thing you will say; put it first.
    - **Where this is** — two or three sentences, from the orientation. Not a summary of the whole thread.
    - **What the audit found** — drops caught, or that it was clean, with the exit code.
    - **Stale live items** — anything whose `as-of` argues it should be re-checked before being relied on.
-   - **A missing portrait**, if you found one.
+   - **A missing architecture document**, if you found one.
+   - **That this has become two threads**, if it has.
 
-   Then call `EnterPlanMode`. Nothing is written yet and nothing is agreed; the plan is where that
-   happens.
+8. **Ask what the owner wants explored first, then enter plan mode.** Ask before a plan has formed, not
+   after. This asks for an agenda, not for permission.
+
+   **Carry your findings into their answer rather than dropping them.** When the answer redirects the
+   work, say which findings still bear on it.
+
+   Then call `EnterPlanMode`.
 
 ## Don't
 
-- **Don't read every dump.** The orientation exists so you do not have to. Reach into one for evidence
-  behind a specific item, not to reconstruct the story.
+- **Don't read every dump.** Reach into one for evidence behind a specific item, not to reconstruct the
+  story.
 - **Don't read two orientations as two accounts of now.** The older one is a record of a past moment.
 - **Don't fix what the audit found.** You are read-only. It goes in your report, and into your dump later.
 - **Don't write, move or edit anything** — no records, no views, and not `architecture/`.
@@ -93,7 +100,6 @@ orientation and the index. `architecture/` is a long-lived edited view and the o
 
 ## When there is no orientation
 
-A workstream still in the old task shape, or a thread nobody has handed off yet, has no `orientation/`.
-Say so plainly, read the routing note and the newest two or three dumps instead, and report that the first
-handoff out of this session will create one. Do not build one yourself: it would be a view written by
-someone who has not done the work.
+A thread nobody has handed off yet has no `orientation/`. Say so plainly, read the routing note and the
+newest two or three dumps instead, and report that the first handoff out of this session will create one.
+Do not build one yourself: it would be a view written by someone who has not done the work.

@@ -41,13 +41,13 @@ check, a dump written today has not had time to drift.
 ```
 <vault>/
   README.md                        VIEW — the index of threads, regenerated
-  architecture/<system>.md         VIEW — the owner's portrait. Stable name, no date, as-of <sha>
+  architecture/<system>.md         VIEW — the owner's. Stable name, no date, as-of <sha>
   reference/YYYY-MM-DD-<topic>.md  RECORD — a trace from source, cross-thread
   workstreams/
     YYYY-MM-DD-<thread>/
       YYYY-MM-DD-<thread>.md       routing note, dated to match the folder
       orientation/YYYY-MM-DD-HHMM.md   newest wins
-      dumps/YYYY-MM-DD-<topic>.md      immutable
+      dumps/YYYY-MM-DD-HHMM-<topic>.md immutable
       reference/YYYY-MM-DD-<topic>.md  dated traces, thread-local
   sources/  external/  values/  grand-plans/
 ```
@@ -82,10 +82,10 @@ one shape:
 - **An item states itself.** "See `[[some-dump]]`" is a pointer, and a pointer is pull; link the detail
   after the statement, never instead of it.
 
-**Four dispositions at a handoff: carried, resolved with evidence, dropped with a reason, escalated.**
-Every item live in the previous orientation takes exactly one, and **every disposition states its basis** —
-evidence, or judgement, said out loud. Dropping on judgement is expected; requiring evidence to drop
-anything is how a live set grows forever. `lipika orientation-audit` catches what vanished in silence.
+**Three dispositions at a handoff: carried, resolved with evidence, escalated.** Every item live in the
+previous orientation takes exactly one, and **carried is the default** — an item leaves only when its
+death condition has fired, and every disposition states its basis. Do not select for the next agent:
+length is not the failure mode. `lipika orientation-audit` catches what vanished in silence.
 
 **Recency is a prior, not a rule.** More recent supersedes older and is trusted more, but the newest
 document can be thin or wrong and you may reach back. What you may not do is read an older orientation as
@@ -93,7 +93,8 @@ a rival account of the present.
 
 ## Conventions
 
-- **Filenames** `YYYY-MM-DD-topic.md`; `architecture/` and `values/` skip the date.
+- **Filenames** `YYYY-MM-DD-topic.md`, and `YYYY-MM-DD-HHMM-topic.md` for dumps and orientations, where
+  several a day is normal and same-date names do not sort. `architecture/` and `values/` skip the date.
 - **Frontmatter** — `type` / `status` / `date` / `tags`, plus `up:` and `from:` where they apply.
 - **Links** — `[[wikilinks]]` inside the vault; code paths as literal text, with the repo named when
   ambiguous.

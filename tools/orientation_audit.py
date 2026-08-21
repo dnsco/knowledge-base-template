@@ -7,11 +7,13 @@ WHY THIS EXISTS
   again, and nothing in the document says so. A register that is edited leaves a diff; a document
   that is regenerated leaves nothing.
 
-  This is NOT a losslessness gate and it does not fail a handoff. The dumps behind an orientation are
-  immutable and complete, so anything left out is still there to be found -- and dropping things is how
-  a live set stays short enough to fire. What this tool does is hand the incoming agent a short list of
-  what the last orientation carried that this one does not, so it can decide, per item, whether to go and
-  dig. Archaeology is cheap here; a live set that grows forever is not.
+  Carried is the default: an item leaves the live set only when its death condition has fired. So an
+  item listed here either had that happen -- recorded in `## Settled since the last orientation` -- or the
+  handoff lost it.
+
+  It still does not fail a handoff, because only a reader can tell those two apart, and the dumps behind
+  an orientation are immutable, so a lost item is still there to be found. What this tool does is hand the
+  incoming agent the short list and let it report which case each one is.
 
   It runs at PICKUP, not at handoff. The handing-off agent is nearly out of budget and auditing its
   own work; the fresh one has a full window and no stake in the answer.
