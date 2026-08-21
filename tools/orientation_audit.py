@@ -43,7 +43,9 @@ EMPTY_ITEM = re.compile(r"^\s*\*{0,2}(none|nothing|n/a|—|-)\.?\*{0,2}\s*$", re
 ACCOUNTED_SECTIONS = LIVE_SECTIONS + ("settled since", "settled", "resolved", "dropped")
 
 AS_OF = re.compile(r"as[- ]of\s+(\d{4}-\d{2}-\d{2})", re.I)
-DIES_WHEN = re.compile(r"\bdies when\b", re.I)
+# "dies when X", but also "dies never" and "dies with the landmine above" -- the clause is
+# the point, not one phrasing of it.
+DIES_WHEN = re.compile(r"\bdies\s+\w", re.I)
 # Scaffolding every item carries. Left in, it is shared vocabulary that inflates the overlap
 # between two items that have nothing to do with each other -- measured on the first fixture, a
 # deleted LANDMINE scored 43% against a successor that did not mention it.
