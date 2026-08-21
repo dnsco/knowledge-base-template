@@ -36,12 +36,14 @@ orientation and the index. `architecture/` is a long-lived edited view and the o
 
    ```bash
    lipika orientation-audit workstreams/<ws>
-   # 0 checked and clean · 1 judge these · 2 a silent drop · 3 NOTHING WAS CHECKED
+   # 0 checked and clean · 1 something to look at · 3 NOTHING WAS CHECKED
    ```
 
-   Every item live in the previous orientation must appear as carried, resolved, dropped or escalated. A
-   silent disappearance is the one failure this document class has. Report what the check found; do not
-   fix it by hand — the correction goes in your own dump later.
+   **This is a recall aid, not a gate, and there is no failure exit.** It hands you the items the last
+   orientation carried that this one does not. The dumps behind them are immutable and complete, so
+   nothing is lost — dropping items is how a live set stays short enough to fire at all. Your job is to
+   decide, per item, whether it bears on the work in front of you and is worth digging into the dumps
+   for. Usually the answer is no. Report what you found either way; do not fix anything by hand.
 
    **Exit 3 is not a pass.** A thread's first orientation has no predecessor, so nothing was verified —
    including whatever it claims to have carried across from a parent. Say so plainly rather than reporting

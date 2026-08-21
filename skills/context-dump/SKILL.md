@@ -132,14 +132,11 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
    Dropping on judgement is expected — say it is judgement and say why. Requiring evidence to drop
    anything is how a live set grows forever.
 
-   **A disposition line must reuse the departing item's own words**, not describe what happened to it.
-   The audit matches on content, so *"carried, restated — the relevant-fraction question, which said it
-   had never been measured"* is findable and *"restated wholesale; only 5 of 18 words survive"* is not.
-   Measured 2026-08-21: the second wording scored 11% and the item read as a silent drop.
-
-   This matters most for an item whose **state changed enough that you rewrote it wholesale**. Nothing
-   distinguishes that from a deletion except your saying so — a threshold cannot: on the first real audit
-   a genuinely deleted item scored 20% and a carried-but-restated one 28%, eight points apart.
+   **You do not have to account for everything.** The dumps are immutable and complete, so an item you
+   leave out is still there for the next agent to find — and `pickup` is handed the list of what you did
+   not carry. Dropping is how the live set stays short enough to fire. Where a disposition is worth
+   writing, reuse the departing item's own words rather than describing what happened to it, so the list
+   the next agent sees is short.
 
    **A live item states itself.** "See [[2026-08-19-the-thing]]" is a pointer, and a pointer is pull — a
    warning has to fire at an agent who does not know to look. Link the detail *after* the statement, never

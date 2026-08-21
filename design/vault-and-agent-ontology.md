@@ -179,11 +179,16 @@ independent reader in the system — nearly out of room, and auditing its own wo
 window and no stake. A bad handoff is caught one session later instead of never, and nothing blocks on the
 handoff path.
 
-✅ **`orientation-audit` is the gate.** Every item live in the previous orientation must appear in the
-current one as carried, or be recorded as resolved, dropped or escalated. **A silent disappearance is the
-one failure this document class has**, and it is the exact price of regenerating rather than editing: an
-edited register leaves a diff, a regenerated document leaves nothing. Matching is deliberately fuzzy,
-because a carried item is *meant* to be reworded.
+✅ **`orientation-audit` is a recall aid, not a gate**, and it has no failure exit. It hands the incoming
+agent the items the last orientation carried that this one does not, so it can decide per item whether to
+dig. Matching is deliberately fuzzy, because a carried item is *meant* to be reworded.
+
+**Dropping items is correct, not a defect** (Dennis, 2026-08-21). The dumps behind an orientation are
+immutable and complete, so anything left out is recoverable by an agent that goes and looks — and a live
+set that may only shrink on evidence grows forever, which defeats goal 2. Requiring every item to be
+accounted for reintroduced a losslessness constraint at the orientation layer that this whole design
+removes everywhere else, and it pushed ceremony onto the writing agent to satisfy a check guarding a
+recoverable loss. Archaeology is cheap here; an unreadable push surface is not.
 
 ✅ **The architecture recommendation is pickup's, not handoff's.** A handoff *infers* a portrait would
 help; pickup *feels it* — it is the agent reading cold and discovering the system it must work on is
@@ -252,7 +257,7 @@ history rather than rebuild it.
 | Every document is a record or a view | The maintenance bill was entirely the third class | A document that must be both, and stays correct |
 | A record is never edited | It is evidence of a moment; a later moment gets a later document | An edited record nobody had to reconcile |
 | A view is regenerated, never patched | Patching reintroduces surgical discipline and its whole toolchain | A patched view that stayed true over months |
-| Every item live in one orientation is disposed of in the next | Regeneration leaves no diff, so a silent drop is invisible | A drop nobody needed to have recorded |
+| An item left out of an orientation stays recoverable from the dumps | Records are immutable and complete, so archaeology is always available | A dropped item that could not be found again |
 | A disposition states its basis | Silent inference is the failure; inference itself is not | An unstated basis nobody later needed |
 | One thread per workstream | Two threads under one prefix put two agents on one path with an advisory warning between them | Two concurrent threads sharing an orientation without either being pushed the other's warnings |
 | Every metric carries the date it was taken | Undated figures invite every later agent to correct them | Agents agreeing on an undated figure across a month |
@@ -266,12 +271,12 @@ history rather than rebuild it.
   recon commands; a verifier reported "nothing changed" nine times having read no diff. Every one was
   fixed by moving the rule into a tool with an exit code. A definition is also a system prompt paid on
   **every** invocation, so a tool is the cheaper end as well.
-- **When two cases cannot be separated by a threshold, do not invent one.** Measured 2026-08-21 on the
-  first real audit: a genuinely deleted item scored 20% content-word overlap and an item that was carried
-  but rewritten wholesale scored 28%. Eight points on two data points is overfitting, and the cost of
-  getting it wrong is the one failure the check exists to catch. The tool stayed strict and the resolution
-  moved into a convention — a disposition line reuses the departing item's own words — which is checkable
-  by the same matcher and costs the author one sentence.
+- **When two cases cannot be separated by a threshold, ask whether the distinction matters.** Measured
+  2026-08-21: a genuinely deleted item scored 20% content-word overlap and one carried-but-rewritten
+  scored 28%. Eight points is not a threshold. The first answer was a convention forcing the author to
+  word dispositions so the matcher could find them — ceremony, to defend a distinction that turned out not
+  to matter, since both outcomes lead the reader to the same cheap action. The check became advisory
+  instead. **A check that cannot separate its cases may be measuring the wrong thing.**
 - **A check that stays red on correct content gets dismissed.** Give every new check a hand-audited red
   case and a green case. Measured 2026-08-21 while building `orientation-audit`: its first matcher scored
   a deleted item at 43% against a successor that never mentioned it, because it compared each item to the

@@ -7,19 +7,24 @@ WHY THIS EXISTS
   again, and nothing in the document says so. A register that is edited leaves a diff; a document
   that is regenerated leaves nothing.
 
-  So the guarantee is not losslessness (the dumps behind it are immutable and intact) but
-  DISPOSITION: every item that was live must appear in the successor as carried, or be recorded as
-  resolved, dropped or escalated. A drop is fine -- an unstated drop is not.
+  This is NOT a losslessness gate and it does not fail a handoff. The dumps behind an orientation are
+  immutable and complete, so anything left out is still there to be found -- and dropping things is how
+  a live set stays short enough to fire. What this tool does is hand the incoming agent a short list of
+  what the last orientation carried that this one does not, so it can decide, per item, whether to go and
+  dig. Archaeology is cheap here; a live set that grows forever is not.
 
   It runs at PICKUP, not at handoff. The handing-off agent is nearly out of budget and auditing its
   own work; the fresh one has a full window and no stake in the answer.
 
 CONTRACT
   exit 0  checked, and every prior item is accounted for
-  exit 1  matched on prose alone, or an item carries no `as-of` -- judge these, one line each
-  exit 2  an item vanished with no trace in the successor -- a silent drop
+  exit 1  something to look at -- an item not carried forward, a weak match, a missing `as-of`
   exit 3  NOTHING WAS CHECKED -- no orientation, or no predecessor to check against
   exit 5  bad invocation
+
+  There is deliberately no failure exit. An earlier version made an uncarried item exit 2, treating it as
+  a silent drop; that reintroduced a losslessness constraint the whole design removes, and it pushed
+  ceremony onto the writing agent to satisfy a check guarding a recoverable loss.
 
   Exit 3 exists because 0 was answering two different questions. A first orientation has no
   predecessor, so it passed silently and looked identical to a clean audit at the exit code --
@@ -232,8 +237,7 @@ def main(argv):
     print(f"current   {os.path.relpath(cur_p, vault)}")
     print(f"{'parent  ' if split else 'previous'}  {os.path.relpath(prev_p, vault)}")
     if split:
-        print("  a split: items that do not bear on this thread may stay behind, but each is a "
-              "judgement to state, not a silence.")
+        print("  a split: items that do not bear on this thread are meant to stay behind.")
 
     prior = live_items(prev)
     if not prior:
@@ -255,26 +259,22 @@ def main(argv):
           f"{len(prior) - len(missing)} accounted for.")
 
     if missing and split:
-        print("\nNOT CARRIED FROM THE PARENT — confirm each was left behind deliberately:")
+        print("\nNOT CARRIED FROM THE PARENT — dig into its dumps if any of these bear on your work:")
         for item, detail in missing:
             print(f"  · {markers.one_line(item)}")
     elif missing:
-        print("\nDROPPED WITHOUT A DISPOSITION — no trace in the successor:")
+        print("\nNOT CARRIED FORWARD — the dumps still hold these; dig if any bear on your work:")
         for item, detail in missing:
             print(f"  · {markers.one_line(item)}")
             print(f"      {detail}")
     if weak:
-        print("\nMATCHED ON PROSE ALONE — judge each in writing:")
+        print("\nMATCHED ON PROSE ALONE — probably the same item, reworded. Glance and move on:")
         for item, detail in weak:
             print(f"  · {markers.one_line(item)}")
             print(f"      {detail}")
 
     unstated = report_freshness(live_items(cur), today, args.stale_days)
 
-    # A same-thread drop is never right in silence. A split leaving an item behind usually IS
-    # right, and only the author knows which -- so it asks rather than fails.
-    if missing and not split:
-        return 2
     if missing or weak or unstated:
         return 1
     print("\nclean: every prior item is carried or its disposition is recorded.")
