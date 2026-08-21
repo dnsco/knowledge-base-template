@@ -34,8 +34,11 @@ import markers                                    # noqa: E402
 import vault_config                               # noqa: E402
 
 ORIENT_DOC = re.compile(r"^\d{4}-\d{2}-\d{2}(-\d{4})?.*\.md$")
+FROM = re.compile(r"^from:\s*\"?\[\[([^\]\n|#]+)", re.M)
 
 LIVE_SECTIONS = ("live items", "needs the owner")
+# "- none" under a heading is an author saying the section is empty, not an item.
+EMPTY_ITEM = re.compile(r"^\s*\*{0,2}(none|nothing|n/a|—|-)\.?\*{0,2}\s*$", re.I)
 # The successor accounts for an item by carrying it OR by recording where it went.
 ACCOUNTED_SECTIONS = LIVE_SECTIONS + ("settled since", "settled", "resolved", "dropped")
 
@@ -54,6 +57,30 @@ def substance(item):
     return SCAFFOLD.sub(" ", item)
 
 
+def parent_of(text, vault):
+    """The thread this one split from, as a workstream directory, or None.
+
+    A split is where the push guarantee is won or lost: a new thread's first orientation must COPY
+    what still bears on it, because an agent reading one document does not follow a pointer it was
+    not told it needed.
+    """
+    m = FROM.search(text)
+    if not m:
+        return None
+    name = m.group(1).strip()
+    cand = os.path.join(vault, "workstreams", name)
+    if os.path.isdir(cand):
+        return cand
+    ws_root = os.path.join(vault, "workstreams")
+    if os.path.isdir(ws_root):
+        for entry in sorted(os.listdir(ws_root)):
+            if entry == name or entry.endswith(name):
+                d = os.path.join(ws_root, entry)
+                if os.path.isdir(d):
+                    return d
+    return None
+
+
 def orientations(ws_dir):
     """Every orientation under the workstream, oldest first. Names sort chronologically."""
     d = os.path.join(ws_dir, "orientation")
@@ -67,6 +94,8 @@ def live_items(text):
     out, seen = [], set()
     for _, _, t in markers.list_items(text, LIVE_SECTIONS):
         key = re.sub(r"\s+", " ", t).strip()
+        if EMPTY_ITEM.match(key):
+            continue
         if key and key not in seen:
             seen.add(key)
             out.append(t)
@@ -173,18 +202,28 @@ def main(argv):
         print(f"no orientation/ under {args.scope} — nothing handed off yet.")
         print("The first handoff out of this session creates one.")
         return 0
+    split = False
     if len(docs) == 1:
-        print(f"one orientation, no predecessor to audit: {os.path.relpath(docs[0], vault)}")
         cur = open(docs[0], encoding="utf-8").read()
-        report_freshness(live_items(cur), today, args.stale_days)
-        return 0
-
-    prev_p, cur_p = docs[-2], docs[-1]
+        parent = parent_of(cur, vault)
+        pdocs = orientations(parent) if parent else []
+        if not pdocs:
+            print(f"one orientation, no predecessor to audit: {os.path.relpath(docs[0], vault)}")
+            if parent:
+                print(f"  (names a parent, {os.path.basename(parent)}, which has no orientation)")
+            report_freshness(live_items(cur), today, args.stale_days)
+            return 0
+        prev_p, cur_p, split = pdocs[-1], docs[0], True
+    else:
+        prev_p, cur_p = docs[-2], docs[-1]
     prev = open(prev_p, encoding="utf-8").read()
     cur = open(cur_p, encoding="utf-8").read()
 
     print(f"current   {os.path.relpath(cur_p, vault)}")
-    print(f"previous  {os.path.relpath(prev_p, vault)}")
+    print(f"{'parent  ' if split else 'previous'}  {os.path.relpath(prev_p, vault)}")
+    if split:
+        print("  a split: items that do not bear on this thread may stay behind, but each is a "
+              "judgement to state, not a silence.")
 
     prior = live_items(prev)
     if not prior:
@@ -205,7 +244,11 @@ def main(argv):
     print(f"\n{len(prior)} item(s) live in the previous orientation; "
           f"{len(prior) - len(missing)} accounted for.")
 
-    if missing:
+    if missing and split:
+        print("\nNOT CARRIED FROM THE PARENT — confirm each was left behind deliberately:")
+        for item, detail in missing:
+            print(f"  · {markers.one_line(item)}")
+    elif missing:
         print("\nDROPPED WITHOUT A DISPOSITION — no trace in the successor:")
         for item, detail in missing:
             print(f"  · {markers.one_line(item)}")
@@ -218,9 +261,11 @@ def main(argv):
 
     unstated = report_freshness(live_items(cur), today, args.stale_days)
 
-    if missing:
+    # A same-thread drop is never right in silence. A split leaving an item behind usually IS
+    # right, and only the author knows which -- so it asks rather than fails.
+    if missing and not split:
         return 2
-    if weak or unstated:
+    if missing or weak or unstated:
         return 1
     print("\nclean: every prior item is carried or its disposition is recorded.")
     return 0

@@ -36,7 +36,7 @@ workstreams/YYYY-MM-DD-<thread>/
 ```
 
 One workstream is **one thread of work** — one path prefix, one agent at a time. A second concurrent thread
-is a **new dated workstream and a link**, not a subfolder. Resolve the vault with `lipika vault-config path`;
+is a **new dated workstream**, not a subfolder — and see step 4a, because opening one is not just a link. Resolve the vault with `lipika vault-config path`;
 no path to it is written here. Full conventions: the vault's `CLAUDE.md`, which a session rooted in a code
 project does **not** load automatically — read it if you have not.
 
@@ -112,6 +112,7 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
    status: current
    date: YYYY-MM-DD
    up: "[[YYYY-MM-DD-<thread>]]"
+   from: "[[YYYY-MM-DD-<parent-thread>]]"   # only on a thread's FIRST orientation
    ---
 
    ## Where this is
@@ -137,6 +138,27 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
 
    Dropping an item on judgement is fine and expected — say it is judgement and say why. Requiring
    evidence to drop anything is how a live set grows forever.
+
+   **Write live items so they stand alone.** "See [[2026-08-19-the-thing]]" is not an item — it is a
+   pointer, and a pointer is pull. The whole reason this document exists is that a warning has to fire at
+   an agent who does not know to go looking for it. State the item; link the detail *after* the statement,
+   never instead of it. The `## Recent narrative` section is the one place a pointer is the content,
+   because narrative genuinely is something you go and read.
+
+4a. **If you are opening a new thread, its first orientation COPIES what still bears on it.**
+
+   A split is not a link. Read the parent thread's current orientation and copy across every live item
+   that bears on the new thread — reworded freely, each citing the source it came from — then name the
+   parent in `from:`. Items that do not bear on it stay behind; that is the whole point of splitting.
+
+   ```bash
+   lipika orientation-audit workstreams/<new-ws>    # follows `from:` and checks what you carried
+   ```
+
+   **A pointer to the parent does not do this job.** An agent picking up the new thread reads one
+   orientation, and anything not in it does not fire. Measured across this system's whole history: every
+   mechanism that relied on someone following a link to find a warning failed, and the ones that put the
+   warning in front of the reader worked.
 
 5. **Commit** in the vault, which is its own repo. Stage **specific paths** — never `git add -A`, never a
    bare `commit`, because other sessions write here.

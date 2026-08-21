@@ -105,8 +105,17 @@ log's prefix partition exactly right rather than approximate.
 
 ✅ **Heaviness is concurrent threads, not bytes.** Two hundred dumps on one thread cost nothing: orientation
 is still one document and dumps are read on demand. Forty dumps across three concurrent efforts is already
-too heavy at a fifth the size. **A second concurrent thread is a new dated workstream and a link** — which
-is also why there is no task tier, no closure ceremony, no carry-across and no `done/`.
+too heavy at a fifth the size. **A second concurrent thread is a new dated workstream** — which is why
+there is no task tier, no closure ceremony and no `done/`.
+
+✅ **A split COPIES what still bears on the new thread; it does not point at it.** The new thread's first
+orientation carries the parent's still-live items across, reworded freely and each citing its source, and
+names the parent in `from:`. Items that do not bear on the new thread stay behind — that is what splitting
+is for. This is the one piece of the retired carry-across that survives, and it survives because the
+*mechanism* was tied to task closure while the *duty* is tied to §1: a pointer is pull, and pull cannot
+fire on an agent who does not know to look. `orientation-audit` follows `from:` and asks about every
+parent item that did not come across — asks rather than fails, because only the author knows what bears on
+the new thread.
 
 ✅ **A thread ends by not being listed as live.** Nothing is archived. A dated folder plus its last dump's
 date already encodes the lifecycle, and leaving it in place is what keeps every inbound link true forever.
@@ -146,6 +155,12 @@ requiring evidence to drop anything is how a live set grows forever.
 
 ✅ **Every disposition states its basis: evidence or judgement.** This replaces *never infer completion; a
 marker is the only authority*, which is retired — see §8.
+
+✅ **A live item states itself; it never merely points.** "See `[[2026-08-19-the-thing]]`" is not an item.
+Goal 2 is that a warning fires unprompted, and an agent reading one document does not follow a link it was
+not told it needed — every mechanism in this system's history that relied on someone following a pointer
+to find a warning failed. Link the detail *after* the statement, never instead of it. **Narrative is the
+exception**, because going and reading it is exactly what it is for.
 
 ## 6. The two skills, and where the audit lives
 
