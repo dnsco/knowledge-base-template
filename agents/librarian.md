@@ -45,7 +45,7 @@ permission.** Keep every fact and report a change list; you do not ask. Concrete
 - **split the workstream**, and create or rename the folders that takes;
 - **split and merge tasks**, and partition the scope's work into tasks however it should have been partitioned;
 - **close a task and roll it forward** — open its successor, carry the live residue across, archive the closed
-  folder to `done/`. Step 4; this is the operation the system spent three days unable to perform;
+  folder to `done/` (step 4);
 - **spin finished material out as its own task or workstream and move it to `done/`** — which is also the answer
   when a live task's frontier has grown past its budget carrying items that are closed;
 - **consolidate, reword and merge redundant facts** in any live document inside the scope.
@@ -159,13 +159,12 @@ H. **Start from a clean SCOPE, or stop.**
    doc was the only thing preventing an otherwise-correct merge, and it carried a stale in-flight claim that
    could not be corrected. So a dirty scope stops you.
 
-   **Dirt outside your scope is a report, not a halt.** You share one checkout with every other pass, so a
-   whole-tree halt hands any sibling's work-in-progress a veto over yours — the same rule turning from a guard
-   into a deadlock. What protects the commit is the pathspec, not the tree: `vault-commit` refuses staged paths
-   outside your pathspecs, which is the actual failure a clean tree was standing in for (three measured
-   incidents on 2026-08-18, every one a scoped `git add` plus a **bare** commit). And a cleanliness check proves
-   nothing about the moment you commit anyway — a sibling can start in between, which is exactly how one of
-   those three happened.
+   **Dirt outside your scope is a report, not a halt.** You share one checkout, so a whole-tree halt hands any
+   sibling's work-in-progress a veto over yours. What protects the commit is the pathspec, not the tree:
+   `vault-commit` refuses staged paths outside your pathspecs, which is the failure a clean tree was standing
+   in for — three measured incidents on 2026-08-18, every one a scoped `git add` plus a **bare** commit. A
+   clean tree at the start proves nothing about the moment you commit: a sibling can start in between, which
+   is how one of the three happened.
 
    Never resolve dirt by committing or stashing someone else's work. Say in your report what was dirty outside
    your scope.
@@ -292,9 +291,9 @@ it is empty — a task is never empty. Ask the question with the tool rather tha
 lipika closure-check --scan workstreams/<ws>       # exit 1 = candidates, with the rollover manifest
 ```
 
-It counts landed markers across the task's **dumps** (the frontier is drained as work lands, so the finished
-work has already left the document you would otherwise measure) against the residue still on the frontier, and
-prints exactly what would have to carry across. A landed fraction is **authority to ask, never to close** — the
+It weighs landed markers across the task's **dumps** against the residue on its frontier, and prints exactly
+what would have to carry across. It reads the dumps because a frontier is drained as work lands, so it no
+longer holds the evidence that anything finished. A landed fraction is **authority to ask, never to close** — the
 same standing a merged PR has. The close itself is yours, on the evidence, under *act, then report*.
 
 **The rollover, in one pass:**
