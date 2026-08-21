@@ -56,9 +56,7 @@ def main():
         import vault_config
         v = vault_config.resolve()
         print(f"  ok       vault -> {v.path}  (via {v.source})")
-        t, s = v.budget("task")
-        print(f"           budgets in force: task target {t}B signal {s}B, "
-              f"frozen tiers {', '.join(v.frozen_tiers)}")
+        print(f"           frozen tiers: {', '.join(v.frozen_tiers)}")
         if not (v.path / ".git").exists():
             print("  WARNING  that vault is not a git repository, so nothing there is recoverable")
             problems += 1

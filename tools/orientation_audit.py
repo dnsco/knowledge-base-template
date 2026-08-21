@@ -31,7 +31,6 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import markers                                    # noqa: E402
-from closure_check import one_line                # noqa: E402
 import vault_config                               # noqa: E402
 
 ORIENT_DOC = re.compile(r"^\d{4}-\d{2}-\d{2}(-\d{4})?.*\.md$")
@@ -152,7 +151,8 @@ def main(argv):
     args = ap.parse_args(argv)
 
     try:
-        vault = args.vault or vault_config.resolve()
+        # resolve() returns a Vault, whose existence is the proof it is one; .path is the str.
+        vault = args.vault or str(vault_config.resolve().path)
     except Exception as e:                                    # noqa: BLE001
         print(f"cannot resolve the vault: {e}", file=sys.stderr)
         return 5
@@ -208,12 +208,12 @@ def main(argv):
     if missing:
         print("\nDROPPED WITHOUT A DISPOSITION — no trace in the successor:")
         for item, detail in missing:
-            print(f"  · {one_line(item)}")
+            print(f"  · {markers.one_line(item)}")
             print(f"      {detail}")
     if weak:
         print("\nMATCHED ON PROSE ALONE — judge each in writing:")
         for item, detail in weak:
-            print(f"  · {one_line(item)}")
+            print(f"  · {markers.one_line(item)}")
             print(f"      {detail}")
 
     unstated = report_freshness(live_items(cur), today, args.stale_days)
@@ -247,15 +247,15 @@ def report_freshness(items, today, stale_days):
     if stale:
         print(f"\nSTALE — as-of is {stale_days}+ days old; re-check before relying on these:")
         for age, t in sorted(stale, reverse=True):
-            print(f"  · {age}d  {one_line(t)}")
+            print(f"  · {age}d  {markers.one_line(t)}")
     if undated:
         print("\nNO as-of — cannot tell how fresh; treat as unconfirmed:")
         for t in undated:
-            print(f"  · {one_line(t)}")
+            print(f"  · {markers.one_line(t)}")
     if no_death:
         print("\nNO death condition — nothing says what would retire these:")
         for t in no_death:
-            print(f"  · {one_line(t)}")
+            print(f"  · {markers.one_line(t)}")
     return bool(undated)
 
 

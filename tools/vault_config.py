@@ -32,7 +32,6 @@ CONFIG SHAPE
   {
     "default": "ai_docs",
     "vaults":  {"ai_docs": "/Users/you/workspace/ai_docs"},
-    "budgets": {"parent_kb": [8, 12], "task_kb": [8, 12], "register_soft_kb": 20},
     # Only the roles somebody WAITS on carry a ceiling. The background roles had 300 s and 480 s
     # and never met either, on any pass ever measured -- and a ceiling nothing meets makes an
     # honest report read as a failure, so one was overridden twice in a single run by an agent
@@ -45,18 +44,9 @@ CONFIG SHAPE
   Named vaults with a default, so a second vault never needs a CLI change. Every key except
   `vaults` is optional and falls back to the constants below.
 
-  **The budget pairs are [target_kb, signal_kb], and they are not all measured against the same
-  thing** — a parent is judged on its NON-register bytes, because a register plus live gates put
-  any real parent permanently over a total-bytes signal, and a check that is permanently red gets
-  read past. A task is judged whole. `register_soft_kb` reports and asks; it never fails. The
-  authority for those semantics is `budget_check.py`, which is where they were measured; this
-  file only carries the numbers so they have one home.
-
-  The defaults below were taken from `budget_check.py` rather than from prose. Writing this file
-  surfaced a live disagreement between the two: the vault's `CLAUDE.md` still says a parent gets
-  12 KB / 16 KB, which the tool superseded because that pair was against total bytes and
-  unreachable by construction. The tool won. That is the argument for a config: one home for a
-  number means one thing to correct.
+  Byte budgets are gone. They measured the wrong quantity: a workstream is heavy when it carries
+  more than one concurrent thread, not when it is large, and a document that is regenerated
+  cannot accumulate its way over a line. `budget_check.py` is retired with them.
 """
 
 import json
@@ -74,11 +64,7 @@ ENV_VAULT = "LIPIKA_VAULT"
 TIER_NAMES = ("workstreams", "grand-plans", "reference", "design",
               "values", "done", "sources", "external", "historical")
 
-#: [target, signal] in KB, from budget_check.py. Parent is against non-register bytes.
-DEFAULT_BUDGETS = {"parent_kb": (8, 12), "task_kb": (8, 12)}
-#: reports and asks, never fails
-DEFAULT_SOFT = {"register_soft_kb": 20}
-DEFAULT_SPANS_S = {"context-dump": 120, "frontier-clerk": 120, "librarian": 300, "curator": 480}
+DEFAULT_SPANS_S = {"context-dump": 120, "pickup": 120}
 DEFAULT_FROZEN_TIERS = ("done", "sources", "external")
 
 
@@ -102,8 +88,6 @@ class Vault:
     path: Path
     name: str
     source: str  # which rung of the chain produced it — for error messages and reports
-    budgets: dict = field(default_factory=lambda: dict(DEFAULT_BUDGETS))
-    soft_kb: dict = field(default_factory=lambda: dict(DEFAULT_SOFT))
     spans_s: dict = field(default_factory=lambda: dict(DEFAULT_SPANS_S))
     frozen_tiers: tuple = DEFAULT_FROZEN_TIERS
 
@@ -113,18 +97,8 @@ class Vault:
     def joined(self, *parts):
         return self.path.joinpath(*parts)
 
-    def budget(self, tier):
-        """(target_bytes, signal_bytes) for 'parent' or 'task'."""
-        target, signal = self.budgets[f"{tier}_kb"]
-        return target * 1024, signal * 1024
-
-    def soft(self, name):
-        """A soft mark in bytes, or None. Soft marks report and ask; they never fail a check."""
-        kb = self.soft_kb.get(f"{name}_soft_kb")
-        return kb * 1024 if kb else None
-
     def span_budget(self, role):
-        """Seconds, or None for a role the budgets deliberately exempt (evals, profiling)."""
+        """Seconds, or None for a role deliberately exempt (evals, profiling)."""
         return self.spans_s.get(role)
 
     def is_frozen(self, relpath):
@@ -187,20 +161,10 @@ def git_main_checkout(start=None):
 
 
 def _tunables(cfg):
-    budgets, soft = dict(DEFAULT_BUDGETS), dict(DEFAULT_SOFT)
-    for k, v in (cfg.get("budgets") or {}).items():
-        if k.endswith("_soft_kb"):
-            if not isinstance(v, (int, float)):
-                raise Unresolved(f"budgets.{k} is a soft mark and must be a single number", code=4)
-            soft[k] = v
-        elif isinstance(v, (list, tuple)) and len(v) == 2:
-            budgets[k] = tuple(v)
-        else:
-            raise Unresolved(f"budgets.{k} must be [target_kb, signal_kb]", code=4)
     spans = dict(DEFAULT_SPANS_S)
     spans.update(cfg.get("spans_s") or {})
     frozen = tuple(cfg.get("frozen_tiers") or DEFAULT_FROZEN_TIERS)
-    return budgets, spans, frozen, soft
+    return spans, frozen
 
 
 def resolve(vault=None, config_path=CONFIG_PATH, cwd=None):
@@ -223,9 +187,8 @@ def resolve(vault=None, config_path=CONFIG_PATH, cwd=None):
                 f"{source} names {p}, which carries {found} of the recognized tier directories "
                 f"({', '.join(TIER_NAMES[:4])}…) and needs {need} — it does not look like a "
                 f"vault", code=3)
-        budgets, spans, frozen, soft = _tunables(cfg)
-        return Vault(path=p, name=name, source=source, budgets=budgets,
-                     spans_s=spans, frozen_tiers=frozen, soft_kb=soft)
+        spans, frozen = _tunables(cfg)
+        return Vault(path=p, name=name, source=source, spans_s=spans, frozen_tiers=frozen)
 
     # 1. explicit
     if vault:
@@ -279,7 +242,7 @@ def _main(argv):
     import argparse
     ap = argparse.ArgumentParser(description=__doc__.strip().splitlines()[0])
     ap.add_argument("what", nargs="?", default="path",
-                    choices=("path", "name", "show", "budgets", "spans"),
+                    choices=("path", "name", "show", "spans"),
                     help="path (default) prints the resolved vault root, for `cd $(…)`")
     add_argument(ap)
     a = ap.parse_args(argv)
@@ -292,13 +255,6 @@ def _main(argv):
         print(v.path)
     elif a.what == "name":
         print(v.name)
-    elif a.what == "budgets":
-        for tier in ("parent", "task"):
-            t, s = v.budget(tier)
-            note = "  (non-register bytes)" if tier == "parent" else ""
-            print(f"{tier:7} target {t}B  signal {s}B{note}")
-        if v.soft("register"):
-            print(f"{'register':7} soft   {v.soft('register')}B  (reports, never fails)")
     elif a.what == "spans":
         for role, s in sorted(v.spans_s.items()):
             print(f"{role:16} {s}s")
@@ -307,10 +263,8 @@ def _main(argv):
         print(f"name    {v.name}")
         print(f"via     {v.source}")
         print(f"frozen  {', '.join(v.frozen_tiers)}")
-        for tier in ("parent", "task"):
-            t, s = v.budget(tier)
-            note = "  (non-register)" if tier == "parent" else ""
-            print(f"budget  {tier:7} target {t}B  signal {s}B{note}")
+        for role, sec in sorted(v.spans_s.items()):
+            print(f"span    {role:16} {sec}s")
     return 0
 
 

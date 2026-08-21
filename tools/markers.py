@@ -160,3 +160,9 @@ def list_items(text, sections=None):
     if buf:
         items.append(buf)
     return [tuple(i) for i in items]
+
+
+def one_line(text, width=96):
+    """A list item collapsed to one printable line, for a report."""
+    t = re.sub(r"\s+", " ", text).strip()
+    return t if len(t) <= width else t[:width - 1] + "\u2026"
