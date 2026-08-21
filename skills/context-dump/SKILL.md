@@ -16,14 +16,10 @@ Two modes, and you are usually in the first.
 **Every document in the vault is a record or a view.**
 
 - **A record is never edited.** Dumps, `reference/` traces, `sources/`, `external/`, and every orientation
-  already written. Correct one by writing a newer one — it supersedes, and the old one stays true about the
-  moment it describes.
+  already written. Correct one by writing a newer one.
 - **A view is regenerated wholesale, never patched.** An orientation is a view written *as* a record: fresh
-  each handoff, newest wins. It is safe to rewrite from scratch precisely because the records behind it are
-  intact.
-- **`architecture/` is the owner's.** You may contradict it with a dated trace. You do not edit it.
-
-So there is nothing here you can damage by adding, and nothing you are allowed to change by hand.
+  each handoff, newest wins.
+- **`architecture/` is the owner's.** Contradict it with a dated trace; never edit it.
 
 ## Shape
 
@@ -54,7 +50,7 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
    ```
 
    Say it in one breath: *"Dumping into `workstreams/2026-08-21-x/`."* Never interrogate. If an open pass
-   overlaps, say so before you write; a STALE record is an agent that died, not one still working.
+   overlaps, say so before you write — a STALE record is an agent that died, not one still working.
 
    ```bash
    lipika pass-log start context-dump "<what you are dumping>" --scope workstreams/<ws> --kind dump
@@ -65,10 +61,9 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
 
    - **What you did and what came of it** — PR numbers, commit shas, branch names, what is green and what
      is red.
-   - **Answer the questions you inherited.** You opened with an orientation carrying open questions and
-     live warnings. Say what happened to each one you touched: resolved (with the evidence), still open,
-     or now understood differently. This is what makes the newest document the most useful one, and it is
-     the single highest-value thing in a dump.
+   - **Answer the questions you inherited.** For each open question or warning you touched: resolved (with
+     the evidence), still open, or now understood differently. This is the highest-value thing in a dump —
+     it is what makes the newest document the useful one.
    - **A scannable `## Live items` block** — collected, not scattered through prose, one per line:
 
      `[TYPE] statement — trigger → consequence → dies when <condition> · as-of YYYY-MM-DD`
@@ -81,16 +76,15 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
        does not.
      - **DEAD END** — ruled out, with the reason. It has no death condition; it fires forever.
 
-     **Every item carries a death condition** — what would make it stop being true. Writing it costs you
-     nothing now, with the context in hand, and without it the next agent cannot decide whether the item is
-     still live without re-reading everything. An item you cannot write one for is usually two items.
+     **Every item carries a death condition** — what would make it stop being true. It costs you nothing
+     now and saves the next agent re-reading everything. An item you cannot write one for is usually two.
 
-     **`as-of` is when the item was last *confirmed*, not when it was last copied.** Carrying an item
-     forward does not refresh its date.
-   - **State, with its basis.** Say what landed and how you know: `merged #4131`, `commit a1b2c3d`, `gate
-     green`. A draft or an open PR has not landed. Where you are asserting judgement rather than evidence,
-     say that instead — *judgement: the remaining work no longer describes this thread*. Both are
-     acceptable; an unstated basis is not, because it is the one thing nobody can check later.
+     **`as-of` is when the item was last *confirmed*, not last copied.** Carrying an item forward does not
+     refresh its date.
+   - **State, with its basis.** What landed and how you know: `merged #4131`, `commit a1b2c3d`, `gate
+     green`. A draft or open PR has not landed. Asserting judgement instead is fine — say so:
+     *judgement: the remaining work no longer describes this thread*. **An unstated basis is the only
+     unacceptable one**, being the one nobody can check later.
    - **Reusable commands** — the exact incantation, so the next agent re-runs instead of re-deriving. A real
      script goes in Lipika's `tools/`, not the vault.
    - `[[wikilinks]]` to vault docs; literal text for code-repo paths, with the repo named.
@@ -103,8 +97,8 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
 4. **If this is a handoff, write the next orientation.** `workstreams/<ws>/orientation/YYYY-MM-DD-HHMM.md`
    — the time is in the name because more than one handoff a day is normal and the newest must sort last.
 
-   Read the previous orientation and your own dumps since it. Then write a **new** document; do not edit
-   the old one, and do not diff-and-patch it in your head. Regeneration is the cheap operation here.
+   Read the previous orientation and your dumps since it, then write a **new** document. Do not edit the
+   old one and do not diff-and-patch it in your head; regeneration is the cheap operation here.
 
    ```markdown
    ---
@@ -132,18 +126,15 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
    The last handful of dumps, newest first, one or two sentences each, linked.
    ```
 
-   **Every item that was live in the previous orientation appears in exactly one of those sections.** An
-   item that silently vanishes is the one failure this document has; the next session's `pickup` audits
-   for exactly that, so a drop you record honestly costs nothing and a drop you hide gets caught anyway.
+   **Every item live in the previous orientation appears in exactly one of those sections.** A silent
+   vanishing is the one failure this document has, and the next session's `pickup` audits for it.
 
-   Dropping an item on judgement is fine and expected — say it is judgement and say why. Requiring
-   evidence to drop anything is how a live set grows forever.
+   Dropping on judgement is expected — say it is judgement and say why. Requiring evidence to drop
+   anything is how a live set grows forever.
 
-   **Write live items so they stand alone.** "See [[2026-08-19-the-thing]]" is not an item — it is a
-   pointer, and a pointer is pull. The whole reason this document exists is that a warning has to fire at
-   an agent who does not know to go looking for it. State the item; link the detail *after* the statement,
-   never instead of it. The `## Recent narrative` section is the one place a pointer is the content,
-   because narrative genuinely is something you go and read.
+   **A live item states itself.** "See [[2026-08-19-the-thing]]" is a pointer, and a pointer is pull — a
+   warning has to fire at an agent who does not know to look. Link the detail *after* the statement, never
+   instead of it. `## Recent narrative` is the one place a pointer is the content.
 
 4a. **If you are opening a new thread, its first orientation COPIES what still bears on it.**
 
@@ -156,9 +147,7 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
    ```
 
    **A pointer to the parent does not do this job.** An agent picking up the new thread reads one
-   orientation, and anything not in it does not fire. Measured across this system's whole history: every
-   mechanism that relied on someone following a link to find a warning failed, and the ones that put the
-   warning in front of the reader worked.
+   orientation; anything not in it does not fire.
 
 5. **Commit** in the vault, which is its own repo. Stage **specific paths** — never `git add -A`, never a
    bare `commit`, because other sessions write here.
@@ -167,8 +156,8 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
    cd "$(lipika vault-config path)" && lipika vault-commit -m "…" -- <your paths>
    ```
 
-   **Never change HEAD.** No `git checkout -b`: the checkout is shared, and creating a branch moves HEAD
-   for every other session in it. Don't push unless asked.
+   **Never change HEAD.** No `git checkout -b` — the checkout is shared, so a branch moves HEAD for every
+   session in it. Don't push unless asked.
 
 6. **Close the pass.**
 
@@ -176,8 +165,7 @@ existing document exactly where it is. Conversion is lazy and it never moves rec
    lipika pass-log stop context-dump "<the dump you wrote>" --result incremental
    ```
 
-   `--result aborted` if you did not write. An unclosed `start` reads to the next agent as someone still
-   working in here.
+   `--result aborted` if you did not write. An unclosed `start` reads as someone still working in here.
 
 ## Don't
 

@@ -113,7 +113,9 @@ orientation carries the parent's still-live items across, reworded freely and ea
 names the parent in `from:`. Items that do not bear on the new thread stay behind — that is what splitting
 is for. This is the one piece of the retired carry-across that survives, and it survives because the
 *mechanism* was tied to task closure while the *duty* is tied to §1: a pointer is pull, and pull cannot
-fire on an agent who does not know to look. `orientation-audit` follows `from:` and asks about every
+fire on an agent who does not know to look. Measured across this system's history, every mechanism that
+relied on someone following a link to find a warning failed, and every one that put the warning in front
+of the reader worked. `orientation-audit` follows `from:` and asks about every
 parent item that did not come across — asks rather than fails, because only the author knows what bears on
 the new thread.
 

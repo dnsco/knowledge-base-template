@@ -19,13 +19,13 @@ Read the vault's `CLAUDE.md` first. Resolve the vault with `lipika vault-config 
 **Every document is a record or a view.**
 
 - **A record is never edited.** Dumps, `reference/` traces, `sources/`, `external/`, and every
-  orientation already written. It is corrected by a newer document, never by a change to it.
-- **A view is regenerated wholesale, never patched.** The vault index is a view. So is each thread's
-  current orientation, which is **not yours** — a handoff writes it.
-- **`architecture/` is the owner's.** You may repair a link inside one. You may not write or reword one.
+  orientation already written. Corrected by a newer document, never by a change to it.
+- **A view is regenerated wholesale, never patched.** The index is yours; a thread's current orientation
+  is **not** — a handoff writes it.
+- **`architecture/` is the owner's.** Repair a link inside one; never write or reword one.
 
-You have full autonomy inside your surfaces and you do not ask. You act and report a change list, one
-line per change with how to reverse it.
+Full autonomy inside your surfaces, and you do not ask: act, then report a change list, one line per
+change with how to reverse it.
 
 ## Do
 
@@ -37,10 +37,10 @@ line per change with how to reverse it.
    lipika pass-log start curator "<what you are doing>" --scope . --kind curate
    ```
 
-   **Never change HEAD.** No `git checkout -b`: the checkout is shared, and creating a branch moves HEAD
-   for every other session in it. Commit to the branch you found. Given a base ref, check
-   `git rev-parse HEAD` against it and halt if they differ — a tree at an unexpected commit still
-   computes a delta that still looks clean, so the failure reports success.
+   **Never change HEAD.** No `git checkout -b` — the checkout is shared, so a branch moves HEAD for every
+   session in it. Commit to the branch you found. Given a base ref, check `git rev-parse HEAD` against it
+   and halt if they differ: a tree at an unexpected commit computes a delta that looks clean, so the
+   failure reports success.
 
 2. **Regenerate the index.** `README.md` is a view, so rewrite it rather than patching it. One line per
    workstream: what the thread is, and whether it is live. A workstream is **live** if it has accrued a
@@ -48,8 +48,8 @@ line per change with how to reverse it.
    moved and nothing is archived — a dated folder that stopped accruing has already recorded that it
    ended, and leaving it in place is what keeps every inbound link true forever.
 
-   The index carries **no mutable state** beyond that: no gates, no PR numbers, no next-moves. Those live
-   in the thread's own orientation, and a second copy has to be hand-synced and diverges.
+   The index carries **no mutable state** beyond that — no gates, no PR numbers, no next-moves. A second
+   copy has to be hand-synced and diverges.
 
 3. **Repair links that cross threads.**
 
@@ -67,9 +67,9 @@ line per change with how to reverse it.
    lipika architecture-candidates    # traces cited from 2+ threads with no architecture node
    ```
 
-   Report the candidates with pointers — which system, which traces back it, what question a portrait
-   would answer. `architecture/` is the owner's, because an agent-authored portrait becomes the
-   most-linked document in the vault with no dated evidence positioned to contradict it.
+   Report candidates with pointers — which system, which traces back it, what question a portrait would
+   answer. An agent-authored portrait becomes the most-linked document in the vault with nothing
+   positioned to contradict it.
 
 5. **Verify, commit, record.**
 
