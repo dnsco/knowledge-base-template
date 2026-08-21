@@ -10,6 +10,11 @@ owner needs to decide. **You write nothing.**
 
 The audit lives here because you have the budget the handing-off agent did not, and no stake in the answer.
 
+**The vocabulary an orientation assumes.** Every vault document is a **record** — dated and never edited,
+corrected only by a newer document: dumps, `reference/` traces, `sources/`, `external/`, and every
+orientation already written — or a **view**, regenerated wholesale and never patched: the current
+orientation and the index. `architecture/` is a long-lived edited view and the owner's alone.
+
 ## Do
 
 1. **Resolve where you are.**
@@ -30,12 +35,18 @@ The audit lives here because you have the budget the handing-off agent did not, 
 3. **Audit it against its predecessor.**
 
    ```bash
-   lipika orientation-audit workstreams/<ws>     # exit 1 = an item vanished with no disposition
+   lipika orientation-audit workstreams/<ws>
+   # 0 checked and clean · 1 judge these · 2 a silent drop · 3 NOTHING WAS CHECKED
    ```
 
    Every item live in the previous orientation must appear as carried, resolved, dropped or escalated. A
    silent disappearance is the one failure this document class has. Report what the check found; do not
    fix it by hand — the correction goes in your own dump later.
+
+   **Exit 3 is not a pass.** A thread's first orientation has no predecessor, so nothing was verified —
+   including whatever it claims to have carried across from a parent. Say so plainly rather than reporting
+   a clean audit, and treat its "Settled since the last orientation" section as the author's self-report,
+   which is what it is.
 
 4. **Judge how fresh each item is.** More recent supersedes older and is trusted more — **a prior, not a
    rule**: reach back into dumps when the newest document is thin or wrong.
@@ -48,8 +59,10 @@ The audit lives here because you have the budget the handing-off agent did not, 
    is there a system here you must work on that nothing describes?
 
    ```bash
-   lipika architecture-candidates          # traces cited from 2+ workstreams with no architecture node
+   lipika architecture-candidates    # 0 nothing to recommend · 1 CANDIDATES FOUND, not an error
    ```
+
+   Exit 1 here means it found something. Do not wrap this in `set -e`.
 
    The check is mechanical and your own experience is not; report both. **Recommend, never write** —
    `architecture/` is the owner's, because an agent-authored portrait becomes the most-linked document in

@@ -15,10 +15,16 @@ WHY THIS EXISTS
   own work; the fresh one has a full window and no stake in the answer.
 
 CONTRACT
-  exit 0  every prior item accounted for  (also: no predecessor to audit against)
+  exit 0  checked, and every prior item is accounted for
   exit 1  matched on prose alone, or an item carries no `as-of` -- judge these, one line each
   exit 2  an item vanished with no trace in the successor -- a silent drop
+  exit 3  NOTHING WAS CHECKED -- no orientation, or no predecessor to check against
   exit 5  bad invocation
+
+  Exit 3 exists because 0 was answering two different questions. A first orientation has no
+  predecessor, so it passed silently and looked identical to a clean audit at the exit code --
+  found by a cold run, 2026-08-21. "Not looked at" must not be spelled the same way as "looked at
+  and fine", which is the same rule this vault already applies to a skipped scope.
 
   Matching is deliberately fuzzy, the same way `closure-check --into` is: a carried item is MEANT to
   be reworded, so a hard identifier localizes and prose corroborates, and only total absence fails.
@@ -201,20 +207,22 @@ def main(argv):
 
     docs = orientations(ws)
     if not docs:
-        print(f"no orientation/ under {args.scope} — nothing handed off yet.")
+        print(f"NOT CHECKED: no orientation/ under {args.scope} — nothing handed off yet.")
         print("The first handoff out of this session creates one.")
-        return 0
+        return 3
     split = False
     if len(docs) == 1:
         cur = open(docs[0], encoding="utf-8").read()
         parent = parent_of(cur, vault)
         pdocs = orientations(parent) if parent else []
         if not pdocs:
-            print(f"one orientation, no predecessor to audit: {os.path.relpath(docs[0], vault)}")
+            print("NOT CHECKED: one orientation and no predecessor — "
+                  f"{os.path.relpath(docs[0], vault)}")
             if parent:
-                print(f"  (names a parent, {os.path.basename(parent)}, which has no orientation)")
+                print(f"  it names a parent, {os.path.basename(parent)}, which has no orientation of "
+                      "its own, so what it carried across cannot be verified against anything.")
             report_freshness(live_items(cur), today, args.stale_days)
-            return 0
+            return 3
         prev_p, cur_p, split = pdocs[-1], docs[0], True
     else:
         prev_p, cur_p = docs[-2], docs[-1]
@@ -229,9 +237,9 @@ def main(argv):
 
     prior = live_items(prev)
     if not prior:
-        print("\nthe previous orientation held no live items — nothing to account for.")
+        print("\nNOT CHECKED: the previous orientation held no live items.")
         report_freshness(live_items(cur), today, args.stale_days)
-        return 0
+        return 3
 
     cands = accounted_items(cur)
 
