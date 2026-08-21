@@ -266,6 +266,12 @@ history rather than rebuild it.
   recon commands; a verifier reported "nothing changed" nine times having read no diff. Every one was
   fixed by moving the rule into a tool with an exit code. A definition is also a system prompt paid on
   **every** invocation, so a tool is the cheaper end as well.
+- **When two cases cannot be separated by a threshold, do not invent one.** Measured 2026-08-21 on the
+  first real audit: a genuinely deleted item scored 20% content-word overlap and an item that was carried
+  but rewritten wholesale scored 28%. Eight points on two data points is overfitting, and the cost of
+  getting it wrong is the one failure the check exists to catch. The tool stayed strict and the resolution
+  moved into a convention — a disposition line reuses the departing item's own words — which is checkable
+  by the same matcher and costs the author one sentence.
 - **A check that stays red on correct content gets dismissed.** Give every new check a hand-audited red
   case and a green case. Measured 2026-08-21 while building `orientation-audit`: its first matcher scored
   a deleted item at 43% against a successor that never mentioned it, because it compared each item to the
