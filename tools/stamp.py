@@ -6,29 +6,32 @@ WHY THIS EXISTS
   and the failure is silent at every step: the file writes, the commit succeeds, the handoff reports
   done, and the next session reads a stale document.
 
-  A name is therefore a SEQUENCE KEY, not a timestamp, and this checks SORTING: string comparison
-  against the existing names, no date parsing.
+  **A name is a UTC timestamp, and the seconds are there so it is always a truthful one.**
 
-  Measured 2026-08-21, of four orientations on one thread, only the first is a UTC timestamp --
-  1930 was written at 18:10Z, 2015 at 18:13Z, 2100 at 19:32Z. The names run ahead of the clock and
-  the drift compounds; the newest was 88 minutes out. The skill said "stamp from `date`", which is
-  local time besides, and would have produced a name sorting before all three.
+  Measured 2026-08-21: agents had been inventing names. Of four orientations on one thread only the
+  first was a real time -- 1930 was written at 18:10Z, 2015 at 18:13Z (three minutes after 1930),
+  2100 at 19:32Z. Each agent picked a number bigger than the last, so the names ratcheted up to 121
+  minutes ahead of the clock and a truthful stamp could no longer sort last.
 
-  --after exists for that drift and is not the default: emitting a monotonic name silently would
-  entrench it invisibly, where refusing puts it in front of the writer once per handoff, the only
-  moment anyone can decide to reset. A document's real time is its `date:` frontmatter and its
-  commit.
+  The first version of this tool offered --after, which stepped past the newest name. That was the
+  wrong fix: it made inventing a number the sanctioned path and guaranteed the drift never healed.
+  It is gone. Minute-resolution names were the other half of the problem -- two handoffs in one
+  minute forced a tie-break, and a tie-break is an invented number. Seconds remove the tie.
+
+  A name that cannot sort last is now an ANOMALY to report, not a case to route around. It means an
+  existing name is ahead of the clock, and it heals by itself as real time advances.
 
 CONTRACT
+
   exit 0  the stamp is printed on stdout, and (with --for) it sorts last in that directory
-  exit 1  the stamp would NOT sort last -- the directory holds a name at or after it
+  exit 1  the stamp would NOT sort last -- an existing name is ahead of the clock. Reports how long
+          until it heals. Do not invent a name; wait, or fix the name that is wrong.
   exit 5  bad invocation
 
 USAGE
-  lipika stamp                                   # 2026-08-21-2245
+  lipika stamp                                   # 2026-08-21-205131
   lipika stamp --date                            # 2026-08-21
   lipika stamp --for workstreams/<ws>/orientation      # stamp, checked against what is there
-  lipika stamp --for <dir> --after               # ...and if the clock is behind, step past the last
 """
 
 import argparse
@@ -42,7 +45,7 @@ import vault_config     # noqa: E402
 
 # A leading YYYY-MM-DD-HHMM or YYYY-MM-DD. Anything else in the directory is not a stamped
 # document and cannot be sorted against -- README.md in an orientation folder is not a rival.
-STAMPED = re.compile(r"^(\d{4}-\d{2}-\d{2}(?:-\d{4})?)")
+STAMPED = re.compile(r"^(\d{4}-\d{2}-\d{2}(?:-\d{4,6})?)")
 
 
 def utc_now():
@@ -50,7 +53,21 @@ def utc_now():
 
 
 def stamp(now, date_only=False):
-    return now.strftime("%Y-%m-%d" if date_only else "%Y-%m-%d-%H%M")
+    return now.strftime("%Y-%m-%d" if date_only else "%Y-%m-%d-%H%M%S")
+
+
+def _heals_in(newest, now):
+    """Minutes until a truthful stamp would sort after `newest`, or None if it never will.
+
+    An ahead-of-clock name is temporary by construction: real time keeps advancing and the name
+    does not. Saying WHEN turns a refusal into a wait instead of an invitation to invent."""
+    for fmt in ("%Y-%m-%d-%H%M%S", "%Y-%m-%d-%H%M", "%Y-%m-%d"):
+        try:
+            t = datetime.datetime.strptime(newest, fmt).replace(tzinfo=datetime.timezone.utc)
+        except ValueError:
+            continue
+        return max(0, int((t - now).total_seconds() // 60) + 1)
+    return None
 
 
 def existing_stamps(dirpath):
@@ -76,16 +93,8 @@ def main(argv):
                     help="YYYY-MM-DD only, for a document dated to the day")
     ap.add_argument("--for", dest="target", metavar="DIR",
                     help="check the stamp sorts last in this directory (vault-relative or absolute)")
-    ap.add_argument("--after", action="store_true",
-                    help="if the clock does not sort last, step one minute past the newest name "
-                         "instead of refusing -- and say so on stderr")
     ap.add_argument("--vault", help="override the resolved vault")
     args = ap.parse_args(argv)
-
-    if args.after and not args.target:
-        ap.error("--after needs --for: there is nothing to step past without a directory")
-    if args.after and args.date:
-        ap.error("--after needs minute resolution; it cannot step a --date stamp")
 
     now = utc_now()
     s = stamp(now, args.date)
@@ -101,27 +110,9 @@ def main(argv):
 
     found = existing_stamps(target)
     # Compare on the leading stamp, string-wise, because that is how pickup picks the newest.
-    # A same-minute collision counts as NOT sorting last: two handoffs in one minute need the
-    # author to look, not a silent overwrite or an arbitrary tiebreak.
+    # At seconds resolution a genuine tie needs two handoffs in the same second; anything blocking
+    # here is a name that is ahead of the clock, which is a fact about the directory, not the clock.
     blocking = [(st, n) for st, n in found if st >= s]
-
-    if blocking and args.after:
-        newest = max(st for st, _ in blocking)
-        try:
-            stepped = (datetime.datetime.strptime(newest, "%Y-%m-%d-%H%M")
-                       + datetime.timedelta(minutes=1)).strftime("%Y-%m-%d-%H%M")
-        except ValueError:
-            # A day-only name (YYYY-MM-DD) in an orientation folder: any HHMM sorts after it.
-            stepped = newest + "-0001"
-        drift = stepped[:16]
-        print(stepped)
-        print(f"\nthe clock does not sort last here, so this stepped past {newest}", file=sys.stderr)
-        print(f"  UTC now is {s}; the newest name is {newest}", file=sys.stderr)
-        print(f"  emitted {drift} -- a SEQUENCE KEY, ahead of real time. The document's true time is"
-              f"\n  its `date:` frontmatter and its commit, not this name.", file=sys.stderr)
-        print("  Drift compounds. If it has grown large, the fix is a reset agreed with the owner,"
-              "\n  not another step.", file=sys.stderr)
-        return 0
 
     if blocking:
         print(s)
@@ -129,13 +120,17 @@ def main(argv):
         for st, n in blocking:
             rel = "same minute" if st == s else "sorts after"
             print(f"  {n}   ({rel})", file=sys.stderr)
+        newest = max(st for st, _ in blocking)
+        heals = _heals_in(newest, now)
         print("\n  A new orientation must sort last by name or `pickup` will not read it.",
               file=sys.stderr)
-        print("  Measured 2026-08-21: these names are sequence keys, not timestamps, and they run"
-              "\n  ahead of the clock. Re-run with --after to step past the newest one.",
-              file=sys.stderr)
-        print("  Do not hand-pick a stamp -- the step is the tool's job, and it reports the drift.",
-              file=sys.stderr)
+        print(f"  An existing name is AHEAD OF THE CLOCK. UTC now is {s}.", file=sys.stderr)
+        if heals is not None:
+            print(f"  This heals by itself in ~{heals} minute(s), when real time passes {newest}.",
+                  file=sys.stderr)
+        print("  Do NOT invent a later name. That is how the drift above was created: each agent"
+              "\n  picked a number bigger than the last, and the names ran up to 121 minutes ahead"
+              "\n  of real time. Wait, or correct the name that is wrong.", file=sys.stderr)
         return 1
 
     print(s)

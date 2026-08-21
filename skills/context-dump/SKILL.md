@@ -72,12 +72,13 @@ project does **not** load automatically — read it if you have not.
    time is in the name, and **the name comes from the tool, never from `date`**:
 
    ```bash
-   lipika stamp --for workstreams/<ws>/dumps     # exits 1 if it would not sort last; --after steps past
+   lipika stamp --for workstreams/<ws>/dumps     # UTC to the second, checked against what is there
    ```
 
-   These names are sequence keys that run ahead of the clock, and `date` is local time besides. A name
-   that does not sort last is invisible to `pickup`, and nothing about that failure is loud — the file
-   writes, the commit succeeds, the handoff reports done. Do not hand-pick a stamp.
+   `date` is local time, and a name that does not sort last is invisible to `pickup` — the file writes,
+   the commit succeeds, the handoff reports done, and nothing is loud. **If it exits 1, an existing name
+   is ahead of the clock; it tells you when that heals. Wait — never invent a later name.** Inventing is
+   what put those names ahead in the first place.
 
    Frontmatter: `type` / `status` / `date` / `tags` / `up:`.
 
@@ -194,6 +195,7 @@ project does **not** load automatically — read it if you have not.
 
 Terse and factual, written for a first-time reader who was not in the room. **No agent-local codenames** —
 "Option C", "Track B", "Phase 2", workflow IDs — say what a thing *is*. Filenames carry their stamp:
-`YYYY-MM-DD-HHMM-topic.md` for dumps and orientations, `YYYY-MM-DD-topic.md` elsewhere.
+`YYYY-MM-DD-HHMMSS-topic.md` for dumps and orientations, from `lipika stamp`; `YYYY-MM-DD-topic.md`
+elsewhere.
 **Timestamp every metric**: "9 KB at 2026-08-21", never "9 KB". Better still, cite the reference and let a
 tool answer the number.
